@@ -1,15 +1,17 @@
 package dns
 
-import "testing"
+import (
+	"net"
+	"testing"
+)
 
 // Test function to test how the API feels.
 func TestDNS(t *testing.T) {
-	rr := &A{
-		Hdr: Header{
-			Name:  MustName("example.net."),
-			Class: ClassINET,
-			TTL:   SetTTL(15),
-		},
-	}
+	rr := new(A)
+	rr.Hdr.Name.Set("example.net.")
+	rr.Hdr.Class.Set(ClassINET)
+	rr.Hdr.TTL.Set(15)
+	rr.SetData(0, net.IPv4allrouter)
 
+	println(rr.String())
 }

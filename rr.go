@@ -2,8 +2,7 @@
 package dns
 
 import (
-	"strconv"
-	"strings"
+	gob "encoding/binary"
 )
 
 type (
@@ -22,54 +21,61 @@ type (
 	RR interface {
 		// Data returns the rdata at position i (zero based). If there is no data at that position nil is returned.
 		Data(i int) []byte
-		// SetData sets rdata at position i with the data any.
-		SetData(i int, d any) ([]byte, error)
-		// String returns the string representation.
+		// Set sets rdata at position i with the data any.
+		Set(i int, d any) error
+		// String returns the string representation of the rdata.
 		String() string
 	}
 )
 
-// +#v
-func (n Name) GoString() string {
-	if len(n) == 0 {
-		return ""
+func (t TTL) Set(i int)     { gob.BigEndian.PutUint32(t[:], uint32(i)) }
+func (c Class) Set(d Class) { c = d }
+
+func (n Name) Set(s string) error {
+	// Any non escaped dot signals a label
+	// First check for root domain.
+	if s == "." {
+		n = []byte{0}
+		return nil
 	}
-	if n[0] == 0 {
-		return "00"
+	if s[len(s)-1] != '.' {
+		return ParseError("name must be fully qualified")
 	}
-	b := &strings.Builder{}
-	for i := 0; i < len(n); {
-		v := int(n[i])
-		ll := strconv.Itoa(v)
-		if v < 10 {
-			b.WriteString("0")
+
+	var (
+		j       int
+		escaped bool
+	)
+
+	if n == nil {
+		n = make([]byte, 0, 256)
+	}
+
+	for i := 0; i < len(s); i++ {
+		if !escaped && s[i] == '\\' {
+			escaped = true
+			continue
 		}
-		b.WriteString(ll)
-		// i+1 ... i+ll is the labels "text"
-		b.Write(n[i+1 : i+1+v])
-		i += v + 1
-	}
-
-	return b.String()
-}
-
-func (n Name) String() string {
-	if len(n) == 0 {
-		return ""
-	}
-	if n[0] == 0 {
-		return "."
-	}
-	b := &strings.Builder{}
-	for i := 0; i < len(n); {
-		v := int(n[i])
-		if i > 0 { // don't want to start with a dot
-			b.WriteString(".")
+		if escaped && s[i] == '.' {
+			escaped = false
+			continue
 		}
-		// i+1 ... i+ll is the labels "text"
-		b.Write(n[i+1 : i+1+v])
-		i += v + 1
-	}
+		if !escaped && s[i] == '.' {
+			ll := i - j
+			if ll < 1 {
+				return ParseError("short label")
+			}
+			if ll > 63 {
+				return ParseError("label length exceeded")
+			}
+			n = append(n, []byte{byte(ll)}...)
+			n = append(n, []byte(s[j:i])...)
+			j = i + 1 // skip dot
+		}
 
-	return b.String()
+		escaped = false
+
+	}
+	n = append(n, byte(0))
+	return nil
 }

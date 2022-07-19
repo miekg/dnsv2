@@ -17,7 +17,8 @@ func TestNameFromString(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		name, err := NameFromString(tc.in)
+		var name Name
+		err := name.Set(tc.in)
 		if err != nil && tc.err {
 			t.Fatalf("expected no error, but got %s", err)
 		}
