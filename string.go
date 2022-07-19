@@ -70,4 +70,7 @@ func (n Name) String() string {
 func (h Header) GoString() string {
 	return h.Name.GoString() + " " + h.TTL.GoString() + " " + h.Class.GoString()
 }
-func (h Header) String() string { return h.GoString() }
+
+func (h Header) String() string {
+	return h.Name.String() + " " + h.TTL.String() + " " + h.Class.String()
+}

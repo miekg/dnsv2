@@ -28,14 +28,14 @@ type (
 	}
 )
 
-func (t TTL) Set(i int)     { gob.BigEndian.PutUint32(t[:], uint32(i)) }
-func (c Class) Set(d Class) { c = d }
+func (t *TTL) Set(i int)     { gob.BigEndian.PutUint32((*t)[:], uint32(i)) }
+func (c *Class) Set(d Class) { *c = d }
 
-func (n Name) Set(s string) error {
+func (n *Name) Set(s string) error {
 	// Any non escaped dot signals a label
 	// First check for root domain.
 	if s == "." {
-		n = []byte{0}
+		*n = []byte{0}
 		return nil
 	}
 	if s[len(s)-1] != '.' {
@@ -47,8 +47,8 @@ func (n Name) Set(s string) error {
 		escaped bool
 	)
 
-	if n == nil {
-		n = make([]byte, 0, 256)
+	if *n == nil {
+		*n = make([]byte, 0, 256)
 	}
 
 	for i := 0; i < len(s); i++ {
@@ -68,14 +68,14 @@ func (n Name) Set(s string) error {
 			if ll > 63 {
 				return ParseError("label length exceeded")
 			}
-			n = append(n, []byte{byte(ll)}...)
-			n = append(n, []byte(s[j:i])...)
+			*n = append(*n, []byte{byte(ll)}...)
+			*n = append(*n, []byte(s[j:i])...)
 			j = i + 1 // skip dot
 		}
 
 		escaped = false
 
 	}
-	n = append(n, byte(0))
+	*n = append(*n, byte(0))
 	return nil
 }

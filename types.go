@@ -33,7 +33,7 @@ func (rr *A) SetData(i int, a net.IP) error {
 }
 
 func (rr *A) GoString() string {
-	return net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
+	return "A\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
 }
 
 func (rr *A) String() string { return rr.GoString() }
