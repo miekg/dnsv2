@@ -3,6 +3,8 @@ package dns
 import (
 	"fmt"
 	"testing"
+
+	"github.com/miekg/dnsv2/dnswire"
 )
 
 func TestNameFromString(t *testing.T) {
@@ -17,11 +19,7 @@ func TestNameFromString(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		var name Name
-		err := name.Set(tc.in)
-		if err != nil && tc.err {
-			t.Fatalf("expected no error, but got %s", err)
-		}
+		name := Name(dnswire.MustName(tc.in))
 		if x := fmt.Sprintf("%#v", name); x != tc.out {
 			t.Errorf("expected [%s], got [%s]", tc.out, x)
 		}
