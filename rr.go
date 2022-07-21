@@ -26,11 +26,11 @@ type (
 	RR interface {
 		// Hdr returns the header of the RR.
 		Hdr() Header
+		// Len returns the number of rdata elements the RR has.
+		Len() int
 		// Data returns the rdata at position i (zero based). If there is no data at that position nil is returned.
 		// The buffer returned is in wire format, i.e. if some data requires a length, that length is prepended to the buffer.
 		Data(i int) []byte
-		// Len returns the number of rdata elements the RR has.
-		Len() int
 		// String returns the string representation of the rdata(!) only.
 		String() string
 	}
