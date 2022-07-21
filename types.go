@@ -8,9 +8,9 @@ import (
 
 var (
 	// Valid Classes.
-	ClassNONE = [2]byte{0, 254}
-	ClassINET = [2]byte{0, 1}
-	classANY  = [2]byte{0, 255}
+	ClassNONE = Class{0, 254}
+	ClassINET = Class{0, 1}
+	classANY  = Class{0, 255}
 )
 
 /*
@@ -71,13 +71,13 @@ type CNAME struct {
 
 // Supported RR Types.
 var (
-	TypeNone = [2]byte{0, 0}
-	TypeA    = [2]byte{0, 1}
-	TypeOPT  = [2]byte{0, 41}
+	TypeNone = Type{0, 0}
+	TypeA    = Type{0, 1}
+	TypeOPT  = Type{0, 41}
 )
 
-// Type returns the type of the RR.
-func Type(rr RR) [2]byte {
+// RRType returns the type of the RR.
+func RRType(rr RR) [2]byte {
 	switch rr.(type) {
 	case *A:
 		return TypeA
@@ -120,8 +120,8 @@ func WireBytes(rr RR) []byte {
 	buf := make([]byte, 256)
 	n := copy(buf[0:], rr.Hdr().Name)
 
-	buf[n+1] = Type(rr)[0]
-	buf[n+2] = Type(rr)[1]
+	buf[n+1] = RRType(rr)[0]
+	buf[n+2] = RRType(rr)[1]
 	n += 2
 
 	buf[n+1] = rr.Hdr().Class[0]

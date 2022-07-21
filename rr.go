@@ -11,15 +11,21 @@ type (
 	Name  []byte  // Name is the owner name of the RR.
 	Class [2]byte // Class the class of the RR.
 	TTL   [4]byte // TTL is the TTL of the RR.
-
-	// Eluding Type here, implicit from the RR type being used.
+	Type  [2]byte // Type is the Type of an RR. An RR in this package is implicitaly typed via it's Go type.
 
 	// Header is the header each RR has.
 	Header struct {
 		Name
+		// Implicit type
 		Class
 		TTL
-		// Implicit type
+	}
+
+	// Question holds the Question in a dns message. It implements the RR interface, although it's not an actuall RR.
+	Question struct {
+		Name
+		Type
+		Class
 	}
 
 	// An RR represents a resource record.
@@ -35,6 +41,18 @@ type (
 		String() string
 	}
 )
+
+func (q *Question) Hdr() Header {
+	return Header{Name: q.Name, Class: q.Class}
+}
+func (q *Question) Len() int       { return 1 }
+func (q *Question) String() string { return "MX-TODO" } // TODO
+func (q *Question) Data(i int) []byte {
+	if i != 1 {
+		return nil
+	}
+	return q.Type[:]
+}
 
 // Mostly here, to prevent users from accessing the dnswire pkg directly. Not sure if this is a good idea.
 
