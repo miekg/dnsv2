@@ -16,8 +16,9 @@ func TestDNS(t *testing.T) {
 	fmt.Printf("%s %s\n", rr.Hdr().String(), rr.String()) // example.net. 15 IN A	224.0.0.2
 	fmt.Printf("%#v\n", rr.Hdr().Name)                    // 06example03net00
 
-	fmt.Println(rr.Data(0))
+	fmt.Printf("This RR has %d rdatas\n", rr.Len())
+	fmt.Printf("This is the first: %v\n", rr.Data(0))
 
 	wirebuf := WireBytes(rr)
-	fmt.Printf("%+v\n", wirebuf)
+	fmt.Printf("This is its complete wireformat: %+v\n", wirebuf)
 }

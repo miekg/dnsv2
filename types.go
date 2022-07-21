@@ -112,6 +112,5 @@ func WireBytes(rr RR) []byte {
 		l += n
 	}
 	gob.BigEndian.PutUint16(buf[rdlen+1:], uint16(l))
-	println(l, rdlen)
 	return buf[:j+1]
 }
