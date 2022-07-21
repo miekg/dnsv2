@@ -8,10 +8,21 @@ import (
 
 // Here we implement the fmt.Stinger interface for a Header types.
 
+// should be a map like in miekg/dns. for Type as well.
 func (c Class) String() string {
 	switch c {
 	case ClassINET:
 		return "IN"
+	}
+	return "NONE"
+}
+
+func (t Type) String() string {
+	switch t {
+	case TypeA:
+		return "A"
+	case TypeOPT:
+		return "OPT"
 	}
 	return "NONE"
 }

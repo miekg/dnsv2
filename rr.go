@@ -16,12 +16,13 @@ type (
 	// Header is the header each RR has.
 	Header struct {
 		Name
-		// Implicit type
+		// Implicit type.
 		Class
 		TTL
 	}
 
-	// Question holds the Question in a dns message. It implements the RR interface, although it's not an actuall RR.
+	// Question holds the Question in a dns message. It implements the RR interface, although it's not an actual RR.
+	// We treat the Type as the Question's rdata.
 	Question struct {
 		Name
 		Type
@@ -42,11 +43,9 @@ type (
 	}
 )
 
-func (q *Question) Hdr() Header {
-	return Header{Name: q.Name, Class: q.Class}
-}
+func (q *Question) Hdr() Header    { return Header{Name: q.Name, Class: q.Class} }
 func (q *Question) Len() int       { return 1 }
-func (q *Question) String() string { return "MX-TODO" } // TODO
+func (q *Question) String() string { return q.Type.String() }
 func (q *Question) Data(i int) []byte {
 	if i != 1 {
 		return nil

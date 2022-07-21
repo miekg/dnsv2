@@ -19,7 +19,7 @@ func TestDNS(t *testing.T) {
 	fmt.Printf("This RR has %d rdatas\n", rr.Len())
 	fmt.Printf("This is the first: %v\n", rr.Data(0))
 
-	wirebuf := WireBytes(rr)
+	wirebuf := Bytes(rr)
 	fmt.Printf("This is its complete wireformat: %+v\n", wirebuf)
 }
 
@@ -28,6 +28,21 @@ func TestEDNS0(t *testing.T) {
 	nsid := &NSID{ID: []byte("AA")}
 	opt.Options = []Option{nsid}
 
-	wirebuf := WireBytes(opt)
+	wirebuf := Bytes(opt)
 	fmt.Printf("This is its complete wireformat: %+v\n", wirebuf)
+}
+
+func TestQuestion(t *testing.T) {
+	q := &Question{NewName("example.net."), TypeA, ClassINET}
+	fmt.Printf("Question %s %s\n", q.Hdr(), q)
+
+}
+
+func TestMsg(t *testing.T) {
+	m := NewMsg(make([]byte, 256))
+
+	q := &Question{NewName("example.net."), TypeOPT, ClassINET}
+	fmt.Printf("Q: %s %#v\n", q, q)
+	m.SetRR(SectionQuestion, &Question{NewName("example.net."), TypeOPT, ClassINET})
+	fmt.Printf("Msg %s %v\n", m.Bytes(), m.Bytes())
 }

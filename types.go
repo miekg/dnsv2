@@ -79,6 +79,8 @@ var (
 // RRType returns the type of the RR.
 func RRType(rr RR) [2]byte {
 	switch rr.(type) {
+	case *Question:
+		return rr.(*Question).Type
 	case *A:
 		return TypeA
 	case *OPT:
@@ -88,7 +90,7 @@ func RRType(rr RR) [2]byte {
 }
 
 /*
-WireBytes converts an RR to the format we can use on the wire. The format is described
+Bytes converts an RR to the format we can use on the wire. The format is described
 in RFC 1035:
 
                                     1  1  1  1  1  1
@@ -113,13 +115,11 @@ in RFC 1035:
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 The bytes are copied into a newly allocated memory buffer.
-
 */
-func WireBytes(rr RR) []byte {
+func Bytes(rr RR) []byte {
 	// this now allocates a buffer, actual function will let you choose. And compression and stuff.
 	buf := make([]byte, 256)
 	n := copy(buf[0:], rr.Hdr().Name)
-
 	buf[n+1] = RRType(rr)[0]
 	buf[n+2] = RRType(rr)[1]
 	n += 2
@@ -127,6 +127,13 @@ func WireBytes(rr RR) []byte {
 	buf[n+1] = rr.Hdr().Class[0]
 	buf[n+2] = rr.Hdr().Class[1]
 	n += 2
+
+	switch rr.(type) {
+	case *Question:
+		return buf[:n]
+	default:
+		break
+	}
 
 	buf[n+1] = rr.Hdr().TTL[0]
 	buf[n+2] = rr.Hdr().TTL[1]
