@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-// Uint32 returns the wireformat of v.
+// Uint32 returns the wire format of v.
 func Uint32(v uint32, buf ...[4]byte) [4]byte {
 	if buf != nil {
 		gob.BigEndian.PutUint32((buf[0])[:], uint32(v))
@@ -18,6 +18,7 @@ func Uint32(v uint32, buf ...[4]byte) [4]byte {
 	}
 }
 
+// String returns the wire format of the string v. On error nil is returned.
 func String(v string, buf ...[]byte) []byte {
 	if v[len(v)-1] != '.' {
 		return nil
@@ -69,6 +70,7 @@ func String(v string, buf ...[]byte) []byte {
 	return n
 }
 
+// IPv4 returns the wire format of the IP v.
 func IPv4(v net.IP, buf ...[4]byte) [4]byte {
 	if buf == nil {
 		return *(*[4]byte)(v.To4())

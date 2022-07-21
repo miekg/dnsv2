@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// Here we implement the fmt.Stinger interface for a Header types.
+
 func (c Class) String() string {
 	switch c {
 	case ClassINET:
