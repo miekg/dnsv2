@@ -2,16 +2,8 @@ package dnswire
 
 import (
 	gob "encoding/binary"
+	"net"
 )
-
-// Error is returned when any parsing to wire format fails.
-type Error string
-
-func (e Error) Error() string {
-	return "dns: " + string(e)
-}
-
-func TTL(v uint32, buf ...[4]byte) [4]byte { return Uint32(v, buf...) }
 
 // Uint32 returns the wireformat of v.
 func Uint32(v uint32, buf ...[4]byte) [4]byte {
@@ -26,29 +18,21 @@ func Uint32(v uint32, buf ...[4]byte) [4]byte {
 	}
 }
 
-func MustName(s string, buf ...*[]byte) []byte {
-	n, err := Name(s, buf...)
-	if err != nil {
-		panic("dns:" + err.Error())
-	}
-	return n
-}
-
-func Name(s string, buf ...*[]byte) ([]byte, error) {
-	if s[len(s)-1] != '.' {
-		return nil, Error("name must be fully qualified")
+func String(v string, buf ...[]byte) []byte {
+	if v[len(v)-1] != '.' {
+		return nil
 	}
 
 	var n []byte
 	if buf == nil {
 		n = make([]byte, 0, 256)
 	} else {
-		n = *buf[0]
+		n = buf[0]
 	}
 
-	if s == "." {
+	if v == "." {
 		n = []byte{0}
-		return n, nil
+		return n
 	}
 
 	var (
@@ -56,25 +40,25 @@ func Name(s string, buf ...*[]byte) ([]byte, error) {
 		escaped bool
 	)
 
-	for i := 0; i < len(s); i++ {
-		if !escaped && s[i] == '\\' {
+	for i := 0; i < len(v); i++ {
+		if !escaped && v[i] == '\\' {
 			escaped = true
 			continue
 		}
-		if escaped && s[i] == '.' {
+		if escaped && v[i] == '.' {
 			escaped = false
 			continue
 		}
-		if !escaped && s[i] == '.' {
+		if !escaped && v[i] == '.' {
 			ll := i - j
 			if ll < 1 {
-				return nil, Error("short label")
+				return nil
 			}
 			if ll > 63 {
-				return nil, Error("label length exceeded")
+				return nil
 			}
 			n = append(n, []byte{byte(ll)}...)
-			n = append(n, []byte(s[j:i])...)
+			n = append(n, []byte(v[j:i])...)
 			j = i + 1 // skip dot
 		}
 
@@ -82,5 +66,18 @@ func Name(s string, buf ...*[]byte) ([]byte, error) {
 
 	}
 	n = append(n, byte(0))
-	return n, nil
+	return n
+}
+
+func IPv4(v net.IP, buf ...[4]byte) [4]byte {
+	if buf == nil {
+		return *(*[4]byte)(v.To4())
+
+	}
+	ip := v.To4()
+	buf[0][0] = ip[0]
+	buf[0][1] = ip[1]
+	buf[0][2] = ip[2]
+	buf[0][3] = ip[3]
+	return buf[0]
 }

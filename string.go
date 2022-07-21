@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (c Class) GoString() string {
+func (c Class) String() string {
 	switch c {
 	case ClassINET:
 		return "IN"
@@ -14,14 +14,10 @@ func (c Class) GoString() string {
 	return "NONE"
 }
 
-func (c Class) String() string { return c.GoString() }
-
-func (t TTL) GoString() string {
+func (t TTL) String() string {
 	i := gob.BigEndian.Uint32(t[:])
 	return strconv.FormatUint(uint64(i), 10)
 }
-
-func (t TTL) String() string { return t.GoString() }
 
 func (n Name) GoString() string {
 	if len(n) == 0 {
@@ -65,10 +61,6 @@ func (n Name) String() string {
 	}
 
 	return b.String()
-}
-
-func (h Header) GoString() string {
-	return h.Name.GoString() + " " + h.TTL.GoString() + " " + h.Class.GoString()
 }
 
 func (h Header) String() string {
