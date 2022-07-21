@@ -1,8 +1,9 @@
 package dns
 
 import (
-	gob "encoding/binary"
 	"net"
+
+	"github.com/miekg/dnsv2/dnswire"
 )
 
 var (
@@ -11,6 +12,36 @@ var (
 	ClassINET = [2]byte{0, 1}
 	classANY  = [2]byte{0, 255}
 )
+
+/*
+OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
+Each option is encoded as:
+
+               +0 (MSB)                            +1 (LSB)
+      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+   0: |                          OPTION-CODE                          |
+      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+   2: |                         OPTION-LENGTH                         |
+      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+   4: |                                                               |
+      /                          OPTION-DATA                          /
+      /                                                               /
+      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+*/
+type OPT struct {
+	Header
+	Options []Option
+}
+
+func (rr *OPT) Hdr() Header    { return rr.Header }
+func (rr *OPT) Len() int       { return len(rr.Options) }
+func (rr *OPT) String() string { return "TODO" }
+func (rr *OPT) Data(i int) []byte {
+	if i < 0 || i >= rr.Len() {
+		return nil
+	}
+	return rr.Options[i].Data()
+}
 
 // A RR. See RFC 1035.
 type A struct {
@@ -111,6 +142,6 @@ func WireBytes(rr RR) []byte {
 		j += n
 		l += n
 	}
-	gob.BigEndian.PutUint16(buf[rdlen+1:], uint16(l))
+	dnswire.Uint16(uint16(l), buf[rdlen+1:])
 	return buf[:j+1]
 }

@@ -6,13 +6,24 @@ import (
 )
 
 // Uint32 returns the wire format of v.
-func Uint32(v uint32, buf ...[4]byte) [4]byte {
+func Uint32(v uint32, buf ...[]byte) [4]byte {
 	if buf != nil {
-		gob.BigEndian.PutUint32((buf[0])[:], uint32(v))
+		gob.BigEndian.PutUint32((buf[0])[:], v)
 	}
 	return [4]byte{
 		byte(v >> 24),
 		byte(v >> 16),
+		byte(v >> 8),
+		byte(v),
+	}
+}
+
+// Uint16 returns the wire format of v.
+func Uint16(v uint16, buf ...[]byte) [2]byte {
+	if buf != nil {
+		gob.BigEndian.PutUint16((buf[0])[:], v)
+	}
+	return [2]byte{
 		byte(v >> 8),
 		byte(v),
 	}
@@ -71,7 +82,7 @@ func String(v string, buf ...[]byte) []byte {
 }
 
 // IPv4 returns the wire format of the IP v.
-func IPv4(v net.IP, buf ...[4]byte) [4]byte {
+func IPv4(v net.IP, buf ...[]byte) [4]byte {
 	if buf == nil {
 		return *(*[4]byte)(v.To4())
 
@@ -81,5 +92,5 @@ func IPv4(v net.IP, buf ...[4]byte) [4]byte {
 	buf[0][1] = ip[1]
 	buf[0][2] = ip[2]
 	buf[0][3] = ip[3]
-	return buf[0]
+	return *(*[4]byte)(buf[0])
 }
