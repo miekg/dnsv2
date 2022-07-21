@@ -27,4 +27,7 @@ func TestEDNS0(t *testing.T) {
 	opt := &OPT{Header: Header{Name: NewName(".")}}
 	nsid := &NSID{ID: []byte("AA")}
 	opt.Options = []Option{nsid}
+
+	wirebuf := WireBytes(opt)
+	fmt.Printf("This is its complete wireformat: %+v\n", wirebuf)
 }

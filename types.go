@@ -73,6 +73,7 @@ type CNAME struct {
 var (
 	TypeNone = [2]byte{0, 0}
 	TypeA    = [2]byte{0, 1}
+	TypeOPT  = [2]byte{0, 41}
 )
 
 // Type returns the type of the RR.
@@ -80,6 +81,8 @@ func Type(rr RR) [2]byte {
 	switch rr.(type) {
 	case *A:
 		return TypeA
+	case *OPT:
+		return TypeOPT
 	}
 	return TypeNone
 }

@@ -1,4 +1,4 @@
-// Package dns implements a fast and natural interface to the Domain Name Syste
+// Package dns implements a fast and natural interface to the Domain Name System.
 package dns
 
 import (
@@ -44,5 +44,5 @@ func NewTTL(t uint32, buf ...[]byte) TTL { return TTL(dnswire.Uint32(t, buf...))
 // NewName returns a name from s. If buf is not nil the value is also written into it.
 func NewName(s string, buf ...[]byte) Name { return Name(dnswire.String(s, buf...)) }
 
-// NewIPv4 returns a 4 byte buffer from v. If buf is not nit the value is also written into it.
+// NewIPv4 returns a 4 byte buffer from v. If buf is not nil the value is also written into it.
 func NewIPv4(v net.IP, buf ...[]byte) [4]byte { return dnswire.IPv4(v, buf...) }
