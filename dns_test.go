@@ -40,9 +40,11 @@ func TestQuestion(t *testing.T) {
 
 func TestMsg(t *testing.T) {
 	m := NewMsg(make([]byte, 256))
-
-	q := &Question{NewName("example.net."), TypeOPT, ClassINET}
-	fmt.Printf("Q: %s %#v\n", q, q)
-	m.SetRR(SectionQuestion, &Question{NewName("example.net."), TypeOPT, ClassINET})
+	m.SetRR(Qd, &Question{NewName("example.net."), TypeA, ClassINET})
+	rr := &A{
+		Header{NewName("example.net."), ClassINET, NewTTL(15)},
+		NewIPv4(net.ParseIP("127.0.0.1")),
+	}
+	m.SetRR(An, rr)
 	fmt.Printf("Msg %s %v\n", m.Bytes(), m.Bytes())
 }

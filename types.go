@@ -11,6 +11,11 @@ var (
 	ClassNONE = Class{0, 254}
 	ClassINET = Class{0, 1}
 	classANY  = Class{0, 255}
+
+	// Supported RR Types.
+	TypeNone = Type{0, 0}
+	TypeA    = Type{0, 1}
+	TypeOPT  = Type{0, 41}
 )
 
 /*
@@ -68,13 +73,6 @@ type CNAME struct {
 	Target Name
 }
 */
-
-// Supported RR Types.
-var (
-	TypeNone = Type{0, 0}
-	TypeA    = Type{0, 1}
-	TypeOPT  = Type{0, 41}
-)
 
 // RRType returns the type of the RR.
 func RRType(rr RR) [2]byte {
@@ -154,4 +152,9 @@ func Bytes(rr RR) []byte {
 	}
 	dnswire.Uint16(uint16(l), buf[rdlen+1:])
 	return buf[:j+1]
+}
+
+// Write writes buffer buf into the RR.
+func Write(rr RR, buf []byte) error {
+	return nil
 }

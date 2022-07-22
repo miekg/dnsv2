@@ -53,6 +53,8 @@ func (q *Question) Data(i int) []byte {
 	return q.Type[:]
 }
 
+// Copy of header and Copy of RR, make part of the RR interface?
+
 // Mostly here, to prevent users from accessing the dnswire pkg directly. Not sure if this is a good idea.
 
 // NewTTL returns a TTL from t. If buf is not nil the value is also written into it.
