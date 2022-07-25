@@ -1,3 +1,5 @@
+// The dnswire package contains functions to write to wire format. Each functions has
+// an optional buffer, it that parameters is given the value is also written.
 package dnswire
 
 import (
