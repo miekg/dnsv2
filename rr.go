@@ -31,6 +31,8 @@ type (
 		Data(i int) []byte
 		// String returns the string representation of the rdata(!) only.
 		String() string
+		// Write([]byte) (int, error)
+		// Write the bytes into the rdata for each RR.
 	}
 )
 
