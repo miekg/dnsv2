@@ -257,6 +257,7 @@ func (m *Msg) name(offset int) (Name, int, error) {
 			}
 			j1 := uint8(m.Buf[i+1])
 			i = int(j^0xC0) | int(j1)
+			println("points to", i)
 		}
 	}
 	if i == offset {
