@@ -16,6 +16,7 @@ var (
 	// Supported RR Types.
 	TypeNone = Type{0, 0}
 	TypeA    = Type{0, 1}
+	TypeMX   = Type{0, 15}
 	TypeOPT  = Type{0, 41}
 )
 
@@ -68,8 +69,35 @@ func (rr *A) Data(i int) []byte {
 	return rr.A[:]
 }
 
+// MX RR. See RFC 1035.
+type MX struct {
+	Header
+	Preference [2]byte
+	Mx         Name
+}
+
+func (rr *MX) Hdr() *Header { return &rr.Header }
+func (rr *MX) Len() int     { return 2 }
+func (rr *MX) String() string {
+	return "MX\t" + rr.Mx.String()
+}
+
+func (rr *MX) Data(i int) []byte {
+	if i < 0 || i > 2 {
+		return nil
+	}
+	switch i {
+	case 0:
+		return rr.Preference[:]
+	case 1:
+		return rr.Name
+	}
+	return nil
+}
+
 var (
 	_ RR = new(A)
+	_ RR = new(MX)
 	_ RR = new(OPT)
 )
 
@@ -83,10 +111,10 @@ type CNAME struct {
 // RRType returns the type of the RR.
 func RRType(rr RR) [2]byte {
 	switch rr.(type) {
-	case *Question:
-		return rr.(*Question).Type
 	case *A:
 		return TypeA
+	case *MX:
+		return TypeMX
 	case *OPT:
 		return TypeOPT
 	}
@@ -130,13 +158,6 @@ func Bytes(rr RR) []byte {
 	buf[n+3] = rr.Hdr().Class[1]
 	n += 3
 
-	switch rr.(type) {
-	case *Question:
-		return buf[:n]
-	default:
-		break
-	}
-
 	buf[n+1] = rr.Hdr().TTL[0]
 	buf[n+2] = rr.Hdr().TTL[1]
 	buf[n+3] = rr.Hdr().TTL[2]
@@ -177,5 +198,6 @@ func Write(rr RR, buf []byte) error {
 
 var typeToRR = map[Type]func() RR{
 	TypeA:   func() RR { return new(A) },
+	TypeMX:  func() RR { return new(MX) },
 	TypeOPT: func() RR { return new(OPT) },
 }

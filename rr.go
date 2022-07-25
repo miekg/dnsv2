@@ -21,15 +21,6 @@ type (
 		TTL
 	}
 
-	// Question holds the Question in a dns message. It implements the RR interface, although it's not an actual RR.
-	// We treat the Type as the Question's rdata.
-	Question struct {
-		Name
-		Type
-		Class
-	}
-
-	// An RR represents a resource record.
 	RR interface {
 		// Hdr returns a pointer to the header of the RR.
 		Hdr() *Header
@@ -42,16 +33,6 @@ type (
 		String() string
 	}
 )
-
-func (q *Question) Hdr() *Header   { return &Header{Name: q.Name, Class: q.Class} }
-func (q *Question) Len() int       { return 1 }
-func (q *Question) String() string { return q.Type.String() }
-func (q *Question) Data(i int) []byte {
-	if i != 1 {
-		return nil
-	}
-	return q.Type[:]
-}
 
 // Copy of header and Copy of RR, make part of the RR interface?
 
