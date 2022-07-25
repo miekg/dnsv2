@@ -31,12 +31,11 @@ type (
 		Data(i int) []byte
 		// String returns the string representation of the rdata(!) only.
 		String() string
-		// Write([]byte) (int, error)
-		// Write the bytes into the rdata for each RR.
+		// Write writes the bytes from buf into the rdata for each RR. It needs the full message in case domain names in the
+		// rdata contain pointers.
+		Write(msg, buf []byte) error
 	}
 )
-
-// Copy of header and Copy of RR, make part of the RR interface?
 
 // Mostly here, to prevent users from accessing the dnswire pkg directly. Not sure if this is a good idea.
 

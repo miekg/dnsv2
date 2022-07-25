@@ -56,6 +56,10 @@ func TestMsg(t *testing.T) {
 	println("L", len(m.Buf))
 	m.index()
 	println(m.r[0], m.r[1], m.r[2])
+	rr, err := m.RR(An)
+	if err != nil {
+		println(rr.String())
+	}
 }
 
 // Test function to test how the API feels.

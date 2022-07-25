@@ -50,6 +50,8 @@ func (rr *OPT) Data(i int) []byte {
 	return rr.Options[i].Data()
 }
 
+func (rr *OPT) Write(msg, buf []byte) error { return nil }
+
 // A RR. See RFC 1035.
 type A struct {
 	Header
@@ -67,6 +69,17 @@ func (rr *A) Data(i int) []byte {
 		return nil
 	}
 	return rr.A[:]
+}
+
+func (rr *A) Write(msg, buf []byte) error {
+	if len(buf) != 4 {
+		return fmt.Errorf("A rdata must be 4 bytes")
+	}
+	rr.A[0] = buf[0]
+	rr.A[1] = buf[1]
+	rr.A[2] = buf[2]
+	rr.A[3] = buf[3]
+	return nil
 }
 
 // MX RR. See RFC 1035.
@@ -92,6 +105,10 @@ func (rr *MX) Data(i int) []byte {
 	case 1:
 		return rr.Name
 	}
+	return nil
+}
+
+func (rr *MX) Write(msg, buf []byte) error {
 	return nil
 }
 
@@ -177,23 +194,6 @@ func Bytes(rr RR) []byte {
 	}
 	dnswire.Uint16(uint16(l), buf[rdlen+1:])
 	return buf[:j+1]
-}
-
-// Write writes buffer buf into the RRs rdata.
-func Write(rr RR, buf []byte) error {
-	switch x := rr.(type) {
-	case *A:
-		if len(buf) != 4 {
-			return fmt.Errorf("nono")
-		}
-		x.A[0] = buf[0]
-		x.A[1] = buf[1]
-		x.A[2] = buf[2]
-		x.A[3] = buf[3]
-		return nil
-
-	}
-	return nil
 }
 
 var typeToRR = map[Type]func() RR{
