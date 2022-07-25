@@ -31,8 +31,8 @@ type (
 
 	// An RR represents a resource record.
 	RR interface {
-		// Hdr returns the header of the RR.
-		Hdr() Header
+		// Hdr returns a pointer to the header of the RR.
+		Hdr() *Header
 		// Len returns the number of rdata elements the RR has.
 		Len() int
 		// Data returns the rdata at position i (zero based). If there is no data at that position nil is returned.
@@ -43,7 +43,7 @@ type (
 	}
 )
 
-func (q *Question) Hdr() Header    { return Header{Name: q.Name, Class: q.Class} }
+func (q *Question) Hdr() *Header   { return &Header{Name: q.Name, Class: q.Class} }
 func (q *Question) Len() int       { return 1 }
 func (q *Question) String() string { return q.Type.String() }
 func (q *Question) Data(i int) []byte {

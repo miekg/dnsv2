@@ -47,4 +47,11 @@ func TestMsg(t *testing.T) {
 	}
 	m.SetRR(An, rr)
 	fmt.Printf("Msg %s %v\n", m.Bytes(), m.Bytes())
+
+	rr1, err := m.RR(An)
+	if err != nil {
+		fmt.Printf("%s - %s\n", err, rr1)
+	} else {
+		fmt.Printf("%s\n", rr1)
+	}
 }

@@ -140,7 +140,9 @@ func (m *Msg) SetRR(s Section, rr RR) error {
 }
 
 // RR returns the next RR from the specified section. If none are found, nil is returned.
-func (m *Msg) RR(s Section) RR {
+// On succesfull return the reader index is set to the next RR, if the read failed it's is not moved.
+// An partial RR maybe returned.
+func (m *Msg) RR(s Section) (RR, error) {
 	// Finding RRs can only be done by walking the message and keeping track of where you are. After the Msg's header you'll
 	// need to:
 	//
@@ -151,21 +153,58 @@ func (m *Msg) RR(s Section) RR {
 	if m.rindex == 0 {
 		m.rindex = 12
 	}
-	i := m.skipName(m.rindex)
+	i := m.skipName(m.rindex + 1)
 	if i == 0 {
-		return nil
+		return nil, fmt.Errorf("failed to find end of name")
 	}
-
-	return nil
+	// we're after the name, now we have type class and ttl, from type we create the correct RR.
+	tpy := Type{m.buf[i], m.buf[i+1]}
+	println("TYPE:", tpy.String())
+	rrfunc, ok := typeToRR[tpy]
+	if !ok {
+		// unknown RR
+		println("UNKNOWN RR", tpy[0], tpy[1])
+		return nil, fmt.Errorf("bla")
+	}
+	// buf to use!!! need len(to figure out length first), means jumping the message.
+	// Name
+	rr := rrfunc()
+	// rindex : i+1 is the name (compression!!!)
+	copy(rr.Hdr().Name, m.buf[m.rindex:i])
+	i++
+	fmt.Printf("NAME %+v\n", rr.Hdr().Name)
+	// Class
+	rr.Hdr().Class[0], rr.Hdr().Class[0] = m.buf[i], m.buf[i+1]
+	i++
+	println("CLASS", i)
+	// TTL
+	rr.Hdr().TTL[0] = m.buf[i+1]
+	rr.Hdr().TTL[1] = m.buf[i+2]
+	rr.Hdr().TTL[2] = m.buf[i+3]
+	rr.Hdr().TTL[3] = m.buf[i+4]
+	println(rr.Hdr().TTL.String())
+	i += 4
+	// Rdata length
+	rdl := binary.BigEndian.Uint16(m.buf[i+1:])
+	i += 2
+	println("RDL", rdl)
+	err := Write(rr, m.buf[i+1:i+1+int(rdl)])
+	if err != nil {
+		return rr, err
+	}
+	m.rindex = i + 1 + int(rdl)
+	return rr, nil
 }
 
 // skipName return the index of where the domain name ended. This is usually on the 0x00 label, or otherwise on a pointer 0xC0 label.
+// off must be the beginning of the name.
 func (m *Msg) skipName(off int) int {
-	// TODO compression
+	// TODO handle compression pointer.
 	i := off
 	for {
-		j := binary.BigEndian.Uint16(m.buf[i:])
-		i += int(j)
+		j := uint8(m.buf[i])
+		println(i, j)
+		i += int(j) + 1
 		if j == 0 {
 			return i
 		}
@@ -173,7 +212,6 @@ func (m *Msg) skipName(off int) int {
 			return 0
 		}
 	}
-	return 0
 }
 
 // func (m *Msg) Walk()

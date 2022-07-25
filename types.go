@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/miekg/dnsv2/dnswire"
@@ -38,7 +39,7 @@ type OPT struct {
 	Options []Option
 }
 
-func (rr *OPT) Hdr() Header    { return rr.Header }
+func (rr *OPT) Hdr() *Header   { return &rr.Header }
 func (rr *OPT) Len() int       { return len(rr.Options) }
 func (rr *OPT) String() string { return "TODO" }
 func (rr *OPT) Data(i int) []byte {
@@ -54,8 +55,8 @@ type A struct {
 	A [4]byte
 }
 
-func (rr *A) Hdr() Header { return rr.Header }
-func (rr *A) Len() int    { return 1 }
+func (rr *A) Hdr() *Header { return &rr.Header }
+func (rr *A) Len() int     { return 1 }
 func (rr *A) String() string {
 	return "A\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
 }
@@ -66,6 +67,11 @@ func (rr *A) Data(i int) []byte {
 	}
 	return rr.A[:]
 }
+
+var (
+	_ RR = new(A)
+	_ RR = new(OPT)
+)
 
 /*
 type CNAME struct {
@@ -118,13 +124,11 @@ func Bytes(rr RR) []byte {
 	// this now allocates a buffer, actual function will let you choose. And compression and stuff.
 	buf := make([]byte, 256)
 	n := copy(buf[0:], rr.Hdr().Name)
-	buf[n+1] = RRType(rr)[0]
-	buf[n+2] = RRType(rr)[1]
-	n += 2
-
-	buf[n+1] = rr.Hdr().Class[0]
-	buf[n+2] = rr.Hdr().Class[1]
-	n += 2
+	buf[n+0] = RRType(rr)[0]
+	buf[n+1] = RRType(rr)[1]
+	buf[n+2] = rr.Hdr().Class[0]
+	buf[n+3] = rr.Hdr().Class[1]
+	n += 3
 
 	switch rr.(type) {
 	case *Question:
@@ -154,7 +158,24 @@ func Bytes(rr RR) []byte {
 	return buf[:j+1]
 }
 
-// Write writes buffer buf into the RR.
+// Write writes buffer buf into the RRs rdata.
 func Write(rr RR, buf []byte) error {
+	switch x := rr.(type) {
+	case *A:
+		if len(buf) != 4 {
+			return fmt.Errorf("nono")
+		}
+		x.A[0] = buf[0]
+		x.A[1] = buf[1]
+		x.A[2] = buf[2]
+		x.A[3] = buf[3]
+		return nil
+
+	}
 	return nil
+}
+
+var typeToRR = map[Type]func() RR{
+	TypeA:   func() RR { return new(A) },
+	TypeOPT: func() RR { return new(OPT) },
 }
