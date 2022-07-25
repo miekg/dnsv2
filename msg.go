@@ -150,6 +150,8 @@ func (m *Msg) RR(s Section) (RR, error) {
 	// * add the type (2), class (2), ttl (4), until you hit the rdata length (2)
 	// * use the length to jump to the next RR.
 
+	// Skip to correct section start, need per section indexing.
+
 	if m.rindex == 0 {
 		m.rindex = 12
 	}
@@ -170,18 +172,19 @@ func (m *Msg) RR(s Section) (RR, error) {
 	// Name
 	rr := rrfunc()
 	// rindex : i+1 is the name (compression!!!)
-	copy(rr.Hdr().Name, m.buf[m.rindex:i])
-	i++
+	println(m.rindex, i)
+	rr.Hdr().Name = m.buf[m.rindex+1 : i]
 	fmt.Printf("NAME %+v\n", rr.Hdr().Name)
 	// Class
-	rr.Hdr().Class[0], rr.Hdr().Class[0] = m.buf[i], m.buf[i+1]
-	i++
-	println("CLASS", i)
+	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.buf[i], m.buf[i+1]
+	fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
+	i += 2
 	// TTL
-	rr.Hdr().TTL[0] = m.buf[i+1]
-	rr.Hdr().TTL[1] = m.buf[i+2]
-	rr.Hdr().TTL[2] = m.buf[i+3]
-	rr.Hdr().TTL[3] = m.buf[i+4]
+	println(m.buf[i], m.buf[i+1], m.buf[i+2], m.buf[i+3])
+	rr.Hdr().TTL[0] = m.buf[i]
+	rr.Hdr().TTL[1] = m.buf[i+1]
+	rr.Hdr().TTL[2] = m.buf[i+2]
+	rr.Hdr().TTL[3] = m.buf[i+3]
 	println(rr.Hdr().TTL.String())
 	i += 4
 	// Rdata length
@@ -203,7 +206,6 @@ func (m *Msg) skipName(off int) int {
 	i := off
 	for {
 		j := uint8(m.buf[i])
-		println(i, j)
 		i += int(j) + 1
 		if j == 0 {
 			return i
