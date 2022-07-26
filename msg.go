@@ -137,16 +137,16 @@ func (m *Msg) RR(s Section) (RR, error) {
 		return nil, fmt.Errorf("msg m is not indexed")
 	}
 
-	println("start", m.r[s])
 	i := int(m.r[s])
 	fmt.Printf("%v\n", m.Buf[i:])
 	name, i, err := m.name(i)
 	if err != nil {
 		return nil, err
 	}
-	println("next offset", i, "read", i-int(m.r[s]))
 
+	println(i, i)
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
+	fmt.Printf("%v\n", m.Buf[i:])
 	tpy := Type{m.Buf[i], m.Buf[i+1]}
 	println("TYPE:", tpy.String())
 	rrfunc, ok := typeToRR[tpy]
@@ -195,7 +195,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 func (m *Msg) index() {
 	start := 12
 	m.r[Qd] = 12
-	start += m.skipName(start) + 4 // question section
+	start = m.skipName(start) + 4 // question section
 	println("index start", start)
 	for s := An; s <= Ar; s++ {
 		c := m.Count(s)
@@ -204,7 +204,7 @@ func (m *Msg) index() {
 		}
 		m.r[s] = uint16(start)
 		for r := uint16(0); r < c; r++ {
-			start += m.skipRR(start)
+			start = m.skipRR(start)
 		}
 	}
 }
@@ -217,9 +217,9 @@ func (m *Msg) skipName(offset int) int {
 		j := uint8(m.Buf[i])
 		switch {
 		case j == 0:
-			return i
+			return i + 1
 		case j&0xC0 == 0xC0:
-			return i
+			return i + 1
 		}
 		i += int(j) + 1
 	}
