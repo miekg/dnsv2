@@ -137,10 +137,14 @@ func (m *Msg) RR(s Section) (RR, error) {
 		return nil, fmt.Errorf("msg m is not indexed")
 	}
 
-	name, i, err := m.name(int(m.r[s]))
+	println("start", m.r[s])
+	i := int(m.r[s])
+	fmt.Printf("%v\n", m.Buf[i:])
+	name, i, err := m.name(i)
 	if err != nil {
 		return nil, err
 	}
+	println("next offset", i, "read", i-int(m.r[s]))
 
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
 	tpy := Type{m.Buf[i], m.Buf[i+1]}
@@ -151,26 +155,32 @@ func (m *Msg) RR(s Section) (RR, error) {
 		println("UNKNOWN RR", tpy[0], tpy[1])
 		return nil, fmt.Errorf("bla")
 	}
+	i += 2
+
 	rr := rrfunc()
 	rr.Hdr().Name = name
-	fmt.Printf("NAME %b\n", name)
+	fmt.Printf("NAME %s %#v\n", name, name)
+
+	fmt.Printf("%v\n", m.Buf[i:])
+	// Class
+	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
+	fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
+	i += 2
+	// TTL
+	ttl := binary.BigEndian.Uint32(m.Buf[i:])
+	println("TT", ttl)
+	println(m.Buf[i], m.Buf[i+1], m.Buf[i+2], m.Buf[i+3])
+	rr.Hdr().TTL[0] = m.Buf[i]
+	rr.Hdr().TTL[1] = m.Buf[i+1]
+	rr.Hdr().TTL[2] = m.Buf[i+2]
+	rr.Hdr().TTL[3] = m.Buf[i+3]
+	println(rr.Hdr().TTL.String())
+	i += 4
+	// Rdata length
+	rdl := binary.BigEndian.Uint16(m.Buf[i+1:])
+	i += 2
+	println("RDL", rdl)
 	/*
-		// Class
-		rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
-		fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
-		i += 2
-		// TTL
-		println(m.Buf[i], m.Buf[i+1], m.Buf[i+2], m.Buf[i+3])
-		rr.Hdr().TTL[0] = m.Buf[i]
-		rr.Hdr().TTL[1] = m.Buf[i+1]
-		rr.Hdr().TTL[2] = m.Buf[i+2]
-		rr.Hdr().TTL[3] = m.Buf[i+3]
-		println(rr.Hdr().TTL.String())
-		i += 4
-		// Rdata length
-		rdl := binary.BigEndian.Uint16(m.Buf[i+1:])
-		i += 2
-		println("RDL", rdl)
 		err := Write(rr, m.Buf[i+1:i+1+int(rdl)])
 		if err != nil {
 			return rr, err
@@ -185,6 +195,8 @@ func (m *Msg) RR(s Section) (RR, error) {
 func (m *Msg) index() {
 	start := 12
 	m.r[Qd] = 12
+	start += m.skipName(start) + 4 // question section
+	println("index start", start)
 	for s := An; s <= Ar; s++ {
 		c := m.Count(s)
 		if c == 0 {
@@ -205,9 +217,9 @@ func (m *Msg) skipName(offset int) int {
 		j := uint8(m.Buf[i])
 		switch {
 		case j == 0:
-			return i + 1
+			return i
 		case j&0xC0 == 0xC0:
-			return i + 1
+			return i
 		}
 		i += int(j) + 1
 	}
@@ -234,22 +246,25 @@ func (m *Msg) skipRR(offset int) int {
 	return i + int(rdlen) + 1
 }
 
+// returned int is next offset.
 func (m *Msg) name(offset int) (Name, int, error) {
 	ptr := 0
-	i := offset
-	ret := i
 	buf := make([]byte, 0, 12) // 12 is random number
-	for i < len(m.Buf) {
+	for i := offset; i < len(m.Buf); {
 		j := uint8(m.Buf[i])
+		println("J", j)
 		switch {
 		case j&0xC0 == 0:
 			if j == 0 {
-				return Name(buf), ret + 1, nil
+				buf = append(buf, []byte{0}...)
+				return Name(buf), offset + 1, nil
 			}
-			buf = append(buf, m.Buf[i:i+int(j)]...)
+			buf = append(buf, m.Buf[i:i+int(j)+1]...)
+			println(string(buf))
 			i += int(j) + 1
-			ret += int(j) + 1
+			offset += int(j) + 1
 		case j&0xC0 == 0xC0:
+			println("POINTER")
 			// save position, as we are here in the message, regardless of how
 			// we follow pointers.
 			if ptr++; ptr > 10 {
@@ -257,11 +272,12 @@ func (m *Msg) name(offset int) (Name, int, error) {
 			}
 			j1 := uint8(m.Buf[i+1])
 			i = int(j^0xC0) | int(j1)
+			offset += 2 // advance 2 octets
 			println("points to", i)
 		}
 	}
-	if i == offset {
-		return nil, 0, fmt.Errorf("nothing found")
+	if len(buf) == 0 {
+		return nil, offset, fmt.Errorf("nothing found")
 	}
-	return nil, i + 1, nil
+	return nil, offset + 1, nil
 }

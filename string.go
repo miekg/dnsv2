@@ -21,6 +21,8 @@ func (t Type) String() string {
 	switch t {
 	case TypeA:
 		return "A"
+	case TypeMX:
+		return "MX"
 	case TypeOPT:
 		return "OPT"
 	}
