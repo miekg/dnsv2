@@ -1,20 +1,21 @@
 package dns
 
 import (
-	gob "encoding/binary"
+	"encoding/binary"
 	"strconv"
 	"strings"
 )
 
-// Here we implement the fmt.Stinger interface for a Header types.
-
-// should be a map like in miekg/dns. for Type as well.
 func (c Class) String() string {
+	// via a map
 	switch c {
+	case ClassNONE:
+		return "NONE"
 	case ClassINET:
 		return "IN"
 	}
-	return "NONE"
+	i := binary.BigEndian.Uint16(c[:])
+	return "CLASS" + strconv.FormatUint(uint64(i), 10)
 }
 
 func (t Type) String() string {
@@ -30,7 +31,7 @@ func (t Type) String() string {
 }
 
 func (t TTL) String() string {
-	i := gob.BigEndian.Uint32(t[:])
+	i := binary.BigEndian.Uint32(t[:])
 	return strconv.FormatUint(uint64(i), 10)
 }
 
@@ -53,7 +54,6 @@ func (n Name) GoString() string {
 		b.Write(n[i+1 : i+1+v])
 		i += v + 1
 	}
-
 	return b.String()
 }
 

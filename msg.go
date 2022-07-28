@@ -114,30 +114,22 @@ func (m *Msg) Count(s Section) uint16 {
 	return 0
 }
 
-/*
-// SetRR adds RR's wireformat to the msg m in the specified section. As we build the message RR by RR, you can't go back to
-// add to a previous section (although technically you can alter the counts to make that happen in specific cases). Any RR
-// can be used to set the question section; it will then just use the name, type and class and ignore the rest.
+// SetRR adds RR's wireformat to the msg m in the specified section. As we build the message RR by RR, you can't go back
+// to add to a previous section (although technically you can alter the counts to make that happen in specific cases).
+// Any RR can be used to set the question section; it will then just use the name, type and class and ignore the rest.
 func (m *Msg) SetRR(s Section, rr RR) error {
 	if s == Qd {
 		if m.Count(Qd) == 1 {
 			return fmt.Errorf("error section already contains data")
 		}
-		// don't use bytes, but extract ourselves.
-		n := copy(m.Buf[12+1:], Bytes(rr))
-		m.windex = 12 + n
+		copy(m.Buf[12+1:], Bytes(rr))
 		m.SetCount(Qd, 1)
-		m.ws = Qd
 		return nil
 	}
-
-	n := copy(m.Buf[m.windex+1:], Bytes(rr))
-	m.windex += n
-	m.ws = s
-	m.SetCount(s, m.Count(s)+1)
+	// compression!
+	m.Buf = append(m.Buf, Bytes(rr)...)
 	return nil
 }
-*/
 
 // RR returns the next RR from the specified section. If none are found, nil is returned. If there is an error, a
 // partial RR may be returned. When first called a message will be walked to find the indices of the sections.
