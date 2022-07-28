@@ -7,6 +7,8 @@ import (
 	"github.com/miekg/dnsv2/dnswire"
 )
 
+// worth doing this and not just uint16?
+
 var (
 	// Valid Classes.
 	ClassNONE = Class{0, 254}
@@ -20,38 +22,6 @@ var (
 	TypeOPT  = Type{0, 41}
 )
 
-/*
-OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
-Each option is encoded as:
-
-               +0 (MSB)                            +1 (LSB)
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-   0: |                          OPTION-CODE                          |
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-   2: |                         OPTION-LENGTH                         |
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-   4: |                                                               |
-      /                          OPTION-DATA                          /
-      /                                                               /
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-*/
-type OPT struct {
-	Header
-	Options []Option
-}
-
-func (rr *OPT) Hdr() *Header   { return &rr.Header }
-func (rr *OPT) Len() int       { return len(rr.Options) }
-func (rr *OPT) String() string { return "TODO" }
-func (rr *OPT) Data(i int) []byte {
-	if i < 0 || i >= rr.Len() {
-		return nil
-	}
-	return rr.Options[i].Data()
-}
-
-func (rr *OPT) Write(msg, buf []byte) error { return nil }
-
 // A RR. See RFC 1035.
 type A struct {
 	Header
@@ -61,7 +31,7 @@ type A struct {
 func (rr *A) Hdr() *Header { return &rr.Header }
 func (rr *A) Len() int     { return 1 }
 func (rr *A) String() string {
-	return "A\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
+	return TypeToString[TypeA] + "\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
 }
 
 func (rr *A) Data(i int) []byte {
@@ -71,7 +41,7 @@ func (rr *A) Data(i int) []byte {
 	return rr.A[:]
 }
 
-func (rr *A) Write(msg, buf []byte) error {
+func (rr *A) Write(buf []byte, msg ...[]byte) error {
 	if len(buf) != 4 {
 		return fmt.Errorf("A rdata must be 4 bytes")
 	}
@@ -89,11 +59,9 @@ type MX struct {
 	Mx         Name
 }
 
-func (rr *MX) Hdr() *Header { return &rr.Header }
-func (rr *MX) Len() int     { return 2 }
-func (rr *MX) String() string {
-	return "MX\t" + rr.Mx.String()
-}
+func (rr *MX) Hdr() *Header   { return &rr.Header }
+func (rr *MX) Len() int       { return 2 }
+func (rr *MX) String() string { return TypeToString[TypeMX] + "\t" + rr.Mx.String() }
 
 func (rr *MX) Data(i int) []byte {
 	if i < 0 || i > 2 {
@@ -108,9 +76,7 @@ func (rr *MX) Data(i int) []byte {
 	return nil
 }
 
-func (rr *MX) Write(msg, buf []byte) error {
-	return nil
-}
+func (rr *MX) Write(buf []byte, msg ...[]byte) error { return nil }
 
 var (
 	_ RR = new(A)
@@ -163,7 +129,7 @@ in RFC 1035:
     /                                               /
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-The bytes are copied into a newly allocated memory buffer.
+The bytes are copied into a newly allocated memory buffer. TODO
 */
 func Bytes(rr RR) []byte {
 	// this now allocates a buffer, actual function will let you choose. And compression and stuff.
@@ -200,4 +166,10 @@ var typeToRR = map[Type]func() RR{
 	TypeA:   func() RR { return new(A) },
 	TypeMX:  func() RR { return new(MX) },
 	TypeOPT: func() RR { return new(OPT) },
+}
+
+var TypeToString = map[Type]string{
+	TypeA:   "A",
+	TypeMX:  "MX",
+	TypeOPT: "OPT",
 }

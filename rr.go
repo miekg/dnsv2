@@ -24,16 +24,17 @@ type (
 	RR interface {
 		// Hdr returns a pointer to the header of the RR.
 		Hdr() *Header
-		// Len returns the number of rdata elements the RR has.
+		// Len returns the number of rdata elements the RR has. Only defined for fully parsed RRs.
 		Len() int
-		// Data returns the rdata at position i (zero based). If there is no data at that position nil is returned.
-		// The buffer returned is in wire format, i.e. if some data requires a length, that length is prepended to the buffer.
+		// Data returns the rdata at position i (zero based). If there is no data at that position nil is
+		// returned. The buffer returned is in wire format, i.e. if some data requires a length, that length is
+		// prepended to the buffer.
 		Data(i int) []byte
 		// String returns the string representation of the rdata(!) only.
 		String() string
-		// Write writes the bytes from buf into the rdata for each RR. It needs the full message in case domain names in the
-		// rdata contain pointers.
-		Write(msg, buf []byte) error
+		// Write writes the rdata encoded in buf to the RR. Some rdata needs access to the message's data. (to
+		// follow compression pointers, so that may be optionally given as a parameter.
+		Write(buf []byte, msg ...[]byte) error
 	}
 )
 

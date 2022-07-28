@@ -52,14 +52,12 @@ func TestMsg(t *testing.T) {
 	println("L", len(m.Buf))
 	m.index()
 	println(m.r[0], m.r[1], m.r[2])
-	m = &Msg{Buf: reply}
-	println("L", len(m.Buf))
-	m.index()
-	println(m.r[0], m.r[1], m.r[2])
-	rr, err := m.RR(An)
+	rr, err := m.RR(Ar)
 	if err != nil {
-		println(rr.String())
+		println(err.Error())
+		return
 	}
+	println("parsed", rr.Hdr().String(), rr.String())
 }
 
 // Test function to test how the API feels.

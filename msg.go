@@ -22,7 +22,7 @@ type (
 	//   |      Additional     | RRs holding additional information
 	//   +---------------------+
 	//
-	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces // that convention.
+	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that convention.
 	// After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
 	//
 	// The header is defined as follows:
@@ -42,38 +42,46 @@ type (
 	//    |                    ARCOUNT                    |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//
+	// In this package the question section's RR is handled as a normal RR, but without any rdata - which is an actual RR ever since
+	// dynamic updates (RFC xxxx) have been defined.
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
-		r       [4]uint16 // indices of section starts (0 means no such section), this is updated as we read from the message.
-		AnCount uint16    // reader count for An section, writer count is in msg header.
-		NsCount uint16    // reader count for Ns section, writer count is in msg header.
-		ArCount uint16    // reader count for Ar section, writer count is in msg header.
+		// indices of section starts (0 means no RR in that section), this is updated as we read from the message.
+		// On every RR read, this advances to the index of the next RR.
+		r [4]uint16
+
+		// reader count for each section, updated as we read from the message. Writer count is in the header.
+		count [4]uint16
 
 		compression map[string]int // name to index for the compression pointers
 	}
 
+	// Section signifies a message's section. Four sections are defined (in order): Qd, An, Ns, and Ar.
 	Section int
 )
 
-// These are the sections in Msg.
+// These are the sections in a Msg.
 const (
 	Qd Section = iota // Query Domain/Data (count)
 	An                // Answer (count)
 	Ns                // Ns (count)
-	Ar                // Additional resource (count)
+	Ar                // Additional Resource (count)
 )
 
-func NewMsg(buf []byte) *Msg {
+// NewMsg returns a pointer to a new Msg. Optionally a buffer can be given here, NewMsg will not allocate a buffer on
+// behalf of the caller, it will enlarge a buffer (when given and the need arises).
+func NewMsg(buf ...[]byte) *Msg {
 	m := new(Msg)
-	m.Buf = buf
+	if len(buf) > 1 {
+		m.Buf = buf[0]
+	}
 	return m
 }
 
 // Rcode is a function
 func (m *Msg) Rcode() {
 	// check extended Rcode
-
 }
 
 func (m *Msg) SetRcode() {}
@@ -168,7 +176,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	i += 2
 	// TTL
 	ttl := binary.BigEndian.Uint32(m.Buf[i:])
-	println("TT", ttl)
+	println("TTL:", ttl)
 	println(m.Buf[i], m.Buf[i+1], m.Buf[i+2], m.Buf[i+3])
 	rr.Hdr().TTL[0] = m.Buf[i]
 	rr.Hdr().TTL[1] = m.Buf[i+1]
@@ -177,18 +185,16 @@ func (m *Msg) RR(s Section) (RR, error) {
 	println(rr.Hdr().TTL.String())
 	i += 4
 	// Rdata length
-	rdl := binary.BigEndian.Uint16(m.Buf[i+1:])
+	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 2
 	println("RDL", rdl)
-	/*
-		err := Write(rr, m.Buf[i+1:i+1+int(rdl)])
-		if err != nil {
-			return rr, err
-		}
-		m.r[s] = i + 1 + int(rdl)
-		return rr, nil
-	*/
-	return nil, nil
+	if err := rr.Write(m.Buf[i : i+rdl]); err != nil {
+		return rr, err
+	}
+	// lala overflow - or make ints in Msg as well?
+	m.r[s] = uint16(i + 1 + rdl) // +1 ??
+	m.count[s]++
+	return rr, nil
 }
 
 // index walks through the message and saves the indices of where the defined sections start.
@@ -209,12 +215,13 @@ func (m *Msg) index() {
 	}
 }
 
-// skipName return the index of where the domain name ended. This is usually on the 0x00 label, or otherwise on a pointer 0xC0 label.
-// off must be the beginning of the name.
+// skipName return the index of where the domain name ended. This is after the 00 label or the 0xC0 pointer label.
 func (m *Msg) skipName(offset int) int {
+	println("skipname")
 	i := offset
 	for i < len(m.Buf) {
 		j := uint8(m.Buf[i])
+		println("j, offset", j, offset, i)
 		switch {
 		case j == 0:
 			return i + 1
