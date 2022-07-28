@@ -47,8 +47,8 @@ type (
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
-		// indices of section starts (0 means no RR in that section), this is updated as we read from the message.
-		// On every RR read, this advances to the index of the next RR.
+		// indices of section starts (0 means no RRs in that section), this is updated as we read from the
+		// message. On every RR read, this advances to the index of the next RR.
 		r [4]uint16
 
 		// reader count for each section, updated as we read from the message. Writer count is in the header.
