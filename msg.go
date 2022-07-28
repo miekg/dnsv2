@@ -145,12 +145,14 @@ func (m *Msg) RR(s Section) (RR, error) {
 		return nil, nil
 	}
 
+	println("I", i)
 	fmt.Printf("%v\n", m.Buf[i:])
 	name, i, err := m.name(i)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Printf("NAME %s %#v\n", name, name)
 	println(i, i)
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
 	fmt.Printf("%v\n", m.Buf[i:])
@@ -166,7 +168,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 
 	rr := rrfunc()
 	rr.Hdr().Name = name
-	fmt.Printf("NAME %s %#v\n", name, name)
 
 	fmt.Printf("%v\n", m.Buf[i:])
 	// Class
@@ -232,7 +233,7 @@ func (m *Msg) skipName(offset int) int {
 		case j == 0:
 			return i + 1
 		case j&0xC0 == 0xC0:
-			return i + 1
+			return i + 2
 		}
 		i += int(j) + 1
 	}
