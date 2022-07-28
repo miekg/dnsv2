@@ -1,10 +1,9 @@
 package dns
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
-
-	"github.com/miekg/dnsv2/dnswire"
 )
 
 // worth doing this and not just uint16?
@@ -161,7 +160,7 @@ func Bytes(rr RR) []byte {
 		j += n
 		l += n
 	}
-	dnswire.Uint16(uint16(l), buf[rdlen+1:])
+	binary.BigEndian.PutUint16(buf[rdlen+1:], uint16(l))
 	return buf[:j+1]
 }
 

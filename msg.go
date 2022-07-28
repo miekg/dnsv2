@@ -3,8 +3,6 @@ package dns
 import (
 	"encoding/binary"
 	"fmt"
-
-	"github.com/miekg/dnsv2/dnswire"
 )
 
 type (
@@ -55,7 +53,7 @@ type (
 		count [4]uint16
 
 		// can be filed when indexing? Or remove??
-		compression map[string]int // name to index for the compression pointers
+		compression map[string]*int // name to index for the compression pointers
 	}
 
 	// Section signifies a message's section. Four sections are defined (in order): Qd, An, Ns, and Ar.
@@ -90,13 +88,13 @@ func (m *Msg) SetRcode() {}
 func (m *Msg) SetCount(s Section, i uint16) {
 	switch s {
 	case Qd:
-		dnswire.Uint16(i, m.Buf[4:])
+		binary.BigEndian.PutUint16(m.Buf[4:], i)
 	case An:
-		dnswire.Uint16(i, m.Buf[6:])
+		binary.BigEndian.PutUint16(m.Buf[6:], i)
 	case Ns:
-		dnswire.Uint16(i, m.Buf[8:])
+		binary.BigEndian.PutUint16(m.Buf[8:], i)
 	case Ar:
-		dnswire.Uint16(i, m.Buf[10:])
+		binary.BigEndian.PutUint16(m.Buf[10:], i)
 	}
 }
 
