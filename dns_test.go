@@ -43,20 +43,41 @@ var (
 	}
 )
 
-func TestMsg(t *testing.T) {
+func TestMsgQuery(t *testing.T) {
 	m := &Msg{Buf: query}
 	println(m.Count(Qd))
 	println(m.Count(An))
 	println(m.Count(Ns))
 	println(m.Count(Ar))
 	println("L", len(m.Buf))
-	m.index()
-	println(m.r[0], m.r[1], m.r[2])
 	rr, err := m.RR(Ar)
 	if err != nil {
 		println(err.Error())
 		return
 	}
+	println(m.r[Qd], m.r[An], m.r[Ns], m.r[Ar])
+	println("parsed", rr.Hdr().String(), rr.String())
+	rr, err = m.RR(Qd)
+	if err != nil {
+		println(err.Error())
+		return
+	}
+	println("parsed", rr.Hdr().String(), rr.String())
+}
+
+func TestMsgReply(t *testing.T) {
+	m := &Msg{Buf: reply}
+	println(m.Count(Qd))
+	println(m.Count(An))
+	println(m.Count(Ns))
+	println(m.Count(Ar))
+	println("L", len(m.Buf))
+	rr, err := m.RR(An)
+	if err != nil {
+		println(err.Error())
+		return
+	}
+	println(m.r[Qd], m.r[An], m.r[Ns], m.r[Ar])
 	println("parsed", rr.Hdr().String(), rr.String())
 }
 

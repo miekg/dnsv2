@@ -21,6 +21,8 @@ type (
 		TTL
 	}
 
+	// RR defines a Resource Record. Note that even the special RR in the question section is handled as a normal
+	// Resource Record (i.e with a zero TTL and no rdata).
 	RR interface {
 		// Hdr returns a pointer to the header of the RR.
 		Hdr() *Header

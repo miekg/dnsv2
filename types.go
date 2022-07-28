@@ -76,7 +76,10 @@ func (rr *MX) Data(i int) []byte {
 	return nil
 }
 
-func (rr *MX) Write(buf []byte, msg ...[]byte) error { return nil }
+func (rr *MX) Write(buf []byte, msg ...[]byte) error {
+	// getname
+	return nil
+}
 
 var (
 	_ RR = new(A)

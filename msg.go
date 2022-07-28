@@ -22,8 +22,8 @@ type (
 	//   |      Additional     | RRs holding additional information
 	//   +---------------------+
 	//
-	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that convention.
-	// After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
+	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that
+	// convention. After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
 	//
 	// The header is defined as follows:
 	//                                    1  1  1  1  1  1
@@ -42,8 +42,8 @@ type (
 	//    |                    ARCOUNT                    |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//
-	// In this package the question section's RR is handled as a normal RR, but without any rdata - which is an actual RR ever since
-	// dynamic updates (RFC xxxx) have been defined.
+	// In this package the question section's RR is handled as a normal RR, but without any rdata - which is an
+	// actual RR ever since dynamic updates (RFC xxxx) have been defined.
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
@@ -54,6 +54,7 @@ type (
 		// reader count for each section, updated as we read from the message. Writer count is in the header.
 		count [4]uint16
 
+		// can be filed when indexing? Or remove??
 		compression map[string]int // name to index for the compression pointers
 	}
 
@@ -138,14 +139,22 @@ func (m *Msg) SetRR(s Section, rr RR) error {
 }
 */
 
-// RR returns the next RR from the specified section. If none are found, nil is returned. If there is
-// an error, a partial RR may be returned.
+// RR returns the next RR from the specified section. If none are found, nil is returned. If there is an error, a
+// partial RR may be returned. When first called a message will be walked to find the indices of the sections.
 func (m *Msg) RR(s Section) (RR, error) {
-	if m.r[s] == 0 {
-		return nil, fmt.Errorf("msg m is not indexed")
+	if m.r[Qd] == 0 { // must be 12 after a call to index
+		m.index()
 	}
 
 	i := int(m.r[s])
+	if i == 0 { // an empty message after being index can still have no RRs in this section
+		return nil, nil
+	}
+
+	if m.count[s] >= m.Count(s) { // section drained
+		return nil, nil
+	}
+
 	fmt.Printf("%v\n", m.Buf[i:])
 	name, i, err := m.name(i)
 	if err != nil {
@@ -173,6 +182,13 @@ func (m *Msg) RR(s Section) (RR, error) {
 	// Class
 	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
 	fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
+
+	// if in question section bail out here, as these are no further options.
+	if s == Qd {
+		m.count[s] = 1
+		return rr, nil
+	}
+
 	i += 2
 	// TTL
 	ttl := binary.BigEndian.Uint32(m.Buf[i:])
@@ -242,7 +258,7 @@ func (m *Msg) skipRR(offset int) int {
 	// must be at beginning of RR. If begining of Question offset = 12
 	i := m.skipName(offset)
 	if offset == 12 {
-		return i + 3 // type + class
+		return i + 4 // type + class
 	}
 	// for normal RR, we have TTL, then rdlength
 	i += 4
