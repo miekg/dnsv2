@@ -5,6 +5,39 @@ import (
 	"strings"
 )
 
+type (
+	// An Option represents an OPT RR rdata value. Basic usage for adding an option to an OPT RR:
+	//
+	//	opt := &OPT{Header: Header{Name: NewName(".")}}
+	//	nsid := &NSID{ID: []byte("AA")}
+	//	opt.Options = []Option{nsid}
+	//
+	Option interface {
+		// Len returns the option's value length. This is excluding the option code and length (which is always
+		// 4 octets): len(o.Data()) = o.Len() + 4.
+		Len() int
+
+		// Data returns the option's values. The buffer returned is in wire format, all options require option
+		// code and length, this is prepended in the buffer.
+		Data() []byte
+
+		// String returns the string representation of the EDNS0 option.
+		String() string
+
+		// Write writes the rdata encoded in buf to the EDNS0 option.
+		Write(buf []byte) error // make it implement the io.Writer interface (won't work for RRs... so??)
+	}
+
+	Code [2]byte
+)
+
+// Supported EDNS0 Option Codes.
+var (
+	CodeNone   = Code{0, 0}
+	CodeNSID   = Code{0, 3}
+	CodeCookie = Code{0, 10}
+)
+
 /*
 OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
 Each option is encoded as:
@@ -65,35 +98,6 @@ func (rr *OPT) Write(buf []byte, msg ...[]byte) error {
 	}
 	return nil
 }
-
-type (
-	// An Option represents an OPT RR rdata value.
-	// Basic usage for adding an option to an OPT RR:
-	//
-	//	opt := &OPT{Header: Header{Name: NewName(".")}}
-	//	nsid := &NSID{ID: []byte("AA")}
-	//	opt.Options = []Option{nsid}
-	//
-	Option interface {
-		// Len returns the option's value length. This is excluding the option code and length (which is always 4 octets): len(o.Data()) = o.Len() + 4.
-		Len() int
-		// Data returns the option's values. The buffer returned is in wire format, all options require option code and length, this is prepended in the buffer.
-		Data() []byte
-		// String returns the string representation of the EDNS0 option.
-		String() string
-		// Write writes the rdata encoded in buf to the EDNS0 option.
-		Write(buf []byte) error // make it implement the io.Writer interface (won't work for RRs... so??)
-	}
-
-	Code [2]byte
-)
-
-// Supported EDNS0 Option Codes.
-var (
-	CodeNone   = Code{0, 0}
-	CodeNSID   = Code{0, 3}
-	CodeCookie = Code{0, 10}
-)
 
 // OptionCode returns the option code of the Option.
 func OptionCode(e Option) Code {
