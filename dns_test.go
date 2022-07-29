@@ -72,13 +72,24 @@ func TestMsgReply(t *testing.T) {
 	println(m.Count(Ns))
 	println(m.Count(Ar))
 	println("L", len(m.Buf))
-	rr, err := m.RR(An)
-	if err != nil {
-		println(err.Error())
-		return
-	}
-	println(m.r[Qd], m.r[An], m.r[Ns], m.r[Ar])
-	println("parsed", rr.Hdr().String(), rr.String())
+	i := m.skipName(12)
+	println("question skipped name", i)
+	i = m.skipRR(25) // first RR after question
+	println("first RR end", i)
+	i = m.skipRR(i + 1)
+	println("second RR end", i)
+	i = m.skipRR(i + 1)
+	println("3rd RR end", i)
+	i = m.skipRR(i + 1)
+	println("4th RR end", i)
+	i = m.skipRR(i + 1)
+	println("5th RR end", i)
+	// OPT
+	i = m.skipRR(i + 1)
+	println("6th RR end", i)
+	// should 0
+	i = m.skipRR(i + 1)
+	println("6th RR end", i)
 }
 
 // Test function to test how the API feels.

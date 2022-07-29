@@ -204,7 +204,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	return rr, nil
 }
 
-// index walks through the message and saves the indices of where the defined sections start.
+// index walks through the message and saves the indices of where the sections start.
 func (m *Msg) index() {
 	start := 12
 	m.r[Qd] = 12
@@ -222,42 +222,44 @@ func (m *Msg) index() {
 	}
 }
 
-// skipName return the index of where the domain name ended. This is after the 00 label or the 0xC0 pointer label.
+// skipName returns the index after the skipped name, so either the 00 label or the index of the pointer value.
 func (m *Msg) skipName(offset int) int {
-	println("skipname")
 	i := offset
 	for i < len(m.Buf) {
 		j := uint8(m.Buf[i])
-		println("j, offset", j, offset, i)
 		switch {
 		case j == 0:
-			return i + 1
+			return i
 		case j&0xC0 == 0xC0:
-			return i + 2
+			// next octet contains (rest of) the pointer value.
+			return i + 1
 		}
 		i += int(j) + 1
 	}
-	if i == offset {
-		return i
-	}
-	return i + 1
+	return 0
 }
 
-// skipRR skips the RR start should start at offset, the returned offset is positioned on the first octet of the next RR.
+// skipRR skips the RR that should start at offset, the returned offset is positioned on the last octect of this RR.
 // 0 is return when we overflow the length of m.Buf.
 func (m *Msg) skipRR(offset int) int {
-	// must be at beginning of RR. If begining of Question offset = 12
 	i := m.skipName(offset)
-	if offset == 12 {
-		return i + 4 // type + class
-	}
-	// for normal RR, we have TTL, then rdlength
-	i += 4
-	rdlen := binary.BigEndian.Uint16(m.Buf[i:])
-	if i+1+int(rdlen) > len(m.Buf) {
+	if i == 0 {
 		return 0
 	}
-	return i + int(rdlen) + 1
+	// advance i to next octet afer name + rest of junk
+	i++
+	// for normal RR, we have type, class and TT 2, 2, 4), then we find rdlength (2)
+	i += 8
+	if i > len(m.Buf) {
+		return 0
+	}
+	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
+	i += 1 + rdl
+	println("rdl", rdl)
+	if i >= len(m.Buf) {
+		return 0
+	}
+	return i // last octet
 }
 
 // returned int is next offset.
