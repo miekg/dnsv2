@@ -40,14 +40,14 @@ func (rr *A) Data(i int) []byte {
 	return rr.A[:]
 }
 
-func (rr *A) Write(buf []byte, msg ...[]byte) error {
-	if len(buf) != 4 {
-		return fmt.Errorf("A rdata must be 4 bytes")
+func (rr *A) Write(msg []byte, offset int) error {
+	if offset+4 >= len(msg) {
+		return fmt.Errorf("no space")
 	}
-	rr.A[0] = buf[0]
-	rr.A[1] = buf[1]
-	rr.A[2] = buf[2]
-	rr.A[3] = buf[3]
+	rr.A[0] = msg[offset]
+	rr.A[1] = msg[offset+1]
+	rr.A[2] = msg[offset+2]
+	rr.A[3] = msg[offset+3]
 	return nil
 }
 
@@ -75,14 +75,18 @@ func (rr *MX) Data(i int) []byte {
 	return nil
 }
 
-func (rr *MX) Write(buf []byte, msg ...[]byte) error {
+func (rr *MX) Write(msg []byte, offset int) error {
 	if msg == nil {
 		return nil
 	}
 	// first two bytes are preference, rest is domain name
-	rr.Preference[0] = buf[0]
-	rr.Preference[1] = buf[1]
-	name, i, err := unpackName(buf[2:], msg[0])
+	rr.Preference[0] = msg[offset]
+	rr.Preference[1] = msg[offset+1]
+	name, i, err := unpackName(msg, offset+2)
+	if err != nil {
+		return err
+	}
+	i = i // check on i?
 	rr.Mx = name
 	return nil
 }

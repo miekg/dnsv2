@@ -152,7 +152,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	}
 
 	fmt.Printf("%v\n", m.Buf[i:])
-	name, i, err := unpackName(i, m.Buf)
+	name, i, err := unpackName(m.Buf, i)
 	println("NEW i", i)
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 2
 	println("RDL", rdl)
-	if err := rr.Write(m.Buf[i:i+rdl], m.Buf); err != nil {
+	if err := rr.Write(m.Buf, i+rdl); err != nil {
 		return rr, err
 	}
 	// lala overflow - or make ints in Msg as well?
@@ -288,7 +288,7 @@ func (m *Msg) skipRR(offset int) int {
 
 // unpackName return a domain name that should start at offset. Compression pointers are followed, the returned offset is
 // positioned on the last octet of the name.
-func unpackName(offset int, msg []byte) (Name, int, error) {
+func unpackName(msg []byte, offset int) (Name, int, error) {
 	ptr := 0
 	ptroffset := 0
 	buf := make([]byte, 0, 12) // 12 is random number

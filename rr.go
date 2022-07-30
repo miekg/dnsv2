@@ -34,9 +34,9 @@ type (
 		Data(i int) []byte
 		// String returns the string representation of the rdata(!) only.
 		String() string
-		// Write writes the rdata encoded in buf to the RR. Some rdata needs access to the message's data. (to
-		// follow compression pointers, so that may be optionally given as a parameter.
-		Write(buf []byte, msg ...[]byte) error
+		// Write writes the rdata encoded in msg starting at index offset to the RR. Some rdata needs access to
+		// the message's data, msg is expected to contain the targets of those pointers.
+		Write(msg []byte, offset int) error
 	}
 )
 
