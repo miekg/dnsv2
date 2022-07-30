@@ -76,7 +76,14 @@ func (rr *MX) Data(i int) []byte {
 }
 
 func (rr *MX) Write(buf []byte, msg ...[]byte) error {
-	// getname
+	if msg == nil {
+		return nil
+	}
+	// first two bytes are preference, rest is domain name
+	rr.Preference[0] = buf[0]
+	rr.Preference[1] = buf[1]
+	name, i, err := unpackName(buf[2:], msg[0])
+	rr.Mx = name
 	return nil
 }
 

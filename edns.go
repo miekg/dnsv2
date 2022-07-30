@@ -28,6 +28,7 @@ type (
 		Write(buf []byte) error // make it implement the io.Writer interface (won't work for RRs... so??)
 	}
 
+	// Code represents the 2 byte option code.
 	Code [2]byte
 )
 

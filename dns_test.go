@@ -85,11 +85,21 @@ func TestMsgReply(t *testing.T) {
 	i = m.skipRR(i + 1)
 	println("5th RR end", i)
 	// OPT
+	println("OPT START", i+1)
 	i = m.skipRR(i + 1)
 	println("6th RR end", i)
 	// should 0
 	i = m.skipRR(i + 1)
 	println("6th RR end", i)
+
+	m.index()
+	fmt.Printf("%v", m.r)
+	rr, err := m.RR(An)
+	if err != nil {
+		t.Logf(err.Error())
+		t.Fail()
+	}
+	println(rr.String())
 }
 
 // Test function to test how the API feels.

@@ -133,10 +133,16 @@ func (m *Msg) SetRR(s Section, rr RR) error {
 // partial RR may be returned. When first called a message will be walked to find the indices of the sections.
 func (m *Msg) RR(s Section) (RR, error) {
 	if m.r[Qd] == 0 { // must be 12 after a call to index
-		m.index()
+		// what about no qestion section?
+		err := m.index()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	i := int(m.r[s])
+	println()
+	println("index", i)
 	if i == 0 { // an empty message after being index can still have no RRs in this section
 		return nil, nil
 	}
@@ -145,16 +151,16 @@ func (m *Msg) RR(s Section) (RR, error) {
 		return nil, nil
 	}
 
-	println("I", i)
 	fmt.Printf("%v\n", m.Buf[i:])
-	name, i, err := m.name(i)
+	name, i, err := unpackName(i, m.Buf)
+	println("NEW i", i)
 	if err != nil {
 		return nil, err
 	}
 
 	fmt.Printf("NAME %s %#v\n", name, name)
-	println(i, i)
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
+	i++
 	fmt.Printf("%v\n", m.Buf[i:])
 	tpy := Type{m.Buf[i], m.Buf[i+1]}
 	println("TYPE:", tpy.String())
@@ -174,12 +180,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
 	fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
 
-	// if in question section bail out here, as these are no further options.
-	if s == Qd {
-		m.count[s] = 1
-		return rr, nil
-	}
-
 	i += 2
 	// TTL
 	ttl := binary.BigEndian.Uint32(m.Buf[i:])
@@ -195,7 +195,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 2
 	println("RDL", rdl)
-	if err := rr.Write(m.Buf[i : i+rdl]); err != nil {
+	if err := rr.Write(m.Buf[i:i+rdl], m.Buf); err != nil {
 		return rr, err
 	}
 	// lala overflow - or make ints in Msg as well?
@@ -205,21 +205,45 @@ func (m *Msg) RR(s Section) (RR, error) {
 }
 
 // index walks through the message and saves the indices of where the sections start.
-func (m *Msg) index() {
-	start := 12
+func (m *Msg) index() error {
+	offset := 12
 	m.r[Qd] = 12
-	start = m.skipName(start) + 4 // question section
-	println("index start", start)
-	for s := An; s <= Ar; s++ {
-		c := m.Count(s)
-		if c == 0 {
-			continue
-		}
-		m.r[s] = uint16(start)
-		for r := uint16(0); r < c; r++ {
-			start = m.skipRR(start)
+	if offset = m.skipName(offset); offset == 0 {
+		return fmt.Errorf("buffer overflow")
+	}
+	println("index start", offset)
+	offset += 5 // 4 to skip TYPE, CLASS, +1 to land on next RR
+	// Answer
+	c := m.Count(An)
+	if c > 0 {
+		m.r[An] = uint16(offset)
+		for i := uint16(0); i < c; i++ {
+			offset = m.skipRR(offset)
+			if offset == 0 {
+				return fmt.Errorf("buf overflow")
+			}
+			offset++ // start of next RR
 		}
 	}
+	// Authority
+	c = m.Count(Ns)
+	if c > 0 {
+		m.r[Ns] = uint16(offset)
+		for i := uint16(0); i < c; i++ {
+			offset = m.skipRR(offset)
+			if offset == 0 {
+				return fmt.Errorf("buf overflow")
+			}
+			offset++ // start of next RR
+		}
+
+	}
+	// Additional
+	c = m.Count(Ar)
+	if c > 0 {
+		m.r[Ar] = uint16(offset)
+	}
+	return nil
 }
 
 // skipName returns the index after the skipped name, so either the 00 label or the index of the pointer value.
@@ -239,7 +263,7 @@ func (m *Msg) skipName(offset int) int {
 	return 0
 }
 
-// skipRR skips the RR that should start at offset, the returned offset is positioned on the last octect of this RR.
+// skipRR skips the RR that should start at offset, the returned offset is positioned on the last octet of this RR.
 // 0 is return when we overflow the length of m.Buf.
 func (m *Msg) skipRR(offset int) int {
 	i := m.skipName(offset)
@@ -262,38 +286,44 @@ func (m *Msg) skipRR(offset int) int {
 	return i // last octet
 }
 
-// returned int is next offset.
-func (m *Msg) name(offset int) (Name, int, error) {
+// unpackName return a domain name that should start at offset. Compression pointers are followed, the returned offset is
+// positioned on the last octet of the name.
+func unpackName(offset int, msg []byte) (Name, int, error) {
 	ptr := 0
+	ptroffset := 0
 	buf := make([]byte, 0, 12) // 12 is random number
-	for i := offset; i < len(m.Buf); {
-		j := uint8(m.Buf[i])
+	for i := offset; i < len(msg); {
+		j := uint8(msg[i])
 		println("J", j)
 		switch {
 		case j&0xC0 == 0:
 			if j == 0 {
+				// end of name, if we got here via a pointer we need to return that offset, otherwise
+				// the one we've accumulated.
 				buf = append(buf, []byte{0}...)
-				return Name(buf), offset + 1, nil
+				if ptroffset > 0 {
+					return Name(buf), ptroffset, nil
+				}
+				return Name(buf), offset, nil
 			}
-			buf = append(buf, m.Buf[i:i+int(j)+1]...)
+			buf = append(buf, msg[i:i+int(j)+1]...)
 			println(string(buf))
 			i += int(j) + 1
 			offset += int(j) + 1
 		case j&0xC0 == 0xC0:
 			println("POINTER")
-			// save position, as we are here in the message, regardless of how
-			// we follow pointers.
+			// save position, as we are here in the message, regardless of how maby pointers we follow.
 			if ptr++; ptr > 10 {
 				return nil, 0, fmt.Errorf("too many compression pointers")
 			}
-			j1 := uint8(m.Buf[i+1])
+			j1 := uint8(msg[i+1])
 			i = int(j^0xC0) | int(j1)
-			offset += 2 // advance 2 octets
-			println("points to", i)
+			ptroffset = offset + 1 // advance 2 octets
+			println("points to", i, offset)
 		}
 	}
 	if len(buf) == 0 {
 		return nil, offset, fmt.Errorf("nothing found")
 	}
-	return nil, offset + 1, nil
+	return nil, offset, nil
 }
