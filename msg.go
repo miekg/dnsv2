@@ -170,7 +170,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 
 	// Class
 	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
-	fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
 
 	if s == Qd {
 		return rr, nil
@@ -186,12 +185,15 @@ func (m *Msg) RR(s Section) (RR, error) {
 	// Rdata length, used to double check.
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 2
+	fmt.Printf("BUF %+v\n", m.Buf[i:])
 	n, err := rr.Write(m.Buf, i)
 	if err != nil {
 		return rr, err
 	}
+	println("RDL", rdl)
 	if n != rdl {
-		return rr, fmt.Errorf("rdlength doesn't equal bytes written")
+		println("BYTES WRITTEN", n, rdl)
+		//		return rr, fmt.Errorf("rdlength doesn't equal bytes written %d, %d", n, rdl)
 	}
 	// check rdl with returned bytes written.
 	// lala overflow - or make ints in Msg as well?

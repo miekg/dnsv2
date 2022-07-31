@@ -65,11 +65,6 @@ func TestMsgQuery(t *testing.T) {
 
 func TestMsgReply(t *testing.T) {
 	m := &Msg{Buf: reply}
-	println(m.Count(Qd))
-	println(m.Count(An))
-	println(m.Count(Ns))
-	println(m.Count(Ar))
-	println("L", len(m.Buf))
 	i := m.skipName(12)
 	println("question skipped name", i)
 	i = m.skipRR(25) // first RR after question
@@ -90,19 +85,14 @@ func TestMsgReply(t *testing.T) {
 	i = m.skipRR(i + 1)
 	println("6th RR end", i)
 
-	m.index()
-	rr, err := m.RR(An)
-	if err != nil {
-		t.Logf(err.Error())
-		t.Fail()
+	for rr, err := m.RR(An); rr != nil; rr, err = m.RR(An) {
+		fmt.Printf("%v\n", m.r)
+		if err != nil {
+			t.Errorf(err.Error())
+			break
+		}
+		println(rr.Hdr().String(), rr.String())
 	}
-	println(rr.Hdr().String(), rr.String())
-	rr, err = m.RR(An)
-	if err != nil {
-		t.Logf(err.Error())
-		t.Fail()
-	}
-	println(rr.Hdr().String(), rr.String())
 }
 
 // Test function to test how the API feels.

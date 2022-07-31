@@ -84,6 +84,7 @@ func (rr *MX) Write(msg []byte, offset int) (int, error) {
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
 	name, i, err := unpackName(msg, offset+2)
+	println("offset i", offset, i, i-offset+2)
 	if err != nil {
 		return 2, err
 	}
