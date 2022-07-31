@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strconv"
 )
 
 // worth doing this and not just uint16?
@@ -40,15 +41,15 @@ func (rr *A) Data(i int) []byte {
 	return rr.A[:]
 }
 
-func (rr *A) Write(msg []byte, offset int) error {
+func (rr *A) Write(msg []byte, offset int) (int, error) {
 	if offset+4 >= len(msg) {
-		return fmt.Errorf("no space")
+		return 0, fmt.Errorf("no space")
 	}
 	rr.A[0] = msg[offset]
 	rr.A[1] = msg[offset+1]
 	rr.A[2] = msg[offset+2]
 	rr.A[3] = msg[offset+3]
-	return nil
+	return 4, nil
 }
 
 // MX RR. See RFC 1035.
@@ -58,9 +59,12 @@ type MX struct {
 	Mx         Name
 }
 
-func (rr *MX) Hdr() *Header   { return &rr.Header }
-func (rr *MX) Len() int       { return 2 }
-func (rr *MX) String() string { return TypeToString[TypeMX] + "\t" + rr.Mx.String() }
+func (rr *MX) Hdr() *Header { return &rr.Header }
+func (rr *MX) Len() int     { return 2 }
+func (rr *MX) String() string {
+	prio := binary.BigEndian.Uint16(rr.Preference[:])
+	return TypeToString[TypeMX] + "\t" + strconv.FormatUint(uint64(prio), 10) + " " + rr.Mx.String()
+}
 
 func (rr *MX) Data(i int) []byte {
 	if i < 0 || i > 2 {
@@ -75,20 +79,16 @@ func (rr *MX) Data(i int) []byte {
 	return nil
 }
 
-func (rr *MX) Write(msg []byte, offset int) error {
-	if msg == nil {
-		return nil
-	}
-	// first two bytes are preference, rest is domain name
+func (rr *MX) Write(msg []byte, offset int) (int, error) {
+	// first two bytes are preference, rest is domain name, with possible compression pointers.
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
 	name, i, err := unpackName(msg, offset+2)
 	if err != nil {
-		return err
+		return 2, err
 	}
-	i = i // check on i?
 	rr.Mx = name
-	return nil
+	return 1 + (i - offset), nil
 }
 
 var (
@@ -186,3 +186,9 @@ var TypeToString = map[Type]string{
 	TypeMX:  "MX",
 	TypeOPT: "OPT",
 }
+
+var (
+	_ RR = new(A)
+	_ RR = new(MX)
+	_ RR = new(OPT)
+)

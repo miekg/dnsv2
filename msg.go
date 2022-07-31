@@ -141,8 +141,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 	}
 
 	i := int(m.r[s])
-	println()
-	println("index", i)
 	if i == 0 { // an empty message after being index can still have no RRs in this section
 		return nil, nil
 	}
@@ -151,19 +149,14 @@ func (m *Msg) RR(s Section) (RR, error) {
 		return nil, nil
 	}
 
-	fmt.Printf("%v\n", m.Buf[i:])
 	name, i, err := unpackName(m.Buf, i)
-	println("NEW i", i)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("NAME %s %#v\n", name, name)
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
 	i++
-	fmt.Printf("%v\n", m.Buf[i:])
 	tpy := Type{m.Buf[i], m.Buf[i+1]}
-	println("TYPE:", tpy.String())
 	rrfunc, ok := typeToRR[tpy]
 	if !ok {
 		// unknown RR
@@ -175,31 +168,28 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rr := rrfunc()
 	rr.Hdr().Name = name
 
-	fmt.Printf("%v\n", m.Buf[i:])
 	// Class
 	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
 	fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
 
 	i += 2
 	// TTL
-	ttl := binary.BigEndian.Uint32(m.Buf[i:])
-	println("TTL:", ttl)
-	println(m.Buf[i], m.Buf[i+1], m.Buf[i+2], m.Buf[i+3])
 	rr.Hdr().TTL[0] = m.Buf[i]
 	rr.Hdr().TTL[1] = m.Buf[i+1]
 	rr.Hdr().TTL[2] = m.Buf[i+2]
 	rr.Hdr().TTL[3] = m.Buf[i+3]
-	println(rr.Hdr().TTL.String())
 	i += 4
-	// Rdata length
+	// Rdata length, used to double check.
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 2
-	println("RDL", rdl)
-	if err := rr.Write(m.Buf, i+rdl); err != nil {
+	n, err := rr.Write(m.Buf, i)
+	if err != nil {
 		return rr, err
 	}
+	println("N", n, rdl)
+	// check rdl with returned bytes written.
 	// lala overflow - or make ints in Msg as well?
-	m.r[s] = uint16(i + 1 + rdl) // +1 ??
+	m.r[s] = uint16(i + rdl)
 	m.count[s]++
 	return rr, nil
 }
@@ -211,7 +201,6 @@ func (m *Msg) index() error {
 	if offset = m.skipName(offset); offset == 0 {
 		return fmt.Errorf("buffer overflow")
 	}
-	println("index start", offset)
 	offset += 5 // 4 to skip TYPE, CLASS, +1 to land on next RR
 	// Answer
 	c := m.Count(An)
@@ -279,7 +268,6 @@ func (m *Msg) skipRR(offset int) int {
 	}
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 1 + rdl
-	println("rdl", rdl)
 	if i >= len(m.Buf) {
 		return 0
 	}
@@ -294,7 +282,6 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 	buf := make([]byte, 0, 12) // 12 is random number
 	for i := offset; i < len(msg); {
 		j := uint8(msg[i])
-		println("J", j)
 		switch {
 		case j&0xC0 == 0:
 			if j == 0 {
@@ -307,19 +294,16 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 				return Name(buf), offset, nil
 			}
 			buf = append(buf, msg[i:i+int(j)+1]...)
-			println(string(buf))
 			i += int(j) + 1
 			offset += int(j) + 1
 		case j&0xC0 == 0xC0:
-			println("POINTER")
 			// save position, as we are here in the message, regardless of how maby pointers we follow.
 			if ptr++; ptr > 10 {
 				return nil, 0, fmt.Errorf("too many compression pointers")
 			}
 			j1 := uint8(msg[i+1])
 			i = int(j^0xC0) | int(j1)
-			ptroffset = offset + 1 // advance 2 octets
-			println("points to", i, offset)
+			ptroffset = offset + 1 // advance octet
 		}
 	}
 	if len(buf) == 0 {

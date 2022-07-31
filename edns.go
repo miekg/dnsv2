@@ -23,8 +23,9 @@ type (
 		// String returns the string representation of the EDNS0 option.
 		String() string
 
-		// Write writes the rdata encoded in buf to the EDNS0 option.
-		Write(buf []byte) error // make it implement the io.Writer interface (won't work for RRs... so??)
+		// Write writes the rdata encoded in msg staring at offset into the EDNS0 option.
+		// The returned integer is how many octets have been written.
+		Write(msg []byte, offset int) (int, error)
 	}
 
 	// Code represents the 2 byte option code.
@@ -76,7 +77,7 @@ func (rr *OPT) String() string {
 	return b.String()
 }
 
-func (rr *OPT) Write(msg []byte, offset int) error {
+func (rr *OPT) Write(msg []byte, offset int) (int, error) {
 	/*
 		i := 0
 		for i < len(buf) {
@@ -98,7 +99,7 @@ func (rr *OPT) Write(msg []byte, offset int) error {
 			i += rdl
 		}
 	*/
-	return nil
+	return 0, nil
 }
 
 // OptionCode returns the option code of the Option.
@@ -128,7 +129,7 @@ func (o *NSID) Data() []byte {
 	header := optionHeader(o)
 	return append(header[:], o.ID...)
 }
-func (o *NSID) Write(buf []byte) error { o.ID = buf; return nil }
+func (o *NSID) Write(msg []byte, offset int) (int, error) { o.ID = msg[offset:]; return 0, nil }
 
 //  Cookie Option.
 type COOKIE struct {
@@ -141,9 +142,14 @@ func (o *COOKIE) Data() []byte {
 	header := optionHeader(o)
 	return append(header[:], o.Cookie...)
 }
-func (o *COOKIE) Write(buf []byte) error { o.Cookie = buf; return nil }
+func (o *COOKIE) Write(msg []byte, offset int) (int, error) { o.Cookie = msg[offset:]; return 0, nil }
 
 var codeToOption = map[Code]func() Option{
 	CodeNSID:   func() Option { return new(NSID) },
 	CodeCookie: func() Option { return new(COOKIE) },
 }
+
+var (
+	_ Option = new(NSID)
+	_ Option = new(COOKIE)
+)
