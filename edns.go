@@ -3,6 +3,7 @@ package dns
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"strconv"
 	"strings"
 )
 
@@ -25,9 +26,8 @@ type (
 		// String returns the string representation of the EDNS0 option.
 		String() string
 
-		// Write writes the rdata encoded in msg staring at offset into the EDNS0 option.
-		// The returned integer is how many octets have been written.
-		Write(msg []byte, offset int) (int, error)
+		// Write writes the rdata encoded in buf into the EDNS0 option.
+		Write(buf []byte) error
 	}
 
 	// Code represents the 2 byte option code.
@@ -79,29 +79,28 @@ func (rr *OPT) String() string {
 	return b.String()
 }
 
-func (rr *OPT) Write(msg []byte, offset int) (int, error) {
+func (rr *OPT) Write(msg []byte, offset, n int) error {
 	i := 0
+	// check n
 	for i < len(msg[offset:]) {
 		code := Code{msg[offset+i], msg[offset+i+1]}
 		optfunc, ok := codeToOption[code]
 		if !ok {
-			println("UNKNOWN option code", msg[offset+i], msg[offset+i+1])
-			// now what??
+			optfunc = func() Option { return new(EDNS0RFC3597) }
 		}
 		i += 2
 		rdl := int(binary.BigEndian.Uint16(msg[offset+i:]))
 		i += 2
 		// length checks
 		opt := optfunc()
-		n, err := opt.Write(msg[offset+i:offset+i+rdl], 0)
-		n = n // this should be ok, as we size the buffer
+		err := opt.Write(msg[offset+i : offset+i+rdl])
 		if err != nil {
-			return i, err
+			return err
 		}
 		i += rdl
 		rr.Options = append(rr.Options, opt)
 	}
-	return i, nil
+	return nil
 }
 
 // ExtendedRcode returns the extended Rcode.
@@ -130,6 +129,27 @@ func optionHeader(e Option) [4]byte {
 	return [4]byte{code[0], code[1], byte(e.Len() >> 8), byte(e.Len())}
 }
 
+// EDNS0RFC3597 is an unknown EDNS0 Option. Similar in style to RFC 3597 handling.
+// The name is a bit unwieldy, but end-users should not often use this.
+type EDNS0RFC3597 struct {
+	Code           // Code holds the option code number of the unknown option code we're holding.
+	Unknown []byte // Data as-is.
+}
+
+func (o *EDNS0RFC3597) Len() int { return len(o.Unknown) }
+
+func (o *EDNS0RFC3597) String() string {
+	c := binary.BigEndian.Uint16(o.Code[:])
+	l := hex.EncodedLen(len(o.Unknown))
+	return "CODE" + strconv.FormatUint(uint64(c), 10) + "\t\\# " + strconv.FormatUint(uint64(l), 10) + " " + hex.EncodeToString(o.Unknown)
+}
+
+func (o *EDNS0RFC3597) Data() []byte {
+	header := optionHeader(o)
+	return append(header[:], o.Unknown...)
+}
+func (o *EDNS0RFC3597) Write(buf []byte) error { o.Unknown = buf; return nil }
+
 // NSID Option.
 type NSID struct {
 	ID []byte // ID is a hex encoded string.
@@ -141,7 +161,7 @@ func (o *NSID) Data() []byte {
 	header := optionHeader(o)
 	return append(header[:], o.ID...)
 }
-func (o *NSID) Write(msg []byte, offset int) (int, error) { o.ID = msg[offset:]; return 0, nil }
+func (o *NSID) Write(buf []byte) error { o.ID = buf; return nil }
 
 //  Cookie Option.
 type COOKIE struct {
@@ -155,7 +175,7 @@ func (o *COOKIE) Data() []byte {
 	header := optionHeader(o)
 	return append(header[:], o.Cookie...)
 }
-func (o *COOKIE) Write(msg []byte, offset int) (int, error) { o.Cookie = msg[offset:]; return 0, nil }
+func (o *COOKIE) Write(buf []byte) error { o.Cookie = buf; return nil }
 
 var codeToOption = map[Code]func() Option{
 	CodeNSID:   func() Option { return new(NSID) },

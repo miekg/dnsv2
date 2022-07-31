@@ -46,7 +46,18 @@ func (t Type) String() string {
 
 func (t TTL) String() string {
 	i := binary.BigEndian.Uint32(t[:])
-	return strconv.FormatUint(uint64(i), 10)
+	// avoid pulling the machinary from fmt.Printf
+	switch {
+	case i < 10:
+		return "    " + strconv.FormatUint(uint64(i), 10)
+	case i < 100:
+		return "   " + strconv.FormatUint(uint64(i), 10)
+	case i < 1000:
+		return "  " + strconv.FormatUint(uint64(i), 10)
+	case i < 10000:
+		return " " + strconv.FormatUint(uint64(i), 10)
+	}
+	return ""
 }
 
 func (n Name) GoString() string {

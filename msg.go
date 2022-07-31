@@ -170,14 +170,15 @@ func (m *Msg) RR(s Section) (RR, error) {
 	tpy := Type{m.Buf[i], m.Buf[i+1]}
 	rrfunc, ok := typeToRR[tpy]
 	if !ok {
-		// unknown RR
-		println("UNKNOWN RR", tpy[0], tpy[1])
-		return nil, fmt.Errorf("bla")
+		rrfunc = func() RR { return new(RFC3597) }
 	}
 	i += 2
 
 	rr := rrfunc()
 	rr.Hdr().Name = name
+	if rfc3597, ok := rr.(*RFC3597); ok {
+		rfc3597.Type = tpy
+	}
 
 	// Class
 	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
@@ -193,15 +194,12 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rr.Hdr().TTL[2] = m.Buf[i+2]
 	rr.Hdr().TTL[3] = m.Buf[i+3]
 	i += 4
-	// Rdata length, used to double check.
+	// Rdata length
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
+	//	println("RDL", rdl)
 	i += 2
-	n, err := rr.Write(m.Buf, i)
-	if err != nil {
+	if err := rr.Write(m.Buf, i, rdl); err != nil {
 		return rr, err
-	}
-	if n != rdl {
-		return rr, fmt.Errorf("rdlength doesn't equal bytes written %d, %d", n, rdl)
 	}
 	// check rdl with returned bytes written.
 	// lala overflow - or make ints in Msg as well?
@@ -362,7 +360,7 @@ func (m *Msg) String() string {
 		for _, rr := range rrs {
 			if opt, ok := rr.(*OPT); ok {
 				b.WriteString(";; EDNS: version: ")
-				b.WriteByte(opt.Version())
+				b.WriteString(fmt.Sprintf("%d", opt.Version()))
 				b.WriteString(", flags:; udp: ")
 				b.WriteString(fmt.Sprintf("%d\n", opt.Size()))
 				continue

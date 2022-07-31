@@ -35,10 +35,9 @@ type (
 		Data(i int) []byte
 		// String returns the string representation of the rdata(!) only.
 		String() string
-		// Write writes the rdata encoded in msg starting at index offset to the RR. Some rdata needs access to
-		// the message's data, msg is expected to contain the targets of those pointers. The returned int is the
-		// number of octets written.
-		Write(msg []byte, offset int) (int, error)
+		// Write writes the rdata encoded in msg starting at index offset and length n to the RR. Some rdata
+		// needs access to the message's data, msg is expected to contain the targets of those pointers.
+		Write(msg []byte, offset, n int) error
 	}
 )
 

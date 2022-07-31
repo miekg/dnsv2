@@ -2,6 +2,7 @@ package dns
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"strconv"
@@ -41,15 +42,18 @@ func (rr *A) Data(i int) []byte {
 	return rr.A[:]
 }
 
-func (rr *A) Write(msg []byte, offset int) (int, error) {
-	if offset+4 >= len(msg) {
-		return 0, fmt.Errorf("no space")
+func (rr *A) Write(msg []byte, offset, n int) error {
+	if offset+n > len(msg) {
+		return fmt.Errorf("no space")
 	}
 	rr.A[0] = msg[offset]
 	rr.A[1] = msg[offset+1]
 	rr.A[2] = msg[offset+2]
 	rr.A[3] = msg[offset+3]
-	return 4, nil
+	if n != 4 {
+		return fmt.Errorf("bla")
+	}
+	return nil
 }
 
 // MX RR. See RFC 1035.
@@ -79,23 +83,18 @@ func (rr *MX) Data(i int) []byte {
 	return nil
 }
 
-func (rr *MX) Write(msg []byte, offset int) (int, error) {
+func (rr *MX) Write(msg []byte, offset, n int) error {
 	// first two bytes are preference, rest is domain name, with possible compression pointers.
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
 	name, i, err := unpackName(msg, offset+2)
 	if err != nil {
-		return 2, err
+		return err
 	}
 	rr.Mx = name
-	return 1 + (i - offset), nil
+	println(n, 1+(i-offset))
+	return nil
 }
-
-var (
-	_ RR = new(A)
-	_ RR = new(MX)
-	_ RR = new(OPT)
-)
 
 /*
 type CNAME struct {
@@ -103,6 +102,40 @@ type CNAME struct {
 	Target Name
 }
 */
+
+// RFC3597 represents an unknown/generic RR. See RFC 3597.
+type RFC3597 struct {
+	Header
+	Type           // Type holds the type number of the unknown type we're holding.
+	Unknown []byte // Data is as-is.
+}
+
+func (rr *RFC3597) Hdr() *Header { return &rr.Header }
+func (rr *RFC3597) Len() int     { return 1 }
+func (rr *RFC3597) String() string {
+	t := binary.BigEndian.Uint16(rr.Type[:])
+	l := len(rr.Unknown)
+	if l == 0 {
+		return "TYPE" + strconv.FormatUint(uint64(t), 10) + "\t\\# 0"
+	}
+	// TODO format TYPEXX better
+	return "TYPE" + strconv.FormatUint(uint64(t), 10) + "\t\\# " + strconv.FormatUint(uint64(l), 10) + " " + hex.EncodeToString(rr.Unknown)
+}
+
+func (rr *RFC3597) Data(i int) []byte {
+	if i != 1 {
+		return nil
+	}
+	return rr.Unknown
+}
+
+func (rr *RFC3597) Write(msg []byte, offset, n int) error {
+	if offset+n > len(msg) {
+		return fmt.Errorf("no space for RFC3597")
+	}
+	rr.Unknown = msg[offset : offset+n]
+	return nil
+}
 
 // RRType returns the type of the RR.
 func RRType(rr RR) Type {
