@@ -3,7 +3,6 @@ package dns
 import (
 	"fmt"
 	"net"
-	"strings"
 	"testing"
 )
 
@@ -82,43 +81,14 @@ func TestMsgReply(t *testing.T) {
 	fmt.Printf("%s %s\n", opt.Hdr(), opt)
 }
 
-func TestMsgString(t *testing.T) {
+func TestMsgStringReply(t *testing.T) {
 	m := &Msg{Buf: reply}
-	b := &strings.Builder{}
-	b.WriteString(m.String())
-	for s := Qd; s <= Ar; s++ {
-		if m.Count(s) == 0 {
-			continue
-		}
-		b.WriteString(fmt.Sprintf(";; %s SECTION:\n", s))
-		rrs, err := m.RRs(s)
-		if err != nil {
-			t.Errorf(err.Error())
-		}
-		for _, rr := range rrs {
-			if _, ok := rr.(*OPT); ok {
-				// treat differenty
-			}
-			if s == Qd {
-				b.WriteString(rr.Hdr().Name.String())
-				b.WriteString(" ")
-				b.WriteString(rr.Hdr().Class.String())
-				b.WriteString(" ")
-				b.WriteString(RRType(rr).String())
-				b.WriteString("\n")
-				continue
-			}
-			b.WriteString(rr.Hdr().String())
-			b.WriteString("\t")
-			b.WriteString(rr.String())
-			b.WriteString("\n")
-		}
-	}
-	println(b.String())
+	println(m.String())
 }
 
 func TestMsgStringQuery(t *testing.T) {
-
+	m := &Msg{Buf: query}
+	println(m.String())
 }
 
 func TestSkip(t *testing.T) {

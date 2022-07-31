@@ -121,17 +121,6 @@ func (m *Msg) Count(s Section) uint16 {
 	return 0
 }
 
-// String returns the message's header as a string.
-func (m *Msg) String() string {
-	b := &strings.Builder{}
-	b.WriteString(";; ->>HEADER<<-\n")
-	// ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 32123
-	b.WriteString(";; flags: bla; ")
-	b.WriteString(fmt.Sprintf("%s %d, %s: %d, %s: %d, %s: %d\n", Qd, m.Count(Qd), An, m.Count(An), Ns, m.Count(Ns), Ar, m.Count(Ar)))
-
-	return b.String()
-}
-
 // SetRR adds RR's wireformat to the msg m in the specified section. As we build the message RR by RR, you can't go back
 // to add to a previous section (although technically you can alter the counts to make that happen in specific cases).
 // Any RR can be used to set the question section; it will then just use the name, type and class and ignore the rest.
@@ -349,4 +338,45 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 		return nil, offset, fmt.Errorf("nothing found")
 	}
 	return nil, offset, nil
+}
+
+// String returns the text representation of the message m. Note this method _parses_ the message and
+// extracts the RRs for printing, this makes it an expensive method. It can also error, in that case the
+// empty string is returned. Mostly useful for debugging.
+func (m *Msg) String() string {
+	b := &strings.Builder{}
+	b.WriteString(";; ->>HEADER<<-\n")
+	// ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 32123
+	b.WriteString(";; flags: bla; ")
+	b.WriteString(fmt.Sprintf("%s %d, %s: %d, %s: %d, %s: %d\n", Qd, m.Count(Qd), An, m.Count(An), Ns, m.Count(Ns), Ar, m.Count(Ar)))
+
+	for s := Qd; s <= Ar; s++ {
+		if m.Count(s) == 0 {
+			continue
+		}
+		b.WriteString(fmt.Sprintf(";; %s SECTION:\n", s))
+		rrs, err := m.RRs(s)
+		if err != nil {
+			return ""
+		}
+		for _, rr := range rrs {
+			if _, ok := rr.(*OPT); ok {
+				// treat differenty
+			}
+			if s == Qd {
+				b.WriteString(rr.Hdr().Name.String())
+				b.WriteString(" ")
+				b.WriteString(rr.Hdr().Class.String())
+				b.WriteString(" ")
+				b.WriteString(RRType(rr).String())
+				b.WriteString("\n")
+				continue
+			}
+			b.WriteString(rr.Hdr().String())
+			b.WriteString("\t")
+			b.WriteString(rr.String())
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
 }
