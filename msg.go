@@ -3,6 +3,7 @@ package dns
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 type (
@@ -78,6 +79,14 @@ func NewMsg(buf ...[]byte) *Msg {
 	return m
 }
 
+func (m *Msg) ID() uint16 {
+	return 0
+}
+
+func (m *Msg) SetID(i uint16) {
+
+}
+
 // Rcode is a function
 func (m *Msg) Rcode() {
 	// check extended Rcode
@@ -110,6 +119,17 @@ func (m *Msg) Count(s Section) uint16 {
 		return binary.BigEndian.Uint16(m.Buf[10:])
 	}
 	return 0
+}
+
+// String returns the message's header as a string.
+func (m *Msg) String() string {
+	b := &strings.Builder{}
+	b.WriteString(";; ->>HEADER<<-\n")
+	// ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 32123
+	b.WriteString(";; flags: bla; ")
+	b.WriteString(fmt.Sprintf("QUERY %d, ANSWER: %d, AUTHORITY: %d, ADDITIONAL: %d\n", m.Count(Qd), m.Count(An), m.Count(Ns), m.Count(Ar)))
+
+	return b.String()
 }
 
 // SetRR adds RR's wireformat to the msg m in the specified section. As we build the message RR by RR, you can't go back

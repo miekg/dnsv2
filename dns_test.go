@@ -75,6 +75,11 @@ func TestMsgReply(t *testing.T) {
 	}
 }
 
+func TestMsgString(t *testing.T) {
+	m := &Msg{Buf: reply}
+	println(m.String())
+}
+
 func TestSkip(t *testing.T) {
 	m := &Msg{Buf: reply}
 	i := m.skipName(12)
