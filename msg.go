@@ -23,8 +23,10 @@ type (
 	//
 	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that
 	// convention. After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
+	// In this package the question section's RR is handled as a normal RR, just without any rdata - as is also done
+	// in dynamic updates (RFC 2136).
 	//
-	// The header is defined as follows:
+	// The message header is defined as follows:
 	//                                    1  1  1  1  1  1
 	//      0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -40,9 +42,6 @@ type (
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//    |                    ARCOUNT                    |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	//
-	// In this package the question section's RR is handled as a normal RR, but without any rdata - which is an
-	// actual RR ever since dynamic updates (RFC xxxx) have been defined.
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
