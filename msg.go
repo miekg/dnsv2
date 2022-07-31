@@ -172,6 +172,10 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
 	fmt.Printf("CLASS %+v\n", rr.Hdr().Class)
 
+	if s == Qd {
+		return rr, nil
+	}
+
 	i += 2
 	// TTL
 	rr.Hdr().TTL[0] = m.Buf[i]
@@ -186,7 +190,9 @@ func (m *Msg) RR(s Section) (RR, error) {
 	if err != nil {
 		return rr, err
 	}
-	println("N", n, rdl)
+	if n != rdl {
+		return rr, fmt.Errorf("rdlength doesn't equal bytes written")
+	}
 	// check rdl with returned bytes written.
 	// lala overflow - or make ints in Msg as well?
 	m.r[s] = uint16(i + rdl)

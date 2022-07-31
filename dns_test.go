@@ -53,14 +53,12 @@ func TestMsgQuery(t *testing.T) {
 	rr, err := m.RR(Ar)
 	if err != nil {
 		println(err.Error())
-		return
 	}
 	println(m.r[Qd], m.r[An], m.r[Ns], m.r[Ar])
 	println("parsed", rr.Hdr().String(), rr.String())
 	rr, err = m.RR(Qd)
 	if err != nil {
 		println(err.Error())
-		return
 	}
 	println("parsed", rr.Hdr().String(), rr.String())
 }
