@@ -65,38 +65,52 @@ func TestMsgQuery(t *testing.T) {
 
 func TestMsgReply(t *testing.T) {
 	m := &Msg{Buf: reply}
-	i := m.skipName(12)
-	println("question skipped name", i)
-	i = m.skipRR(25) // first RR after question
-	println("first RR end", i)
-	i = m.skipRR(i + 1)
-	println("second RR end", i)
-	i = m.skipRR(i + 1)
-	println("3rd RR end", i)
-	i = m.skipRR(i + 1)
-	println("4th RR end", i)
-	i = m.skipRR(i + 1)
-	println("5th RR end", i)
-	// OPT
-	println("OPT START", i+1)
-	i = m.skipRR(i + 1)
-	println("6th RR end", i)
-	// should 0
-	i = m.skipRR(i + 1)
-	println("6th RR end", i)
 
-	for rr, err := m.RR(An); rr != nil; rr, err = m.RR(An) {
-		fmt.Printf("%v\n", m.r)
-		if err != nil {
-			t.Errorf(err.Error())
-			break
-		}
-		println(rr.Hdr().String(), rr.String())
+	answer, err := m.RRs(An)
+	if err != nil {
+		t.Errorf(err.Error())
 	}
+	for _, rr := range answer {
+		fmt.Printf("%s %s\n", rr.Hdr(), rr)
+	}
+}
 
-	q, _ := m.RR(Qd)
-	println(q.Hdr().String(), q.String())
-
+func TestSkip(t *testing.T) {
+	m := &Msg{Buf: reply}
+	i := m.skipName(12)
+	if i != 20 {
+		t.Errorf("expected offset after qname %d, got %d", 20, i)
+	}
+	// First RR starts at 25 here.
+	i = m.skipRR(25)
+	if i != 63 {
+		t.Errorf("expected offset after 1st skipRR %d, got %d", 63, i)
+	}
+	i = m.skipRR(i + 1)
+	if i != 79 {
+		t.Errorf("expected offset after 2nd skipRR %d, got %d", 79, i)
+	}
+	i = m.skipRR(i + 1)
+	if i != 113 {
+		t.Errorf("expected offset after 3rd skipRR %d, got %d", 113, i)
+	}
+	i = m.skipRR(i + 1)
+	if i != 136 {
+		t.Errorf("expected offset after 4th skipRR %d, got %d", 136, i)
+	}
+	i = m.skipRR(i + 1)
+	if i != 157 {
+		t.Errorf("expected offset after 5th skipRR %d, got %d", 157, i)
+	}
+	// OPT RR
+	i = m.skipRR(i + 1)
+	if i != 168 {
+		t.Errorf("expected offset after OPT RR %d, got %d", 168, i)
+	}
+	i = m.skipRR(i + 1)
+	if i != 0 {
+		t.Errorf("expected offset after msg length %d, got %d", 0, i)
+	}
 }
 
 // Test function to test how the API feels.

@@ -185,21 +185,30 @@ func (m *Msg) RR(s Section) (RR, error) {
 	// Rdata length, used to double check.
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 2
-	fmt.Printf("BUF %+v\n", m.Buf[i:])
 	n, err := rr.Write(m.Buf, i)
 	if err != nil {
 		return rr, err
 	}
-	println("RDL", rdl)
 	if n != rdl {
 		println("BYTES WRITTEN", n, rdl)
-		//		return rr, fmt.Errorf("rdlength doesn't equal bytes written %d, %d", n, rdl)
+		return rr, fmt.Errorf("rdlength doesn't equal bytes written %d, %d", n, rdl)
 	}
 	// check rdl with returned bytes written.
 	// lala overflow - or make ints in Msg as well?
 	m.r[s] = uint16(i + rdl)
 	m.count[s]++
 	return rr, nil
+}
+
+func (m *Msg) RRs(s Section) ([]RR, error) {
+	rrs := []RR{}
+	for rr, err := m.RR(s); rr != nil; rr, err = m.RR(s) {
+		if err != nil {
+			return rrs, err
+		}
+		rrs = append(rrs, rr)
+	}
+	return rrs, nil
 }
 
 // index walks through the message and saves the indices of where the sections start.
@@ -311,7 +320,9 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 			}
 			j1 := uint8(msg[i+1])
 			i = int(j^0xC0) | int(j1)
-			ptroffset = offset + 1 // advance octet
+			if ptroffset == 0 { // the first pointer we follow, ends the wire encoding of this RR.
+				ptroffset = offset + 1 // advance octet
+			}
 		}
 	}
 	if len(buf) == 0 {
