@@ -73,6 +73,12 @@ func TestMsgReply(t *testing.T) {
 	for _, rr := range answer {
 		fmt.Printf("%s %s\n", rr.Hdr(), rr)
 	}
+
+	opt, err := m.RR(Ar)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	fmt.Printf("%s %s\n", opt.Hdr(), opt)
 }
 
 func TestMsgString(t *testing.T) {

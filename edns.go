@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"encoding/binary"
 	"strings"
 )
 
@@ -78,28 +79,27 @@ func (rr *OPT) String() string {
 }
 
 func (rr *OPT) Write(msg []byte, offset int) (int, error) {
-	/*
-		i := 0
-		for i < len(buf) {
-			code := Code{buf[i], buf[i+1]}
-			optfunc, ok := codeToOption[code]
-			if !ok {
-				println("UNKNOWN option code", buf[i], buf[i+1])
-				// now what??
-			}
-			i += 2
-			rdl := int(binary.BigEndian.Uint16(buf[i:]))
-			i += 2
-			// length checks
-			println("RDL", rdl)
-			opt := optfunc()
-			if err := opt.Write(buf[i : i+rdl]); err != nil {
-				return err
-			}
-			i += rdl
+	i := 0
+	for i < len(msg[offset:]) {
+		code := Code{msg[i], msg[i+1]}
+		optfunc, ok := codeToOption[code]
+		if !ok {
+			println("UNKNOWN option code", msg[i], msg[i+1])
+			// now what??
 		}
-	*/
-	return 0, nil
+		i += 2
+		rdl := int(binary.BigEndian.Uint16(msg[i:]))
+		i += 2
+		// length checks
+		opt := optfunc()
+		n, err := opt.Write(msg, i)
+		if err != nil {
+			return i, err
+		}
+		println("RDL", rdl, n)
+		i += rdl //+1?
+	}
+	return i, nil
 }
 
 // OptionCode returns the option code of the Option.
