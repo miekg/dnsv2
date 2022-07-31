@@ -40,6 +40,10 @@ All functions/methods allow you to give (an) optional buffer that you control.
 Building a Msg needs to happen in-order, as a DNS message can only be traversed from the start.
 The buffer containing the wire data is a public member, so the caller can have complete control.
 
+Reading from a `Msg` can be done via any section in any order, from within a section it needs be
+in-order. Writing a `Msg` can only be done in the order: Qd, An, Ns, and Ar, where empty sections
+can be skipped.
+
 Methods on a `Msg` are:
 
 * `RR(s Section) RR` which returns the _next_ RR from the section or `nil` when none found. As said
@@ -51,10 +55,12 @@ Methods on a `Msg` are:
 
 ### Questionable things
 
-* Doing `[2]byte{x, y}` instead of a uint16 for `Class` and `Type`.
+* Doing `[2]byte{x, y}` instead of a uint16 for `Class` and `Type`?
 * Needing helper function in the `dnswire` package to convert from an to rdata types.
 * `Msg` can only be written in the correct order. Technically we should be able to insert RRs, but
-    this requires updating compression pointers which need to be found.
+    this requires updating compression pointers which need to be found?
+* The `Header` doesn't contain the type, as this is encoded in the Go Type of the RR, so printing
+    them as strings looks a bit weird (compared to dig).
 
 ### TODO
 

@@ -93,6 +93,10 @@ func TestMsgReply(t *testing.T) {
 		}
 		println(rr.Hdr().String(), rr.String())
 	}
+
+	q, _ := m.RR(Qd)
+	println(q.Hdr().String(), q.String())
+
 }
 
 // Test function to test how the API feels.
