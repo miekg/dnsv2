@@ -11,6 +11,13 @@ miekg/dns has. Everything here can, and will, change. If you have opinions open 
 
 DNS compression is always done. Making this optional and a user knob is a mistake.
 
+## Current Status
+
+* Some very basic RRs are working, the rest is trivial, but some `go generate` would help here.
+* EDNS0 is implemented.
+* Unknown RRs are implemented.
+* Unknown EDNS0 options (not an official thing) are implemented.
+
 ## Memory Model
 
 A message is the central buffer, extracting RRs and walking the message to get RRs will _copy_ the
