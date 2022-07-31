@@ -54,7 +54,7 @@ type (
 		count [4]uint16
 
 		// can be filed when indexing? Or remove??
-		compression map[string]*int // name to index for the compression pointers
+		compression map[string]int // name to index for the compression pointers
 	}
 
 	// Section signifies a message's section. Four sections are defined (in order): Qd, An, Ns, and Ar.

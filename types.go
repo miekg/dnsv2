@@ -173,12 +173,15 @@ in RFC 1035:
     /                     RDATA                     /
     /                                               /
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-The bytes are copied into a newly allocated memory buffer. TODO
 */
-func Bytes(rr RR) []byte {
-	// this now allocates a buffer, actual function will let you choose. And compression and stuff.
-	buf := make([]byte, 256)
+func Bytes(rr RR, rrbuf ...[]byte) []byte {
+	var buf []byte
+	if rrbuf != nil {
+		buf = rrbuf[0]
+	} else {
+		buf = make([]byte, 0, 256)
+	}
+
 	n := copy(buf[0:], rr.Hdr().Name)
 	buf[n+0] = RRType(rr)[0]
 	buf[n+1] = RRType(rr)[1]
