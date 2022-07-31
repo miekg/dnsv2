@@ -105,7 +105,7 @@ type CNAME struct {
 */
 
 // RRType returns the type of the RR.
-func RRType(rr RR) [2]byte {
+func RRType(rr RR) Type {
 	switch rr.(type) {
 	case *A:
 		return TypeA

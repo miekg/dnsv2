@@ -127,7 +127,7 @@ func (m *Msg) String() string {
 	b.WriteString(";; ->>HEADER<<-\n")
 	// ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 32123
 	b.WriteString(";; flags: bla; ")
-	b.WriteString(fmt.Sprintf("QUERY %d, ANSWER: %d, AUTHORITY: %d, ADDITIONAL: %d\n", m.Count(Qd), m.Count(An), m.Count(Ns), m.Count(Ar)))
+	b.WriteString(fmt.Sprintf("%s %d, %s: %d, %s: %d, %s: %d\n", Qd, m.Count(Qd), An, m.Count(An), Ns, m.Count(Ns), Ar, m.Count(Ar)))
 
 	return b.String()
 }
@@ -173,6 +173,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() { m.count[s]++ }()
 
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
 	i++
@@ -216,7 +217,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 	// check rdl with returned bytes written.
 	// lala overflow - or make ints in Msg as well?
 	m.r[s] = uint16(i + rdl)
-	m.count[s]++
 	return rr, nil
 }
 

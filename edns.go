@@ -60,6 +60,9 @@ type OPT struct {
 	Options []Option
 }
 
+// OptHdrString() // takes an rr.Header and formats it so you can have pretty printed EDNS0 OPT RR.
+// OptHdr and OptHdr.String()
+
 func (rr *OPT) Hdr() *Header { return &rr.Header }
 func (rr *OPT) Len() int     { return len(rr.Options) }
 func (rr *OPT) Data(i int) []byte {

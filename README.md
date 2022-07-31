@@ -63,6 +63,8 @@ Methods on a `Msg` are:
     them as strings looks a bit weird (compared to dig).
 * OPT RR's header needs special casing
 * Question "RR" needs special casing because it obvs isn't a real RR either.
+* Printing a Msg means walking it, so we can't provide a function for it, unless we return the
+    parsed RRs?
 
 ### TODO
 

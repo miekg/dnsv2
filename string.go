@@ -6,6 +6,20 @@ import (
 	"strings"
 )
 
+func (s Section) String() string {
+	switch s {
+	case Qd:
+		return "QUESTION"
+	case An:
+		return "ANSWER"
+	case Ns:
+		return "AUTHORITY"
+	case Ar:
+		return "ADDITIONAL"
+	}
+	return ""
+}
+
 func (c Class) String() string {
 	// via a map
 	switch c {
