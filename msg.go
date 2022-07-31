@@ -162,6 +162,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	if err != nil {
 		return nil, err
 	}
+	// keep defer??
 	defer func() { m.count[s]++ }()
 
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
@@ -200,7 +201,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 		return rr, err
 	}
 	if n != rdl {
-		println("BYTES WRITTEN", n, rdl)
 		return rr, fmt.Errorf("rdlength doesn't equal bytes written %d, %d", n, rdl)
 	}
 	// check rdl with returned bytes written.
@@ -360,8 +360,12 @@ func (m *Msg) String() string {
 			return ""
 		}
 		for _, rr := range rrs {
-			if _, ok := rr.(*OPT); ok {
-				// treat differenty
+			if opt, ok := rr.(*OPT); ok {
+				b.WriteString(";; EDNS: version: ")
+				b.WriteByte(opt.Version())
+				b.WriteString(", flags:; udp: ")
+				b.WriteString(fmt.Sprintf("%d\n", opt.Size()))
+				continue
 			}
 			if s == Qd {
 				b.WriteString(rr.Hdr().Name.String())

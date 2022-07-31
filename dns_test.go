@@ -45,22 +45,21 @@ var (
 
 func TestMsgQuery(t *testing.T) {
 	m := &Msg{Buf: query}
-	println(m.Count(Qd))
-	println(m.Count(An))
-	println(m.Count(Ns))
-	println(m.Count(Ar))
-	println("L", len(m.Buf))
 	rr, err := m.RR(Ar)
-	if err != nil {
-		println(err.Error())
+	if opt, ok := rr.(*OPT); ok {
+		fmt.Printf(";; EDNS: version: %d", opt.Version())
+		fmt.Printf(", flags:; udp: %d; ", opt.Size())
+		fmt.Printf("%s\n", opt.String())
+	} else {
+		fmt.Printf("%s %s\n", rr.Hdr(), rr.String())
 	}
-	println(m.r[Qd], m.r[An], m.r[Ns], m.r[Ar])
-	println("parsed", rr.Hdr().String(), rr.String())
+
 	rr, err = m.RR(Qd)
 	if err != nil {
-		println(err.Error())
+		t.Errorf("failed to get RR: %s", err)
 	}
-	println("parsed", rr.Hdr().String(), rr.String())
+
+	fmt.Printf("%s %s\n", rr.Hdr(), rr)
 }
 
 func TestMsgReply(t *testing.T) {
@@ -74,11 +73,18 @@ func TestMsgReply(t *testing.T) {
 		fmt.Printf("%s %s\n", rr.Hdr(), rr)
 	}
 
-	opt, err := m.RR(Ar)
+	rr, err := m.RR(Ar)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	fmt.Printf("%s %s\n", opt.Hdr(), opt)
+	fmt.Printf("%T\n", rr)
+	if opt, ok := rr.(*OPT); ok {
+		fmt.Printf(";; EDNS: version: %d", opt.Version())
+		fmt.Printf(", flags:; udp: %d; ", opt.Size())
+		fmt.Printf("%s\n", opt)
+		return
+	}
+	fmt.Printf("%s %s\n", rr.Hdr(), rr)
 }
 
 func TestMsgStringReply(t *testing.T) {

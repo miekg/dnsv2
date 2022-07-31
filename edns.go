@@ -2,6 +2,7 @@ package dns
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"strings"
 )
 
@@ -60,9 +61,6 @@ type OPT struct {
 	Options []Option
 }
 
-// OptHdrString() // takes an rr.Header and formats it so you can have pretty printed EDNS0 OPT RR.
-// OptHdr and OptHdr.String()
-
 func (rr *OPT) Hdr() *Header { return &rr.Header }
 func (rr *OPT) Len() int     { return len(rr.Options) }
 func (rr *OPT) Data(i int) []byte {
@@ -73,7 +71,7 @@ func (rr *OPT) Data(i int) []byte {
 }
 func (rr *OPT) String() string {
 	b := &strings.Builder{}
-	b.WriteString(TypeToString[TypeOPT])
+	// don't write the type here.
 	b.WriteString("\t")
 	for i := 0; i < rr.Len(); i++ {
 		b.WriteString(rr.Options[i].String())
@@ -84,26 +82,36 @@ func (rr *OPT) String() string {
 func (rr *OPT) Write(msg []byte, offset int) (int, error) {
 	i := 0
 	for i < len(msg[offset:]) {
-		code := Code{msg[i], msg[i+1]}
+		code := Code{msg[offset+i], msg[offset+i+1]}
 		optfunc, ok := codeToOption[code]
 		if !ok {
-			println("UNKNOWN option code", msg[i], msg[i+1])
+			println("UNKNOWN option code", msg[offset+i], msg[offset+i+1])
 			// now what??
 		}
 		i += 2
-		rdl := int(binary.BigEndian.Uint16(msg[i:]))
+		rdl := int(binary.BigEndian.Uint16(msg[offset+i:]))
 		i += 2
 		// length checks
 		opt := optfunc()
-		n, err := opt.Write(msg, i)
+		n, err := opt.Write(msg[offset+i:offset+i+rdl], 0)
+		n = n // this should be ok, as we size the buffer
 		if err != nil {
 			return i, err
 		}
-		println("RDL", rdl, n)
-		i += rdl //+1?
+		i += rdl
+		rr.Options = append(rr.Options, opt)
 	}
 	return i, nil
 }
+
+// ExtendedRcode returns the extended Rcode.
+func (rr *OPT) ExtendedRcode() uint8 { return rr.Hdr().TTL[0] }
+
+func (rr *OPT) Version() uint8 { return rr.Hdr().TTL[1] }
+
+func (rr *OPT) Do() bool { return false }
+
+func (rr *OPT) Size() uint16 { return binary.BigEndian.Uint16(rr.Hdr().Class[:]) }
 
 // OptionCode returns the option code of the Option.
 func OptionCode(e Option) Code {
@@ -116,6 +124,7 @@ func OptionCode(e Option) Code {
 	return CodeNone
 }
 
+// optionHeader return the code and length as bytes of the EDNS0 Option code.
 func optionHeader(e Option) [4]byte {
 	code := OptionCode(e)
 	return [4]byte{code[0], code[1], byte(e.Len() >> 8), byte(e.Len())}
@@ -127,7 +136,7 @@ type NSID struct {
 }
 
 func (o *NSID) Len() int       { return len(o.ID) }
-func (o *NSID) String() string { return "NSID: " + string(o.ID) }
+func (o *NSID) String() string { return "NSID: " + hex.EncodeToString(o.ID) }
 func (o *NSID) Data() []byte {
 	header := optionHeader(o)
 	return append(header[:], o.ID...)
@@ -140,7 +149,8 @@ type COOKIE struct {
 }
 
 func (o *COOKIE) Len() int       { return len(o.Cookie) }
-func (o *COOKIE) String() string { return "COOKIE: " + string(o.Cookie) }
+func (o *COOKIE) String() string { return "COOKIE: " + hex.EncodeToString(o.Cookie) }
+
 func (o *COOKIE) Data() []byte {
 	header := optionHeader(o)
 	return append(header[:], o.Cookie...)

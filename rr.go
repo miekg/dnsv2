@@ -13,7 +13,8 @@ type (
 	TTL   [4]byte // TTL is the TTL of the RR.
 	Type  [2]byte // Type is the Type of an RR. An RR in this package is implicitaly typed via it's Go type.
 
-	// Header is the header each RR has.
+	// Header is the header each RR has. Some methods are defined to allow easier access to the OPT RR's overloaded
+	// fields.
 	Header struct {
 		Name
 		// Implicit type.
