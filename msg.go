@@ -21,6 +21,9 @@ type (
 	//   |      Additional     | RRs holding additional information
 	//   +---------------------+
 	//
+	// A Msg allows RRs to be added (in order) or retrieved (in order, per section). Only the Msg's buffer is a
+	// public field, all other elements of a Msg are retrieved or set via Methods.
+	//
 	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that
 	// convention. After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
 	// In this package the question section's RR is handled as a normal RR, just without any rdata - as is also done
@@ -42,6 +45,8 @@ type (
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//    |                    ARCOUNT                    |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	//
+	// Again, a MsgHeader doesn't exist, only methods that act up on a byte-slice.
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
