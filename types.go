@@ -87,12 +87,11 @@ func (rr *MX) Write(msg []byte, offset, n int) error {
 	// first two bytes are preference, rest is domain name, with possible compression pointers.
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
-	name, i, err := unpackName(msg, offset+2)
+	name, _, err := unpackName(msg, offset+2)
 	if err != nil {
 		return err
 	}
 	rr.Mx = name
-	println(n, 1+(i-offset))
 	return nil
 }
 

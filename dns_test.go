@@ -2,8 +2,6 @@ package dns
 
 import (
 	"fmt"
-	"net"
-	"testing"
 )
 
 // miek.nl. IN MX request and reply. Both contains OPT RR as well.
@@ -53,124 +51,19 @@ var (
 	}
 )
 
-func TestMsgWww(t *testing.T) {
-	m := &Msg{Buf: www}
-	println(m.String())
-}
-
-func TestMsgQuery(t *testing.T) {
-	m := &Msg{Buf: query}
-	rr, err := m.RR(Ar)
-	if opt, ok := rr.(*OPT); ok {
-		fmt.Printf(";; EDNS: version: %d", opt.Version())
-		fmt.Printf(", flags:; udp: %d; ", opt.Size())
-		fmt.Printf("%s\n", opt.String())
-	} else {
-		fmt.Printf("%s %s\n", rr.Hdr(), rr.String())
-	}
-
-	rr, err = m.RR(Qd)
-	if err != nil {
-		t.Errorf("failed to get RR: %s", err)
-	}
-
-	fmt.Printf("%s %s\n", rr.Hdr(), rr)
-}
-
-func TestMsgReply(t *testing.T) {
+func ExampleMsg_String() {
 	m := &Msg{Buf: reply}
 
 	answer, err := m.RRs(An)
 	if err != nil {
-		t.Errorf(err.Error())
+		return
 	}
 	for _, rr := range answer {
 		fmt.Printf("%s %s\n", rr.Hdr(), rr)
 	}
-
-	rr, err := m.RR(Ar)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if opt, ok := rr.(*OPT); ok {
-		fmt.Printf(";; EDNS: version: %d", opt.Version())
-		fmt.Printf(", flags:; udp: %d; ", opt.Size())
-		fmt.Printf("%s\n", opt)
-		return
-	}
-	fmt.Printf("%s %s\n", rr.Hdr(), rr)
-}
-
-func TestMsgStringReply(t *testing.T) {
-	m := &Msg{Buf: reply}
-	println(m.String())
-}
-
-func TestMsgStringQuery(t *testing.T) {
-	m := &Msg{Buf: query}
-	println(m.String())
-}
-
-func TestSkip(t *testing.T) {
-	m := &Msg{Buf: reply}
-	i := m.skipName(12)
-	if i != 20 {
-		t.Errorf("expected offset after qname %d, got %d", 20, i)
-	}
-	// First RR starts at 25 here.
-	i = m.skipRR(25)
-	if i != 63 {
-		t.Errorf("expected offset after 1st skipRR %d, got %d", 63, i)
-	}
-	i = m.skipRR(i + 1)
-	if i != 79 {
-		t.Errorf("expected offset after 2nd skipRR %d, got %d", 79, i)
-	}
-	i = m.skipRR(i + 1)
-	if i != 113 {
-		t.Errorf("expected offset after 3rd skipRR %d, got %d", 113, i)
-	}
-	i = m.skipRR(i + 1)
-	if i != 136 {
-		t.Errorf("expected offset after 4th skipRR %d, got %d", 136, i)
-	}
-	i = m.skipRR(i + 1)
-	if i != 157 {
-		t.Errorf("expected offset after 5th skipRR %d, got %d", 157, i)
-	}
-	// OPT RR
-	i = m.skipRR(i + 1)
-	if i != 168 {
-		t.Errorf("expected offset after OPT RR %d, got %d", 168, i)
-	}
-	i = m.skipRR(i + 1)
-	if i != 0 {
-		t.Errorf("expected offset after msg length %d, got %d", 0, i)
-	}
-}
-
-// Test function to test how the API feels.
-func TestDNS(t *testing.T) {
-	rr := &A{
-		Header{NewName("example.net."), ClassINET, NewTTL(15)},
-		NewIPv4(net.ParseIP("127.0.0.1")),
-	}
-
-	fmt.Printf("%s %s\n", rr.Hdr().String(), rr.String()) // example.net. 15 IN A	224.0.0.2
-	fmt.Printf("%#v\n", rr.Hdr().Name)                    // 06example03net00
-
-	fmt.Printf("This RR has %d rdatas\n", rr.Len())
-	fmt.Printf("This is the first: %v\n", rr.Data(0))
-
-	wirebuf := Bytes(rr)
-	fmt.Printf("This is its complete wireformat: %+v\n", wirebuf)
-}
-
-func TestEDNS0(t *testing.T) {
-	opt := &OPT{Header: Header{Name: NewName(".")}}
-	nsid := &NSID{ID: []byte("AA")}
-	opt.Options = []Option{nsid}
-
-	wirebuf := Bytes(opt)
-	fmt.Printf("This is its complete wireformat: %+v\n", wirebuf)
+	// Output: miek.nl. 	  900 IN MX	5 alt2.aspmx.l.google.com.
+	// miek.nl. 	  900 IN MX	1 aspmx.l.google.com.
+	// miek.nl. 	  900 IN MX	10 aspmx2.googlemail.com.
+	// miek.nl. 	  900 IN MX	10 aspmx3.googlemail.com.
+	// miek.nl. 	  900 IN MX	5 alt1.aspmx.l.google.com.
 }

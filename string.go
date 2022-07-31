@@ -104,5 +104,5 @@ func (n Name) String() string {
 }
 
 func (h Header) String() string {
-	return h.Name.String() + " " + h.TTL.String() + " " + h.Class.String()
+	return h.Name.String() + " \t" + h.TTL.String() + " " + h.Class.String()
 }
