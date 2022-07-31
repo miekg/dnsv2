@@ -61,6 +61,8 @@ Methods on a `Msg` are:
     this requires updating compression pointers which need to be found?
 * The `Header` doesn't contain the type, as this is encoded in the Go Type of the RR, so printing
     them as strings looks a bit weird (compared to dig).
+* OPT RR's header needs special casing
+* Question "RR" needs special casing because it obvs isn't a real RR either.
 
 ### TODO
 
