@@ -29,8 +29,8 @@ func TestSetRR(t *testing.T) {
 
 	m.SetRR(Qd, rr)
 	m.SetRR(An, rr)
-	//	m.SetRR(Ns, rr)
-	//	m.SetRR(Ar, rr)
+	m.SetRR(Ns, rr)
+	m.SetRR(Ar, rr)
 
 	println(len(m.Buf))
 	println(m.String())

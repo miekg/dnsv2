@@ -83,6 +83,7 @@ func NewMsg(buf ...[]byte) *Msg {
 	if len(buf) > 0 {
 		m.Buf = buf[0]
 	}
+	m.w = 12 // after header, needs buf size of at least this.
 	m.c = compression{}
 	return m
 }
@@ -143,6 +144,7 @@ func (m *Msg) SetRR(s Section, rr RR) error {
 		m.SetCount(Qd, 1)
 		return nil
 	}
+	println("count", c)
 	m.SetCount(s, c+1)
 	m.Bytes(rr)
 	return nil
@@ -151,12 +153,15 @@ func (m *Msg) SetRR(s Section, rr RR) error {
 // RR returns the next RR from the specified section. If none are found, nil is returned. If there is an error, a
 // partial RR may be returned. When first called a message will be walked to find the indices of the sections.
 func (m *Msg) RR(s Section) (RR, error) {
+	println("QD", m.r[Qd])
 	if m.r[Qd] == 0 { // must be 12 after a call to index
 		// what about no qestion section?
 		err := m.index()
 		if err != nil {
+			println(err.Error())
 			return nil, err
 		}
+		fmt.Printf("INDEX %v\n", m.r)
 	}
 
 	i := int(m.r[s])
@@ -179,6 +184,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	i++
 	tpy := Type{m.Buf[i], m.Buf[i+1]}
 	rrfunc, ok := typeToRR[tpy]
+	println(tpy.String())
 	if !ok {
 		rrfunc = func() RR { return new(RFC3597) }
 	}
@@ -366,7 +372,8 @@ func (m *Msg) String() string {
 		b.WriteString(fmt.Sprintf(";; %s SECTION:\n", s))
 		rrs, err := m.RRs(s)
 		if err != nil {
-			return ""
+			println(err.Error())
+			return b.String()
 		}
 		for _, rr := range rrs {
 			if opt, ok := rr.(*OPT); ok {
@@ -424,10 +431,13 @@ making it useless outside of the Msg context.
 */
 func (m *Msg) Bytes(rr RR) []byte {
 	offset := m.w
+	println(m.w)
+	defer func() { println("next", m.w) }()
 
 	compName := m.c.find(rr.Hdr().Name)
 
-	n := copy(m.Buf[m.w:], compName)
+	n := copy(m.Buf[offset:], compName)
+	println("NAME of length:", n)
 	offset += uint16(n)
 
 	m.c.insert(rr.Hdr().Name, offset)
@@ -451,9 +461,9 @@ func (m *Msg) Bytes(rr RR) []byte {
 	j := offset
 	for i := 0; i < rr.Len(); i++ {
 		// for compression I need to knows which rdata of which RR is compressible, finite set, so can be done here
-		n = copy(m.Buf[j+1:], rr.Data(i))
-		j += offset
-		l += offset
+		n := copy(m.Buf[j+1:], rr.Data(i))
+		j += uint16(n)
+		l += uint16(n)
 	}
 	// write rdlength at correct place
 	binary.BigEndian.PutUint16(m.Buf[rdlen+1:], l)
