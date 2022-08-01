@@ -21,8 +21,8 @@ type (
 	//   |      Additional     | RRs holding additional information
 	//   +---------------------+
 	//
-	// A Msg allows RRs to be added (in order) or retrieved (in order, per section). Only the Msg's buffer is a
-	// public field, all other elements of a Msg are retrieved or set via Methods.
+	// A Msg allows RRs to be added (in order) or retrieved (in order, but randmonly per section). Only the Msg's
+	// buffer is a public field, all other elements of a Msg are retrieved or set via Methods.
 	//
 	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that
 	// convention. After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
@@ -50,6 +50,8 @@ type (
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
+		w uint16 // index of last write
+
 		// indices of section starts (0 means no RRs in that section), this is updated as we read from the
 		// message. On every RR read, this advances to the index of the next RR.
 		r [4]uint16
@@ -57,8 +59,9 @@ type (
 		// reader count for each section, updated as we read from the message. Writer count is in the header.
 		count [4]uint16
 
-		// can be filed when indexing? Or remove??
-		compression map[string]int // name to index for the compression pointers
+		// c is used to apply compression to owner names and a few names in rdata of well known
+		// types. The returned uint16 is the target value for the pointer.
+		c compression
 	}
 
 	// Section signifies a message's section. Four sections are defined (in order): Qd, An, Ns, and Ar.
@@ -77,19 +80,18 @@ const (
 // behalf of the caller, it will enlarge a buffer (when given and the need arises).
 func NewMsg(buf ...[]byte) *Msg {
 	m := new(Msg)
-	if len(buf) > 1 {
+	if len(buf) > 0 {
 		m.Buf = buf[0]
 	}
+	m.c = compression{}
 	return m
 }
 
-func (m *Msg) ID() uint16 {
-	return 0
-}
+// ID returns the message's ID.
+func (m *Msg) ID() uint16 { return binary.BigEndian.Uint16(m.Buf[0:]) }
 
-func (m *Msg) SetID(i uint16) {
-
-}
+// SetID sets the message to i.
+func (m *Msg) SetID(i uint16) { binary.BigEndian.PutUint16(m.Buf[0:], i) }
 
 // Rcode is a function
 func (m *Msg) Rcode() {
@@ -97,6 +99,9 @@ func (m *Msg) Rcode() {
 }
 
 func (m *Msg) SetRcode() {}
+
+func (m *Msg) Opcode()    {}
+func (m *Msg) SetOpcode() {}
 
 func (m *Msg) SetCount(s Section, i uint16) {
 	switch s {
@@ -129,16 +134,17 @@ func (m *Msg) Count(s Section) uint16 {
 // to add to a previous section (although technically you can alter the counts to make that happen in specific cases).
 // Any RR can be used to set the question section; it will then just use the name, type and class and ignore the rest.
 func (m *Msg) SetRR(s Section, rr RR) error {
+	c := m.Count(s)
 	if s == Qd {
-		if m.Count(Qd) == 1 {
+		if c == 1 {
 			return fmt.Errorf("error section already contains data")
 		}
-		copy(m.Buf[12+1:], Bytes(rr))
+		m.Bytes(rr)
 		m.SetCount(Qd, 1)
 		return nil
 	}
-	// compression!
-	m.Buf = append(m.Buf, Bytes(rr)...)
+	m.SetCount(s, c+1)
+	m.Bytes(rr)
 	return nil
 }
 
@@ -265,9 +271,10 @@ func (m *Msg) index() error {
 
 // skipName returns the index after the skipped name, so either the 00 label or the index of the pointer value.
 func (m *Msg) skipName(offset int) int {
+	// see Name.Next()
 	i := offset
 	for i < len(m.Buf) {
-		j := uint8(m.Buf[i])
+		j := m.Buf[i]
 		switch {
 		case j == 0:
 			return i
@@ -385,4 +392,73 @@ func (m *Msg) String() string {
 		}
 	}
 	return b.String()
+}
+
+/*
+Bytes converts an RR to the format we can use on the wire. The format is described
+in RFC 1035:
+
+                                    1  1  1  1  1  1
+      0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    |                                               |
+    /                                               /
+    /                      NAME                     /
+    |                                               |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    |                      TYPE                     |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    |                     CLASS                     |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    |                      TTL                      |
+    |                                               |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    |                   RDLENGTH                    |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
+    /                     RDATA                     /
+    /                                               /
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+The wire bytes are directly written into the message. The wiredata is returned, but it may contain compression pointers,
+making it useless outside of the Msg context.
+*/
+func (m *Msg) Bytes(rr RR) []byte {
+	offset := m.w
+
+	compName := m.c.find(rr.Hdr().Name)
+
+	n := copy(m.Buf[m.w:], compName)
+	offset += uint16(n)
+
+	m.c.insert(rr.Hdr().Name, offset)
+
+	m.Buf[offset+0] = RRType(rr)[0]
+	m.Buf[offset+1] = RRType(rr)[1]
+	m.Buf[offset+2] = rr.Hdr().Class[0]
+	m.Buf[offset+3] = rr.Hdr().Class[1]
+	offset += 3
+
+	m.Buf[offset+1] = rr.Hdr().TTL[0]
+	m.Buf[offset+2] = rr.Hdr().TTL[1]
+	m.Buf[offset+3] = rr.Hdr().TTL[2]
+	m.Buf[offset+4] = rr.Hdr().TTL[3]
+	offset += 4
+
+	rdlen := offset // length start
+	offset += 2
+
+	l := uint16(0)
+	j := offset
+	for i := 0; i < rr.Len(); i++ {
+		// for compression I need to knows which rdata of which RR is compressible, finite set, so can be done here
+		n = copy(m.Buf[j+1:], rr.Data(i))
+		j += offset
+		l += offset
+	}
+	// write rdlength at correct place
+	binary.BigEndian.PutUint16(m.Buf[rdlen+1:], l)
+	start := m.w
+	end := j + 1
+	m.w = end
+	return m.Buf[start:end]
 }

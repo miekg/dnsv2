@@ -149,67 +149,6 @@ func RRType(rr RR) Type {
 	return TypeNone
 }
 
-/*
-Bytes converts an RR to the format we can use on the wire. The format is described
-in RFC 1035:
-
-                                    1  1  1  1  1  1
-      0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-    |                                               |
-    /                                               /
-    /                      NAME                     /
-    |                                               |
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-    |                      TYPE                     |
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-    |                     CLASS                     |
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-    |                      TTL                      |
-    |                                               |
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-    |                   RDLENGTH                    |
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
-    /                     RDATA                     /
-    /                                               /
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-*/
-func Bytes(rr RR, rrbuf ...[]byte) []byte {
-	var buf []byte
-	if rrbuf != nil {
-		buf = rrbuf[0]
-	} else {
-		buf = make([]byte, 0, 256)
-	}
-
-	n := copy(buf[0:], rr.Hdr().Name)
-	buf[n+0] = RRType(rr)[0]
-	buf[n+1] = RRType(rr)[1]
-	buf[n+2] = rr.Hdr().Class[0]
-	buf[n+3] = rr.Hdr().Class[1]
-	n += 3
-
-	buf[n+1] = rr.Hdr().TTL[0]
-	buf[n+2] = rr.Hdr().TTL[1]
-	buf[n+3] = rr.Hdr().TTL[2]
-	buf[n+4] = rr.Hdr().TTL[3]
-	n += 4
-
-	rdlen := n // length start
-	n += 2
-
-	l := 0
-	j := n
-	for i := 0; i < rr.Len(); i++ {
-		// for compression I need to knows which rdata of which RR is compressible, finite set, so can be done here
-		n = copy(buf[j+1:], rr.Data(i))
-		j += n
-		l += n
-	}
-	binary.BigEndian.PutUint16(buf[rdlen+1:], uint16(l))
-	return buf[:j+1]
-}
-
 var typeToRR = map[Type]func() RR{
 	TypeA:   func() RR { return new(A) },
 	TypeMX:  func() RR { return new(MX) },

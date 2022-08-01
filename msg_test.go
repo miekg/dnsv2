@@ -1,10 +1,11 @@
 package dns
 
 import (
+	"net"
 	"testing"
 )
 
-func TestQdDepletion(t *testing.T) {
+func TestRRQdDepletion(t *testing.T) {
 	m := &Msg{Buf: query}
 
 	rr, err := m.RR(Qd)
@@ -16,6 +17,23 @@ func TestQdDepletion(t *testing.T) {
 	if rr != nil {
 		t.Errorf("expected RR to be nil, but got %s", rr)
 	}
+}
+
+func TestSetRR(t *testing.T) {
+	m := NewMsg(make([]byte, 256))
+
+	rr := &A{
+		Header{NewName("example.net."), ClassINET, NewTTL(15)},
+		NewIPv4(net.ParseIP("127.0.0.1")),
+	}
+
+	m.SetRR(Qd, rr)
+	m.SetRR(An, rr)
+	//	m.SetRR(Ns, rr)
+	//	m.SetRR(Ar, rr)
+
+	println(len(m.Buf))
+	println(m.String())
 }
 
 func TestSkip(t *testing.T) {

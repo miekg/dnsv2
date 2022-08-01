@@ -51,6 +51,9 @@ Reading from a `Msg` can be done via any section in any order, from within a sec
 in-order. Writing a `Msg` can only be done in the order: Qd, An, Ns, and Ar, where empty sections
 can be skipped.
 
+RRs in a `Msg` contain compression pointers, anything lifted out of a `Msg` will not contain
+compression pointers. I.e. a user should not care about this.
+
 Methods on a `Msg` are:
 
 * `RR(s Section) RR` which returns the _next_ RR from the section or `nil` when none found. As said
@@ -80,3 +83,10 @@ without bloating the package.
 
 Maybe this should serve as a lower level package, `dnsrr` and build a nicer API on top? I.e should
 server and client be here or in a `dnsnet` pkg?
+
+Decide where to use `int` and where to use `uint16`. Uint16 is more natural as length and index
+thingy, but `int` is more used in std go stuff (ie. `len` returns an int).
+
+Length check on domain names (<256) octect, 63 label length.
+
+Use Octets every where instead of bytes - give that old school feel.
