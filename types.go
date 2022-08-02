@@ -15,10 +15,11 @@ var (
 	classANY  = Class{0, 255}
 
 	// Supported RR Types.
-	TypeNone = Type{0, 0}
-	TypeA    = Type{0, 1}
-	TypeMX   = Type{0, 15}
-	TypeOPT  = Type{0, 41}
+	TypeNone  = Type{0, 0}
+	TypeA     = Type{0, 1}
+	TypeCNAME = Type{0, 5}
+	TypeMX    = Type{0, 15}
+	TypeOPT   = Type{0, 41}
 )
 
 // A RR. See RFC 1035.
@@ -92,12 +93,31 @@ func (rr *MX) Write(msg []byte, offset, n int) error {
 	return nil
 }
 
-/*
+// CNAME RR. See RFC 1035.
 type CNAME struct {
-	Hdr    Header
+	Header
 	Target Name
 }
-*/
+
+func (rr *CNAME) Hdr() *Header   { return &rr.Header }
+func (rr *CNAME) Len() int       { return 1 }
+func (rr *CNAME) String() string { return TypeToString[TypeCNAME] + "\t" + rr.Target.String() }
+
+func (rr *CNAME) Data(i int) []byte {
+	if i != 1 {
+		return nil
+	}
+	return rr.Target
+}
+
+func (rr *CNAME) Write(msg []byte, offset, n int) error {
+	name, _, err := unpackName(msg, offset)
+	if err != nil {
+		return err
+	}
+	rr.Target = name
+	return nil
+}
 
 // Unknown represents an unknown/generic RR. See RFC 3597.
 type Unknown struct {
@@ -134,9 +154,12 @@ func (rr *Unknown) Write(msg []byte, offset, n int) error {
 
 // RRType returns the type of the RR.
 func RRType(rr RR) Type {
+	// can be generated.
 	switch rr.(type) {
 	case *A:
 		return TypeA
+	case *CNAME:
+		return TypeCNAME
 	case *MX:
 		return TypeMX
 	case *OPT:
@@ -146,19 +169,24 @@ func RRType(rr RR) Type {
 }
 
 var typeToRR = map[Type]func() RR{
-	TypeA:   func() RR { return new(A) },
-	TypeMX:  func() RR { return new(MX) },
-	TypeOPT: func() RR { return new(OPT) },
+	// can be genarated.
+	TypeA:     func() RR { return new(A) },
+	TypeCNAME: func() RR { return new(CNAME) },
+	TypeMX:    func() RR { return new(MX) },
+	TypeOPT:   func() RR { return new(OPT) },
 }
 
 var TypeToString = map[Type]string{
-	TypeA:   "A",
-	TypeMX:  "MX",
-	TypeOPT: "OPT",
+	// can be generated.
+	TypeA:     "A",
+	TypeCNAME: "CNAME",
+	TypeMX:    "MX",
+	TypeOPT:   "OPT",
 }
 
 var (
 	_ RR = new(A)
 	_ RR = new(MX)
 	_ RR = new(OPT)
+	_ RR = new(CNAME)
 )

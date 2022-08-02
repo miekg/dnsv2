@@ -98,3 +98,5 @@ All public APIs use `int`, internally most things are `uint16`.
     creation, as you can just take a Bytes() from the header as well. Bytes is a bad name.
 
 * Make RRSet a first class citizen, i.e get those from a message, mem friendly struct?
+
+* Implement compression for CNAME, MX, NS, PTR, and SOA.
