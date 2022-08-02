@@ -1,7 +1,5 @@
 package dns
 
-import "encoding/binary"
-
 // compression is used to apply compression to owner names and a few names in rdata of well known types. The returned
 // uint16 is the target value for the pointer.
 type compression map[string]uint16
@@ -12,31 +10,28 @@ func (c compression) insert(n Name, offset uint16) {
 		if len(n[i:]) == 1 {
 			return
 		}
-		_, ok := c[string(n[i:])]
+
+		k := string(n[i:])
+		_, ok := c[k]
 		if ok {
 			continue
 		}
-		println("ADDING", string(n[i:]))
-		c[string(n[i:])] = uint16(offset + uint16(i))
+		c[k] = uint16(offset + uint16(i))
 	}
 }
 
-// find finds the best compression pointer for name, the returned buffer is the truncated name buffer with compression
-// pointers applied.
-func (c compression) find(n Name) Name {
-	pointer, ok := uint16(0), false
+// finds finds the best (longest possible compressed name) compression pointer for name. The returned integers
+// are the offset for where to set the compression pointer in the name and the uint16 value of the pointer.
+// A zero, zero return signals nothing needs to be done.
+func (c compression) find(n Name) (offset, pointer uint16) {
 	for i, stop := 0, false; !stop; i, stop = n.Next(i) {
 		if len(n[i:]) == 1 {
-			return n
+			return 0, 0
 		}
-		if pointer, ok = c[string(n[i:])]; ok {
-			println("pointer found", pointer, string(n[i:]))
-			// i and i+1 can be set to the pointer value.
-			binary.BigEndian.PutUint16(n[i:], uint16(pointer^0xC000))
-			println("new name", string(n[:i+2]))
-			return Name(n[:i+2])
+		if pointer, ok := c[string(n[i:])]; ok {
+			return uint16(i), pointer ^ 0xC000
 		}
 	}
 	// not reached
-	return n
+	return 0, 0
 }

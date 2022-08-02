@@ -85,7 +85,7 @@ func (rr *OPT) Write(msg []byte, offset, n int) error {
 		code := Code{msg[offset+i], msg[offset+i+1]}
 		optfunc, ok := codeToOption[code]
 		if !ok {
-			optfunc = func() Option { return new(EDNS0RFC3597) }
+			optfunc = func() Option { return new(UnknownEDNS0) }
 		}
 		i += 2
 		rdl := int(binary.BigEndian.Uint16(msg[offset+i:]))
