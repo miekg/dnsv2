@@ -66,6 +66,9 @@ type (
 
 	// Section signifies a message's section. Four sections are defined (in order): Qd, An, Ns, and Ar.
 	Section int
+
+	// Flag is a (boolean) message header flag.
+	Flag int
 )
 
 // These are the sections in a Msg.
@@ -75,6 +78,38 @@ const (
 	Ns                // Ns (count)
 	Ar                // Additional Resource (count)
 )
+
+// These are the flags currently defined for a DNS message
+const (
+	QR Flag = iota // Query Response
+	AA             // Authoritative Answer
+	TC             // TrunCated
+	RD             // Recursion Desired
+	RA             // Recussion Available
+)
+
+// Flag returns the value of flag f.
+func (m *Msg) Flag(f Flag) bool {
+	switch f {
+	case QR:
+	case AA:
+	case TC:
+	case RD:
+	case RA:
+	}
+	return false
+}
+
+// SetFlag sets the flag f to value v.
+func (m *Msg) SetFlag(f Flag, v bool) {
+	switch f {
+	case QR:
+	case AA:
+	case TC:
+	case RD:
+	case RA:
+	}
+}
 
 // NewMsg returns a pointer to a new Msg. Optionally a buffer can be given here, NewMsg will not allocate a buffer on
 // behalf of the caller, it will enlarge a buffer (when given and the need arises).
