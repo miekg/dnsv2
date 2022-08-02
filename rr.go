@@ -9,12 +9,11 @@ import (
 
 type (
 	Name  []byte  // Name is the owner name of the RR.
-	Class [2]byte // Class the class of the RR.
-	Type  [2]byte // Type is the Type of an RR. An RR in this package is implicitaly typed via it's Go type.
-	TTL   [4]byte // TTL is the TTL of the RR.
+	Class [2]byte // Class is the class of the RR. Usually every RR has IN as its class.
+	Type  [2]byte // Type is the Type of an RR. An RR in this package is implicitly typed via it's Go type.
+	TTL   [4]byte // TTL is the time to live of the RR.
 
-	// Header is the header each RR has. Some methods are defined to allow easier access to the OPT RR's overloaded
-	// fields.
+	// Header is the header each RR has.
 	Header struct {
 		Name
 		// Implicit type.
@@ -28,7 +27,7 @@ type (
 		// Hdr returns a pointer to the header of the RR.
 		Hdr() *Header
 		// Len returns the number of rdata elements the RR has. For RRs with a dynamic number of elements (i.e.
-		// OPT, and others), this is not a fixed number.
+		// OPT, and others), this is not a constant number.
 		Len() int
 		// Data returns the rdata at position i (zero based). If there is no data at that position nil is
 		// returned. The buffer returned is in wire format, i.e. if some data requires a length, that length is
@@ -41,25 +40,6 @@ type (
 		Write(msg []byte, offset, n int) error
 	}
 )
-
-// Next returns the index of the next label of n. The returned bool indicates the end as been reached.
-// The last index returned is the positon of the root "label".
-func (n Name) Next(i int) (int, bool) {
-	if i >= len(n) {
-		return i, true
-	}
-	// See SkipName as they look too similar.
-	j := n[i]
-	switch {
-	case j == 0:
-		return i, true
-	case j&0xC0 == 0xC0:
-		// this should not happen here, with a parsed Name...
-		// next octet contains (rest of) the pointer value.
-		return i + 1, true
-	}
-	return i + int(j) + 1, false
-}
 
 // Mostly here, to prevent users from accessing the dnswire pkg directly. Not sure if this is a good idea.
 // Do we need this for every Rdata type? NewIPv6, uint16s ? Etc etc??

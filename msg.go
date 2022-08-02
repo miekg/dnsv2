@@ -12,17 +12,17 @@ type (
 	//   +---------------------+
 	//   |        Header       |
 	//   +---------------------+
-	//   |       Question      | the question for the name server
+	//   |       Question      | the question for the name server, [Qd].
 	//   +---------------------+
-	//   |        Answer       | RRs answering the question
+	//   |        Answer       | RRs answering the question, [An].
 	//   +---------------------+
-	//   |      Authority      | RRs pointing toward an authority
+	//   |      Authority      | RRs pointing toward an authority, [Ns].
 	//   +---------------------+
-	//   |      Additional     | RRs holding additional information
+	//   |      Additional     | RRs holding additional information, [Ar].
 	//   +---------------------+
 	//
-	// A Msg allows RRs to be added (in order) or retrieved (in order, but randmonly per section). Only the Msg's
-	// buffer is a public field, all other elements of a Msg are retrieved or set via Methods.
+	// A Msg allows RRs to be added (in order) or retrieved (in order per section, but each section can accessed in
+	// any order).
 	//
 	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that
 	// convention. After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
@@ -46,7 +46,7 @@ type (
 	//    |                    ARCOUNT                    |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//
-	// Again, a MsgHeader doesn't exist, only methods that act up on a byte-slice.
+	// If the buffer in Msg is too small it will be resized and creating a message.
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
@@ -131,36 +131,31 @@ func (m *Msg) Count(s Section) uint16 {
 	return 0
 }
 
-// SetRR adds RR's wireformat to the msg m in the specified section. As we build the message RR by RR, you can't go back
-// to add to a previous section (although technically you can alter the counts to make that happen in specific cases).
-// Any RR can be used to set the question section; it will then just use the name, type and class and ignore the rest.
+// SetRR adds rr's wireformat to the message m in the specified section. Any RR can be used to set the question section;
+// it will then just use the name, type and class and ignore the
 func (m *Msg) SetRR(s Section, rr RR) error {
 	c := m.Count(s)
 	if s == Qd {
 		if c == 1 {
-			return fmt.Errorf("error section already contains data")
+			return &WireError{fmt.Errorf("question section occupied, no room for %s", RRType(rr))}
 		}
-		m.bytes(rr)
+		m.bytes(s, rr)
 		m.SetCount(Qd, 1)
 		return nil
 	}
 	m.SetCount(s, c+1)
-	m.bytes(rr)
+	m.bytes(s, rr)
 	return nil
 }
 
 // RR returns the next RR from the specified section. If none are found, nil is returned. If there is an error, a
 // partial RR may be returned. When first called a message will be walked to find the indices of the sections.
 func (m *Msg) RR(s Section) (RR, error) {
-	println("QD OFFSET", m.r[Qd])
 	if m.r[Qd] == 0 { // must be 12 after a call to index
-		// what about no qestion section?
 		err := m.index()
 		if err != nil {
-			println("INDEX ERROR", err.Error())
 			return nil, err
 		}
-		fmt.Printf("INDEX %v\n", m.r)
 	}
 
 	i := int(m.r[s])
@@ -181,7 +176,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 	i++
 	tpy := Type{m.Buf[i], m.Buf[i+1]}
 	rrfunc, ok := typeToRR[tpy]
-	println(tpy.String())
 	if !ok {
 		rrfunc = func() RR { return new(Unknown) }
 	}
@@ -238,7 +232,7 @@ func (m *Msg) index() error {
 	offset := 12
 	m.r[Qd] = 12
 	if offset = m.skipName(offset); offset == 0 {
-		return fmt.Errorf("QD buffer overflow")
+		return &WireError{fmt.Errorf("buffer size to small, no owner name found in %s section", Qd.String())}
 	}
 	offset += 5 // 4 to skip TYPE, CLASS, +1 to land on next RR
 	// Answer
@@ -248,7 +242,7 @@ func (m *Msg) index() error {
 		for i := uint16(0); i < c; i++ {
 			offset = m.skipRR(offset)
 			if offset == 0 {
-				return fmt.Errorf("AN buf overflow")
+				return &WireError{fmt.Errorf("buffer size to small, no RR found in %s section", An.String())}
 			}
 			offset++ // start of next RR
 		}
@@ -260,7 +254,7 @@ func (m *Msg) index() error {
 		for i := uint16(0); i < c; i++ {
 			offset = m.skipRR(offset)
 			if offset == 0 {
-				return fmt.Errorf("NS buf overflow")
+				return &WireError{fmt.Errorf("buffer size to small, no RR found in %s section", Ns.String())}
 			}
 			offset++ // start of next RR
 		}
@@ -303,12 +297,10 @@ func (m *Msg) skipRR(offset int) int {
 	i++
 	// for normal RR, we have type, class and TT 2, 2, 4), then we find rdlength (2)
 	i += 8
-	println(i, len(m.Buf))
 	if i > len(m.Buf) {
 		return 0
 	}
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
-	println(m.Buf[i], m.Buf[i+1])
 	i += 1 + rdl
 	if i >= len(m.Buf) {
 		return 0
@@ -341,7 +333,7 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 		case j&0xC0 == 0xC0:
 			// save position, as we are here in the message, regardless of how maby pointers we follow.
 			if ptr++; ptr > 10 {
-				return nil, 0, fmt.Errorf("too many compression pointers")
+				return nil, 0, &WireError{fmt.Errorf("too many (>10) compression pointers")}
 			}
 			j1 := uint8(msg[i+1])
 			i = int(j^0xC0) | int(j1)
@@ -351,7 +343,7 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 		}
 	}
 	if len(buf) == 0 {
-		return nil, offset, fmt.Errorf("nothing found")
+		return nil, offset, &WireError{fmt.Errorf("no owner name found at offset %d", offset)}
 	}
 	return nil, offset, nil
 }
@@ -372,10 +364,7 @@ func (m *Msg) String() string {
 		}
 		b.WriteString(fmt.Sprintf(";; %s SECTION:\n", s))
 		rrs, err := m.RRs(s)
-		println("RRS", len(rrs))
 		if err != nil {
-			println(s.String(), err.Error())
-			println("HALLO")
 			return b.String()
 		}
 		for _, rr := range rrs {
@@ -398,6 +387,9 @@ func (m *Msg) String() string {
 			b.WriteString(rr.Hdr().String())
 			b.WriteString("\t")
 			b.WriteString(rr.String())
+			b.WriteString("\n")
+		}
+		if len(rrs) > 0 && s != Ar {
 			b.WriteString("\n")
 		}
 	}
@@ -428,23 +420,27 @@ bytes converts an RR to the format we can use on the wire. The format is describ
     /                                               /
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-The wire bytes are directly written into the message. The wiredata is returned, but it may contain compression pointers,
-making it useless outside of the Msg's context.
+The wire bytes are directly written into the message. If the buffer is too small it will be resized to fit the RR.
 */
-func (m *Msg) bytes(rr RR) []byte {
-	// does this need exporting???
+func (m *Msg) bytes(s Section, rr RR) {
 	offset := m.w
 
 	i, pointer := m.c.find(rr.Hdr().Name)
-	println(i, pointer)
 	if pointer == 0 {
+		if len(rr.Hdr().Name)+int(offset) >= len(m.Buf) {
+			m.Buf = append(m.Buf, make([]byte, len(rr.Hdr().Name)+10)...) // + 10 for everything up to rdata
+		}
+
 		n := copy(m.Buf[offset:], rr.Hdr().Name)
 		offset += uint16(n)
 	} else {
+		if int(i)+2+int(offset) >= len(m.Buf) { // +2 compression pointer
+			m.Buf = append(m.Buf, make([]byte, i+2+10)...) // + 10 for everything up to rdata
+		}
+
 		n := copy(m.Buf[offset:], rr.Hdr().Name[:i])
 		offset += uint16(n)
 		binary.BigEndian.PutUint16(m.Buf[offset+1:], pointer)
-		println(m.Buf[offset+1], m.Buf[offset+2])
 		offset += 3
 	}
 
@@ -456,6 +452,12 @@ func (m *Msg) bytes(rr RR) []byte {
 	m.Buf[offset+2] = rr.Hdr().Class[0]
 	m.Buf[offset+3] = rr.Hdr().Class[1]
 	offset += 3
+
+	// return here if question section
+	if s == Qd {
+		m.w = offset
+		return
+	}
 
 	m.Buf[offset+1] = rr.Hdr().TTL[0]
 	m.Buf[offset+2] = rr.Hdr().TTL[1]
@@ -469,6 +471,11 @@ func (m *Msg) bytes(rr RR) []byte {
 	l := uint16(0)
 	j := offset
 	for i := 0; i < rr.Len(); i++ {
+		data := rr.Data(i)
+		if len(data)+int(j)+1 >= len(m.Buf) {
+			m.Buf = append(m.Buf, make([]byte, len(data))...)
+		}
+
 		// for compression I need to knows which rdata of which RR is compressible, finite set, so can be done here
 		n := copy(m.Buf[j+1:], rr.Data(i))
 		j += uint16(n)
@@ -476,9 +483,8 @@ func (m *Msg) bytes(rr RR) []byte {
 	}
 	// write rdlength at correct place
 	binary.BigEndian.PutUint16(m.Buf[rdlen+1:], l)
-	start := m.w
-	end := j
-	m.w = end
 
-	return m.Buf[start:end]
+	m.w = j
+
+	return
 }

@@ -43,10 +43,32 @@ func TestBytes(t *testing.T) {
 func TestNameNext(t *testing.T) {
 	n := NewName("www.a.miek.nl.")
 
-	for i, stop := 0, false; !stop; i, stop = n.Next(i) {
+	for j, i, stop := 0, 0, false; !stop; i, stop = n.Next(i) {
 		if len(n[i:]) == 1 {
 			break
 		}
-		println(stop, i, Name(n[i:]).GoString())
+		name := Name(n[i:]).GoString()
+		switch j {
+		case 0:
+			if x := "03www01a04miek02nl00"; name != x {
+				t.Errorf("expected %s, got %s", x, name)
+			}
+		case 1:
+			if x := "01a04miek02nl00"; name != x {
+				t.Errorf("expected %s, got %s", x, name)
+			}
+		case 2:
+			if x := "04miek02nl00"; name != x {
+				t.Errorf("expected %s, got %s", x, name)
+			}
+		case 3:
+			if x := "02nl00"; name != x {
+				t.Errorf("expected %s, got %s", x, name)
+			}
+		default:
+			t.Fatalf("expected %d iterations, got %d", 4, j)
+
+		}
+		j++
 	}
 }

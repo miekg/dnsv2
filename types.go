@@ -8,8 +8,6 @@ import (
 	"strconv"
 )
 
-// worth doing this and not just uint16?
-
 var (
 	// Valid Classes.
 	ClassNONE = Class{0, 254}
@@ -44,15 +42,15 @@ func (rr *A) Data(i int) []byte {
 
 func (rr *A) Write(msg []byte, offset, n int) error {
 	if offset+n > len(msg) {
-		return fmt.Errorf("no space")
+		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
+	}
+	if n != 4 {
+		return &WireError{fmt.Errorf("rdata length for %s, must be %d, got %d", RRType(rr), 4, n)}
 	}
 	rr.A[0] = msg[offset]
 	rr.A[1] = msg[offset+1]
 	rr.A[2] = msg[offset+2]
 	rr.A[3] = msg[offset+3]
-	if n != 4 {
-		return fmt.Errorf("bla")
-	}
 	return nil
 }
 
@@ -84,6 +82,7 @@ func (rr *MX) Data(i int) []byte {
 }
 
 func (rr *MX) Write(msg []byte, offset, n int) error {
+	// TODO: WireErrors here.
 	// first two bytes are preference, rest is domain name, with possible compression pointers.
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
@@ -117,7 +116,6 @@ func (rr *Unknown) String() string {
 	if l == 0 {
 		return "TYPE" + strconv.FormatUint(uint64(t), 10) + "\t\\# 0"
 	}
-	// TODO format TYPEXX better
 	return "TYPE" + strconv.FormatUint(uint64(t), 10) + "\t\\# " + strconv.FormatUint(uint64(l), 10) + " " + hex.EncodeToString(rr.Unknown)
 }
 
@@ -130,7 +128,7 @@ func (rr *Unknown) Data(i int) []byte {
 
 func (rr *Unknown) Write(msg []byte, offset, n int) error {
 	if offset+n > len(msg) {
-		return fmt.Errorf("no space for Unknown")
+		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.Unknown = msg[offset : offset+n]
 	return nil

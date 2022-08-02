@@ -1,7 +1,6 @@
 package dns
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
@@ -20,24 +19,22 @@ func TestRRQdDepletion(t *testing.T) {
 	}
 }
 
-func TestSetRR(t *testing.T) {
-	m := NewMsg(make([]byte, 256))
-
+func TestSetRRBufferResizing(t *testing.T) {
+	// this should not crash, as the buffer is resized.
+	m := NewMsg(make([]byte, 40))
 	rr := &A{
 		Header{NewName("example.net."), ClassINET, NewTTL(15)},
 		NewIPv4(net.ParseIP("127.0.0.1")),
 	}
 
 	m.SetRR(Qd, rr)
-	fmt.Printf("1 %d %v\n", m.w, m.Buf)
 	m.SetRR(An, rr)
-	fmt.Printf("2 %d %v\n", m.w, m.Buf)
 	m.SetRR(Ns, rr)
-	fmt.Printf("3 %d %v\n", m.w, m.Buf)
 	m.SetRR(Ar, rr)
-	fmt.Printf("4 %d %v\n", m.w, m.Buf)
+}
 
-	println(m.String())
+func TestSetRROrdering(t *testing.T) {
+	// test ordering of settings RRs.
 }
 
 func TestSkip(t *testing.T) {

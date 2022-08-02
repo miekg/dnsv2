@@ -20,9 +20,9 @@ func (c compression) insert(n Name, offset uint16) {
 	}
 }
 
-// finds finds the best (longest possible compressed name) compression pointer for name. The returned integers
-// are the offset for where to set the compression pointer in the name and the uint16 value of the pointer.
-// A zero, zero return signals nothing needs to be done.
+// finds finds the best (longest possible compressed name) compression pointer for n. The returned integers are the
+// offset where to set the compression pointer in the name and the uint16 value of the pointer. When nothing has been
+// found a 0 pointer will be returned (which is never valid in the DNS).
 func (c compression) find(n Name) (offset, pointer uint16) {
 	for i, stop := 0, false; !stop; i, stop = n.Next(i) {
 		if len(n[i:]) == 1 {
