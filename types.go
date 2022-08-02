@@ -82,8 +82,6 @@ func (rr *MX) Data(i int) []byte {
 }
 
 func (rr *MX) Write(msg []byte, offset, n int) error {
-	// TODO: WireErrors here.
-	// first two bytes are preference, rest is domain name, with possible compression pointers.
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
 	name, _, err := unpackName(msg, offset+2)

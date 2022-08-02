@@ -209,8 +209,6 @@ func (m *Msg) RR(s Section) (RR, error) {
 	if err := rr.Write(m.Buf, i, rdl); err != nil {
 		return rr, err
 	}
-	// check rdl with returned bytes written.
-	// lala overflow - or make ints in Msg as well?
 	m.r[s] = uint16(i + rdl)
 	m.count[s]++
 	return rr, nil

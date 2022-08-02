@@ -17,6 +17,7 @@ DNS compression is always done. Making this optional and a user knob is a mistak
 * EDNS0 is implemented.
 * Unknown RRs are implemented.
 * Unknown EDNS0 options (not an official thing) are implemented.
+* Message creating and parsing works with default compression.
 
 ## Memory Model
 
@@ -64,6 +65,8 @@ Methods on a `Msg` are:
 * `SetRRs(s Section, rs []RR)` sets an entire section.
 
 All RR types are in upper-case, except 'Unknown' as that is the odd one out. UnknownEDNS0 also exist.
+
+All public APIs use `int`, internally most things are `uint16`.
 
 ### Questionable things
 
