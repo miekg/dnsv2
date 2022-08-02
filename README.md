@@ -63,6 +63,8 @@ Methods on a `Msg` are:
 * `RRs(s Section) []RR` returns all RRs from a specific section.
 * `SetRRs(s Section, rs []RR)` sets an entire section.
 
+All RR types are in upper-case, except 'Unknown' as that is the odd one out. UnknownEDNS0 also exist.
+
 ### Questionable things
 
 * Doing `[2]byte{x, y}` instead of a uint16 for `Class` and `Type`?
@@ -78,15 +80,20 @@ Methods on a `Msg` are:
 
 ### TODO
 
-Label manipulation functions still need to be defined, and seeing what other things might be helpful
-without bloating the package.
+* Label manipulation functions still need to be defined, and seeing what other things might be helpful
+    without bloating the package. Name.Next() is a first of these.
 
-Maybe this should serve as a lower level package, `dnsrr` and build a nicer API on top? I.e should
-server and client be here or in a `dnsnet` pkg?
+* Maybe this should serve as a lower level package, `dnsrr` and build a nicer API on top? I.e should
+    server and client be here or in a `dnsnet` pkg?
 
-Decide where to use `int` and where to use `uint16`. Uint16 is more natural as length and index
-thingy, but `int` is more used in std go stuff (ie. `len` returns an int).
+* Decide where to use `int` and where to use `uint16`. Uint16 is more natural as length and index
+    thingy, but `int` is more used in std go stuff (ie. `len` returns an int).
 
-Length check on domain names (<256) octect, 63 label length.
+* Length check on domain names (<256) octect, 63 label length.
 
-Use Octets every where instead of bytes - give that old school feel.
+* Use Octets as a name every where instead of bytes - give that old school feel?
+
+* Make Header also implement the RR interface, so it's also an RR? This would simplify the Msg
+    creation, as you can just take a Bytes() from the header as well. Bytes is a bad name.
+
+* Make RRSet a first class citizen, i.e get those from a message, mem friendly struct?

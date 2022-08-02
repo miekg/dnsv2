@@ -42,8 +42,7 @@ var (
 )
 
 /*
-OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
-Each option is encoded as:
+OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. Each option is encoded as:
 
                +0 (MSB)                            +1 (LSB)
       +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
@@ -129,26 +128,25 @@ func optionHeader(e Option) [4]byte {
 	return [4]byte{code[0], code[1], byte(e.Len() >> 8), byte(e.Len())}
 }
 
-// EDNS0RFC3597 is an unknown EDNS0 Option. Similar in style to RFC 3597 handling.
-// The name is a bit unwieldy, but end-users should not often use this.
-type EDNS0RFC3597 struct {
+// UnknownEDNS0 is an unknown EDNS0 Option. Similar in style to RFC 3597 handling.
+type UnknownEDNS0 struct {
 	Code           // Code holds the option code number of the unknown option code we're holding.
 	Unknown []byte // Data as-is.
 }
 
-func (o *EDNS0RFC3597) Len() int { return len(o.Unknown) }
+func (o *UnknownEDNS0) Len() int { return len(o.Unknown) }
 
-func (o *EDNS0RFC3597) String() string {
+func (o *UnknownEDNS0) String() string {
 	c := binary.BigEndian.Uint16(o.Code[:])
 	l := hex.EncodedLen(len(o.Unknown))
 	return "CODE" + strconv.FormatUint(uint64(c), 10) + "\t\\# " + strconv.FormatUint(uint64(l), 10) + " " + hex.EncodeToString(o.Unknown)
 }
 
-func (o *EDNS0RFC3597) Data() []byte {
+func (o *UnknownEDNS0) Data() []byte {
 	header := optionHeader(o)
 	return append(header[:], o.Unknown...)
 }
-func (o *EDNS0RFC3597) Write(buf []byte) error { o.Unknown = buf; return nil }
+func (o *UnknownEDNS0) Write(buf []byte) error { o.Unknown = buf; return nil }
 
 // NSID Option.
 type NSID struct {

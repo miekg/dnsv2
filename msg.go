@@ -402,8 +402,7 @@ func (m *Msg) String() string {
 }
 
 /*
-Bytes converts an RR to the format we can use on the wire. The format is described
-in RFC 1035:
+Bytes converts an RR to the format we can use on the wire. The format is described in RFC 1035:
 
                                     1  1  1  1  1  1
       0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -427,7 +426,7 @@ in RFC 1035:
     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 The wire bytes are directly written into the message. The wiredata is returned, but it may contain compression pointers,
-making it useless outside of the Msg context.
+making it useless outside of the Msg's context.
 */
 func (m *Msg) Bytes(rr RR) []byte {
 	offset := m.w

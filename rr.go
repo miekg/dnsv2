@@ -10,8 +10,8 @@ import (
 type (
 	Name  []byte  // Name is the owner name of the RR.
 	Class [2]byte // Class the class of the RR.
-	TTL   [4]byte // TTL is the TTL of the RR.
 	Type  [2]byte // Type is the Type of an RR. An RR in this package is implicitaly typed via it's Go type.
+	TTL   [4]byte // TTL is the TTL of the RR.
 
 	// Header is the header each RR has. Some methods are defined to allow easier access to the OPT RR's overloaded
 	// fields.
@@ -27,7 +27,8 @@ type (
 	RR interface {
 		// Hdr returns a pointer to the header of the RR.
 		Hdr() *Header
-		// Len returns the number of rdata elements the RR has. Only defined for fully parsed RRs.
+		// Len returns the number of rdata elements the RR has. For RRs with a dynamic number of elements (i.e.
+		// OPT, and others), this is not a fixed number.
 		Len() int
 		// Data returns the rdata at position i (zero based). If there is no data at that position nil is
 		// returned. The buffer returned is in wire format, i.e. if some data requires a length, that length is

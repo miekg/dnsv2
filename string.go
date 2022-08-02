@@ -103,6 +103,6 @@ func (n Name) String() string {
 	return b.String()
 }
 
-func (h Header) String() string {
+func (h *Header) String() string {
 	return h.Name.String() + " \t" + h.TTL.String() + " " + h.Class.String()
 }

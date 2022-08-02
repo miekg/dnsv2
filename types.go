@@ -102,16 +102,16 @@ type CNAME struct {
 }
 */
 
-// RFC3597 represents an unknown/generic RR. See RFC 3597.
-type RFC3597 struct {
+// Unknown represents an unknown/generic RR. See RFC 3597.
+type Unknown struct {
 	Header
 	Type           // Type holds the type number of the unknown type we're holding.
 	Unknown []byte // Data is as-is.
 }
 
-func (rr *RFC3597) Hdr() *Header { return &rr.Header }
-func (rr *RFC3597) Len() int     { return 1 }
-func (rr *RFC3597) String() string {
+func (rr *Unknown) Hdr() *Header { return &rr.Header }
+func (rr *Unknown) Len() int     { return 1 }
+func (rr *Unknown) String() string {
 	t := binary.BigEndian.Uint16(rr.Type[:])
 	l := len(rr.Unknown)
 	if l == 0 {
@@ -121,16 +121,16 @@ func (rr *RFC3597) String() string {
 	return "TYPE" + strconv.FormatUint(uint64(t), 10) + "\t\\# " + strconv.FormatUint(uint64(l), 10) + " " + hex.EncodeToString(rr.Unknown)
 }
 
-func (rr *RFC3597) Data(i int) []byte {
+func (rr *Unknown) Data(i int) []byte {
 	if i != 1 {
 		return nil
 	}
 	return rr.Unknown
 }
 
-func (rr *RFC3597) Write(msg []byte, offset, n int) error {
+func (rr *Unknown) Write(msg []byte, offset, n int) error {
 	if offset+n > len(msg) {
-		return fmt.Errorf("no space for RFC3597")
+		return fmt.Errorf("no space for Unknown")
 	}
 	rr.Unknown = msg[offset : offset+n]
 	return nil
