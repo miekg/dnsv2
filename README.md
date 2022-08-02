@@ -73,10 +73,8 @@ All RR types are in upper-case, except 'Unknown' as that is the odd one out. Unk
     this requires updating compression pointers which need to be found?
 * The `Header` doesn't contain the type, as this is encoded in the Go Type of the RR, so printing
     them as strings looks a bit weird (compared to dig).
-* OPT RR's header needs special casing
+* OPT RR's header needs special some special functions, make them work on all RRs??
 * Question "RR" needs special casing because it obvs isn't a real RR either.
-* Printing a Msg means walking it, so we can't provide a function for it, unless we return the
-    parsed RRs?
 
 ### TODO
 

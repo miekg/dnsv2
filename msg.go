@@ -216,6 +216,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	return rr, nil
 }
 
+// RRs returns all the RRs from the section s.
 func (m *Msg) RRs(s Section) ([]RR, error) {
 	rrs := []RR{}
 	for rr, err := m.RR(s); rr != nil; rr, err = m.RR(s) {
@@ -225,6 +226,16 @@ func (m *Msg) RRs(s Section) ([]RR, error) {
 		rrs = append(rrs, rr)
 	}
 	return rrs, nil
+}
+
+// SetRR adds each rr's wireformat n rrs to the message m in the specified section.
+func (m *Msg) SetRRs(s Section, rrs []RR) error {
+	for _, rr := range rrs {
+		if err := m.SetRR(s, rr); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // index walks through the message and saves the indices of where the sections start.
