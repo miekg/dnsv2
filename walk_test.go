@@ -2,7 +2,6 @@ package dns
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 )
 
@@ -51,7 +50,6 @@ func TestWalkBackward(t *testing.T) {
 		if j == 0 && RRType(rr) != TypeOPT {
 			t.Errorf("expected first RR type to be %s, got %s", TypeOPT, RRType(rr))
 		}
-		fmt.Printf("%s\t%s %d\n", rr.Hdr(), s, i)
 		j++
 		return nil
 	})
@@ -73,7 +71,13 @@ func TestWalkAndStripOPT(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-		println(pos)
+		rrs, err := m.Strip(pos + 1)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		if len(rrs) != 1 {
+			t.Errorf("expected to have stripped 1, got %d", len(rrs))
+		}
+		// check type etc.
 	}
-	// rrs := m.Strip(pos + 1)
 }

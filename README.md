@@ -116,3 +116,5 @@ much of the buffer we already have. The following API is proposed for this:
 * Make RRSet a first class citizen, i.e get those from a message, mem friendly struct?
 
 * Implement compression for CNAME, MX, NS, PTR, and SOA.
+
+* unpackXXXX need to take uint16, instead of int.

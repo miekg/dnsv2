@@ -169,9 +169,67 @@ func (m *Msg) Count(s Section) uint16 {
 // Strip strips the last n RRs from the message. The stripped RRs are returned, the section counters are adjusted as
 // necessary. Strips disregards any section boundaries. After a call to Strip any reads from m start from the beginning
 // again. The buffer in m is not downsized. Compression pointers are NOT updated.
-func (m *Msg) Strip(n int) []RR {
-	// update index of last write to new end of message.
-	return nil
+func (m *Msg) Strip(n int) ([]RR, error) {
+	indices := make([]uint16, n+1) // track last indices
+	offset := 12
+	if offset = m.skipName(offset); offset == 0 {
+		return nil, &WireError{fmt.Errorf("buffer size to small, no owner name found in %s section", Qd.String())}
+	}
+	offset += 5 // 4 to skip TYPE, CLASS, +1 to land on next RR
+	i := 0
+	for {
+		if offset = m.skipRR(offset); offset == 0 {
+			break
+		}
+		offset++ // start of next RR
+		indices[i%(n+1)] = uint16(offset)
+		i++
+	}
+
+	rrs := make([]RR, n)
+	j := 0
+	for _, offset := range indices {
+		if int(offset) == len(m.Buf) {
+			continue
+		}
+		name, i, err := unpackName(m.Buf, int(offset))
+		if err != nil {
+			return nil, err
+		}
+		var typ Type
+		i++
+		if typ, i, err = unpackType(m.Buf, i); err != nil {
+			return nil, err
+		}
+		rr := rrFromType(typ)
+		rr.Hdr().Name = name
+		if rr.Hdr().Class, i, err = unpackClass(m.Buf, i); err != nil {
+			return nil, err
+		}
+		if rr.Hdr().TTL, i, err = unpackTTL(m.Buf, i); err != nil {
+			return nil, err
+		}
+
+		// Rdata length
+		rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
+		i += 2
+		if err := rr.Write(m.Buf, i, rdl); err != nil {
+			return nil, err
+		}
+		rrs[j] = rr
+		j++
+	}
+
+	// counters!!!! TODO
+
+	// TODO: m.w needs to be set more often, index???
+	m.w = uint16(len(m.Buf))
+	for _, offset := range indices {
+		if offset < m.w {
+			m.w = offset
+		}
+	}
+	return rrs, nil
 }
 
 // SetRR adds rr's wireformat to the message m in the specified section. Any RR can be used to set the question section;
