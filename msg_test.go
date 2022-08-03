@@ -34,10 +34,6 @@ func TestSetRRBufferResizing(t *testing.T) {
 	m.SetRR(Ar, rr)
 }
 
-func TestSetRROrdering(t *testing.T) {
-	// test ordering of settings RRs.
-}
-
 func TestWalkForward(t *testing.T) {
 	m := &Msg{Buf: www}
 	err := m.Walk(WalkForward, func(s Section, rr RR, i int) error {

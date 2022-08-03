@@ -191,8 +191,20 @@ const (
 func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 	m.index() // reset any reads
 
+	// TODO: Walk backward allocates...
+
 	name := make([]byte, 12)
 	i := int(m.r[Qd])
+
+	type reverse struct {
+		s  Section
+		rr RR
+		i  int
+	}
+	var stack []reverse
+	if d == WalkBackward {
+		stack = make([]reverse, 0, m.Count(Qd)+m.Count(An)+m.Count(Ns)+m.Count(Ar))
+	}
 
 	for s := Qd; s <= Ar; s++ {
 		for m.count[s] < m.Count(s) {
@@ -221,8 +233,13 @@ func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 			i += 2
 
 			if s == Qd {
-				if err := fn(s, rr, int(m.count[s])); err != nil {
-					return err
+				switch d {
+				case WalkForward:
+					if err := fn(s, rr, int(m.count[s])); err != nil {
+						return err
+					}
+				case WalkBackward:
+					stack = append(stack, reverse{s, rr, int(m.count[s])})
 				}
 				m.count[s]++
 				continue
@@ -240,12 +257,28 @@ func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 			i += 2
 			i += rdl
 
-			if err := fn(s, rr, int(m.count[s])); err != nil {
-				return err
+			switch d {
+			case WalkForward:
+				if err := fn(s, rr, int(m.count[s])); err != nil {
+					return err
+				}
+			case WalkBackward:
+				stack = append(stack, reverse{s, rr, int(m.count[s])})
+
 			}
 			m.count[s]++
 		}
 	}
+	if d == WalkForward {
+		return nil
+	}
+
+	for i := len(stack) - 1; i >= 0; i-- {
+		if err := fn(stack[i].s, stack[i].rr, stack[i].i); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
