@@ -70,6 +70,8 @@ All public APIs use `int`, internally most things are `uint16`.
 
 ### Examples
 
+#### Stripping OPT RR and Forwarding Message
+
 Take for example a "forwarder", or "resolver", such software takes in coming request and resolves
 it, then returns the response. One of the first steps undertaking by it is checking what kind of
 EDNS0 option are set. This means finding the OPT RR in the additional section, which should be (in
@@ -81,14 +83,14 @@ much of the buffer we already have. The following API is implemented for this:
 ~~~ go
 pos := 0
 err := m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
-	if s == Ar && RRType(rr) == TypeOPT {
-		pos = i
-		return errors.New("found opt RR")
-	}
-	return nil
+    if s == Ar && RRType(rr) == TypeOPT {
+        pos = i
+        return errors.New("found opt RR")
+    }
+    return nil
 })
 if err != nil {
-	rrs, err := m.Strip(pos + 1)
+    rrs, err := m.Strip(pos + 1)
     opt := rrs[0]
 }
 ~~~
