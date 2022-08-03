@@ -1,7 +1,6 @@
 package dns
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
@@ -74,8 +73,12 @@ func TestWalkForward(t *testing.T) {
 
 func TestWalkBackward(t *testing.T) {
 	m := &Msg{Buf: www}
+	j := 0
 	err := m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
-		fmt.Printf("%s %d %s\n", s, i, rr.Hdr())
+		if j == 0 && RRType(rr) != TypeOPT {
+			t.Errorf("expected first RR type to be %s, got %s", TypeOPT, RRType(rr))
+		}
+		j++
 		return nil
 	})
 	if err != nil {
