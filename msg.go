@@ -2,7 +2,6 @@ package dns
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -183,75 +182,71 @@ type WalkFunc func(s Section, rr RR, i int) error
 type WalkDirection int
 
 const (
-	WalkDown WalkDirection = iota
-	WalkUp
+	WalkForward WalkDirection = iota
+	WalkBackward
 )
 
-// Walk walks the section s in the message m. Each rr is filtered by fn. If WalkFunc returns an error the walk is
-// stopped.
+// Walk walks the section s in the message m in the direction of d. Each rr is filtered by fn. If WalkFunc returns an error the walk is
+// stopped. Note due to DNS messages are structed an [WalkBackward] requires to walk forward and then backwards.
 func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
-	if d == WalkUp {
-		return errors.New("walk err")
-	}
 	m.index() // reset any reads
 
 	name := make([]byte, 12)
-
 	i := int(m.r[Qd])
-	for s := Qd; s < Ar; s++ {
-		if i == 0 { // an empty message after being index can still have no RRs in this section
-			continue
+
+	for s := Qd; s <= Ar; s++ {
+		for m.count[s] < m.Count(s) {
+			// overlap with index(), factor this out somehow.
+			if name, i, err = unpackName(m.Buf, i, name); err != nil {
+				return err
+			}
+
+			i++
+			typ := Type{m.Buf[i], m.Buf[i+1]}
+			rrfunc, ok := typeToRR[typ]
+			if !ok {
+				rrfunc = func() RR { return new(Unknown) }
+			}
+			i += 2
+
+			rr := rrfunc()
+			rr.Hdr().Name = name
+
+			if rfc3597, ok := rr.(*Unknown); ok {
+				rfc3597.Type = typ
+			}
+
+			// Class
+			rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
+			i += 2
+
+			if s == Qd {
+				if err := fn(s, rr, int(m.count[s])); err != nil {
+					return err
+				}
+				m.count[s]++
+				continue
+			}
+
+			// TTL
+			rr.Hdr().TTL[0] = m.Buf[i]
+			rr.Hdr().TTL[1] = m.Buf[i+1]
+			rr.Hdr().TTL[2] = m.Buf[i+2]
+			rr.Hdr().TTL[3] = m.Buf[i+3]
+			i += 4
+
+			// Rdata length
+			rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
+			i += 2
+			i += rdl
+
+			if err := fn(s, rr, int(m.count[s])); err != nil {
+				return err
+			}
+			m.count[s]++
 		}
-
-		if m.count[s] >= m.Count(s) { // section drained
-			continue
-		}
-
-		// overlap with index(), factor this out somehow.
-		name, i, err := unpackName(m.Buf, i, name)
-		if err != nil {
-			return err
-		}
-
-		i++
-		typ := Type{m.Buf[i], m.Buf[i+1]}
-		rrfunc, ok := typeToRR[typ]
-		if !ok {
-			rrfunc = func() RR { return new(Unknown) }
-		}
-		i += 2
-
-		rr := rrfunc()
-		rr.Hdr().Name = name
-
-		if rfc3597, ok := rr.(*Unknown); ok {
-			rfc3597.Type = typ
-		}
-
-		// Class
-		rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
-		i += 2
-
-		m.count[s]++
-		if s == Qd {
-			continue
-		}
-
-		// TTL
-		rr.Hdr().TTL[0] = m.Buf[i]
-		rr.Hdr().TTL[1] = m.Buf[i+1]
-		rr.Hdr().TTL[2] = m.Buf[i+2]
-		rr.Hdr().TTL[3] = m.Buf[i+3]
-		i += 4
-
-		// Rdata length
-		rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
-		i += 2
-		i += rdl
-
-		return nil
 	}
-
+	return nil
 }
 
 // SetRR adds rr's wireformat to the message m in the specified section. Any RR can be used to set the question section;
@@ -456,7 +451,6 @@ func unpackName(msg []byte, offset int, buf ...[]byte) (Name, int, error) {
 		namebuf = make([]byte, 0, 12) // 12 is random number
 	}
 
-	fmt.Printf("%s\n", Name(namebuf))
 	for i := offset; i < len(msg); {
 		j := uint8(msg[i])
 		switch {
