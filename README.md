@@ -106,6 +106,8 @@ much of the buffer we already have. The following API is proposed for this:
 
 * Length check on domain names (<256) octect, 63 label length.
 
+* Buffer length checks when unpacking and packing.
+
 * Use Octets as a name every where instead of bytes - give that old school feel?
 
 * Make Header also implement the RR interface, so it's also an RR? This would simplify the Msg
