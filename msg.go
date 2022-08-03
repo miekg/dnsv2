@@ -215,31 +215,28 @@ func (m *Msg) RR(s Section) (RR, error) {
 		return nil, err
 	}
 
-	// we're after the name, now we have type class and ttl, from type we create the correct RR.
 	var typ Type
 	i++
-	typ, i, err = unpackType(m.Buf, i)
-	if err != nil {
+	if typ, i, err = unpackType(m.Buf, i); err != nil {
 		return nil, err
 	}
 	rr := rrFromType(typ)
 	rr.Hdr().Name = name
 
-	// Class
-	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
-
+	j := 0
+	if rr.Hdr().Class, j, err = unpackClass(m.Buf, i); err != nil {
+		return rr, err
+	}
 	if s == Qd {
 		m.count[s]++
 		return rr, nil
 	}
+	// only here advance i
+	i = j
 
-	i += 2
-	// TTL
-	rr.Hdr().TTL[0] = m.Buf[i]
-	rr.Hdr().TTL[1] = m.Buf[i+1]
-	rr.Hdr().TTL[2] = m.Buf[i+2]
-	rr.Hdr().TTL[3] = m.Buf[i+3]
-	i += 4
+	if rr.Hdr().TTL, i, err = unpackTTL(m.Buf, i); err != nil {
+		return rr, err
+	}
 
 	// Rdata length
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
@@ -420,6 +417,24 @@ func unpackType(msg []byte, offset int) (Type, int, error) {
 
 	typ := Type{msg[offset], msg[offset+1]}
 	return typ, offset + 2, nil
+}
+
+func unpackClass(msg []byte, offset int) (Class, int, error) {
+	if offset+2 > len(msg) {
+		return Class{}, 0, &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+2, len(msg))}
+	}
+
+	class := Class{msg[offset], msg[offset+1]}
+	return class, offset + 2, nil
+}
+
+func unpackTTL(msg []byte, offset int) (TTL, int, error) {
+	if offset+4 > len(msg) {
+		return TTL{}, 0, &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+4, len(msg))}
+	}
+
+	ttl := TTL{msg[offset], msg[offset+1], msg[offset+2], msg[offset+3]}
+	return ttl, offset + 4, nil
 }
 
 func rrFromType(typ Type) RR {

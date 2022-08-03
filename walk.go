@@ -45,16 +45,15 @@ func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 
 			var typ Type
 			i++
-			typ, i, err = unpackType(m.Buf, i)
-			if err != nil {
+			if typ, i, err = unpackType(m.Buf, i); err != nil {
 				return err
 			}
 			rr := rrFromType(typ)
 			rr.Hdr().Name = name
 
-			// Class
-			rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
-			i += 2
+			if rr.Hdr().Class, i, err = unpackClass(m.Buf, i); err != nil {
+				return err
+			}
 
 			if s == Qd {
 				switch d {
@@ -73,12 +72,9 @@ func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 				continue
 			}
 
-			// TTL
-			rr.Hdr().TTL[0] = m.Buf[i]
-			rr.Hdr().TTL[1] = m.Buf[i+1]
-			rr.Hdr().TTL[2] = m.Buf[i+2]
-			rr.Hdr().TTL[3] = m.Buf[i+3]
-			i += 4
+			if rr.Hdr().TTL, i, err = unpackTTL(m.Buf, i); err != nil {
+				return err
+			}
 
 			// Rdata length
 			rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
