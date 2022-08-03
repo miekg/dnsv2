@@ -28,6 +28,9 @@ func (c compression) find(n Name) (offset, pointer uint16) {
 		if len(n[i:]) == 1 {
 			return 0, 0
 		}
+		if len(n[i:]) == 2 { // single character label, not worth compressing
+			continue
+		}
 		if pointer, ok := c[string(n[i:])]; ok {
 			return uint16(i), pointer ^ 0xC000
 		}

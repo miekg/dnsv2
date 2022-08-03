@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"fmt"
 	"net"
 	"testing"
 )
@@ -35,6 +36,17 @@ func TestSetRRBufferResizing(t *testing.T) {
 
 func TestSetRROrdering(t *testing.T) {
 	// test ordering of settings RRs.
+}
+
+func TestWalk(t *testing.T) {
+	m := &Msg{Buf: reply}
+	err := m.Walk(WalkDown, func(s Section, rr RR, i int) error {
+		fmt.Printf("%s %d %s %s\n", s, i, rr.Hdr(), rr)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 }
 
 func TestSkip(t *testing.T) {

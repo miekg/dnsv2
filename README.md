@@ -68,6 +68,20 @@ All RR types are in upper-case, except 'Unknown' as that is the odd one out. Unk
 
 All public APIs use `int`, internally most things are `uint16`.
 
+### Examples
+
+Take for example a "forwarder", or "resolver", such software takes in coming request and resolves
+it, then returns the response. One of the first steps undertaking by it is checking what kind of
+EDNS0 option are set. This means finding the OPT RR in the additional section, which should be (in
+case of TSIG it might not be) the last RR in the message. Then that (or those) RR(s) need to be
+stripped as EDNS0 (and TSIG) are hop-by-hop. And after that a new OPT RR will be added and the
+message will be forwarded (with a new message ID). In this use-case it would be nice to re-use as
+much of the buffer we already have. The following API is proposed for this:
+
+~~~ go
+
+~~~
+
 ### Questionable things
 
 * Doing `[2]byte{x, y}` instead of a uint16 for `Class` and `Type`?

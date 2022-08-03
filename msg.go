@@ -2,6 +2,7 @@ package dns
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -88,6 +89,18 @@ const (
 	RA             // Recussion Available
 )
 
+// NewMsg returns a pointer to a new Msg. Optionally a buffer can be given here, NewMsg will not allocate a buffer on
+// behalf of the caller, it will enlarge a buffer (when given and the need arises).
+func NewMsg(buf ...[]byte) *Msg {
+	m := new(Msg)
+	if len(buf) > 0 {
+		m.Buf = buf[0]
+	}
+	m.w = 12 // after header, needs buf size of at least this.
+	m.c = compression{}
+	return m
+}
+
 // Flag returns the value of flag f.
 func (m *Msg) Flag(f Flag) bool {
 	switch f {
@@ -109,18 +122,6 @@ func (m *Msg) SetFlag(f Flag, v bool) {
 	case RD:
 	case RA:
 	}
-}
-
-// NewMsg returns a pointer to a new Msg. Optionally a buffer can be given here, NewMsg will not allocate a buffer on
-// behalf of the caller, it will enlarge a buffer (when given and the need arises).
-func NewMsg(buf ...[]byte) *Msg {
-	m := new(Msg)
-	if len(buf) > 0 {
-		m.Buf = buf[0]
-	}
-	m.w = 12 // after header, needs buf size of at least this.
-	m.c = compression{}
-	return m
 }
 
 // ID returns the message's ID.
@@ -166,6 +167,93 @@ func (m *Msg) Count(s Section) uint16 {
 	return 0
 }
 
+// Strip strips the last n RRs from the message. The stripped RRs are retured, the section counters are adjusted as
+// necessary. Strips disregards any section boundaries. After a call to Strip any reads from m start from the beginning
+// again. The buffer in m is not downsized.
+func (m *Msg) Strip(n int) []RR {
+	// update index of last write to new end of message.
+	return nil
+}
+
+// WalkFunc is the type of the function called by Walk to visit each Header. RR will only contain the header, no rdata
+// unpacked. The int parameter is where in the section this RR sits.
+type WalkFunc func(s Section, rr RR, i int) error
+
+// WalkDirection tells in what order to walk the message.
+type WalkDirection int
+
+const (
+	WalkDown WalkDirection = iota
+	WalkUp
+)
+
+// Walk walks the section s in the message m. Each rr is filtered by fn. If WalkFunc returns an error the walk is
+// stopped.
+func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
+	if d == WalkUp {
+		return errors.New("walk err")
+	}
+	m.index() // reset any reads
+
+	name := make([]byte, 12)
+
+	i := int(m.r[Qd])
+	for s := Qd; s < Ar; s++ {
+		if i == 0 { // an empty message after being index can still have no RRs in this section
+			continue
+		}
+
+		if m.count[s] >= m.Count(s) { // section drained
+			continue
+		}
+
+		// overlap with index(), factor this out somehow.
+		name, i, err := unpackName(m.Buf, i, name)
+		if err != nil {
+			return err
+		}
+
+		i++
+		typ := Type{m.Buf[i], m.Buf[i+1]}
+		rrfunc, ok := typeToRR[typ]
+		if !ok {
+			rrfunc = func() RR { return new(Unknown) }
+		}
+		i += 2
+
+		rr := rrfunc()
+		rr.Hdr().Name = name
+
+		if rfc3597, ok := rr.(*Unknown); ok {
+			rfc3597.Type = typ
+		}
+
+		// Class
+		rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
+		i += 2
+
+		m.count[s]++
+		if s == Qd {
+			continue
+		}
+
+		// TTL
+		rr.Hdr().TTL[0] = m.Buf[i]
+		rr.Hdr().TTL[1] = m.Buf[i+1]
+		rr.Hdr().TTL[2] = m.Buf[i+2]
+		rr.Hdr().TTL[3] = m.Buf[i+3]
+		i += 4
+
+		// Rdata length
+		rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
+		i += 2
+		i += rdl
+
+		return nil
+	}
+
+}
+
 // SetRR adds rr's wireformat to the message m in the specified section. Any RR can be used to set the question section;
 // it will then just use the name, type and class and ignore the
 func (m *Msg) SetRR(s Section, rr RR) error {
@@ -209,8 +297,8 @@ func (m *Msg) RR(s Section) (RR, error) {
 
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
 	i++
-	tpy := Type{m.Buf[i], m.Buf[i+1]}
-	rrfunc, ok := typeToRR[tpy]
+	typ := Type{m.Buf[i], m.Buf[i+1]}
+	rrfunc, ok := typeToRR[typ]
 	if !ok {
 		rrfunc = func() RR { return new(Unknown) }
 	}
@@ -219,7 +307,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rr := rrfunc()
 	rr.Hdr().Name = name
 	if rfc3597, ok := rr.(*Unknown); ok {
-		rfc3597.Type = tpy
+		rfc3597.Type = typ
 	}
 
 	// Class
@@ -237,9 +325,9 @@ func (m *Msg) RR(s Section) (RR, error) {
 	rr.Hdr().TTL[2] = m.Buf[i+2]
 	rr.Hdr().TTL[3] = m.Buf[i+3]
 	i += 4
+
 	// Rdata length
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
-	//	println("RDL", rdl)
 	i += 2
 	if err := rr.Write(m.Buf, i, rdl); err != nil {
 		return rr, err
@@ -273,7 +361,9 @@ func (m *Msg) SetRRs(s Section, rrs []RR) error {
 
 // index walks through the message and saves the indices of where the sections start.
 func (m *Msg) index() error {
+	m.count[Qd], m.count[An], m.count[Ns], m.count[Ar] = 0, 0, 0, 0
 	offset := 12
+	// read counts reset too
 	m.r[Qd] = 12
 	if offset = m.skipName(offset); offset == 0 {
 		return &WireError{fmt.Errorf("buffer size to small, no owner name found in %s section", Qd.String())}
@@ -353,11 +443,20 @@ func (m *Msg) skipRR(offset int) int {
 }
 
 // unpackName return a domain name that should start at offset. Compression pointers are followed, the returned offset is
-// positioned on the last octet of the name.
-func unpackName(msg []byte, offset int) (Name, int, error) {
+// positioned on the last octet of the name. The optional buffer will be used to store the name, it will be resized when
+// needed.
+func unpackName(msg []byte, offset int, buf ...[]byte) (Name, int, error) {
 	ptr := 0
 	ptroffset := 0
-	buf := make([]byte, 0, 12) // 12 is random number
+	var namebuf []byte
+	namei := 0 // index of writes in namebuf
+	if len(buf) > 0 {
+		namebuf = buf[0]
+	} else {
+		namebuf = make([]byte, 0, 12) // 12 is random number
+	}
+
+	fmt.Printf("%s\n", Name(namebuf))
 	for i := offset; i < len(msg); {
 		j := uint8(msg[i])
 		switch {
@@ -365,13 +464,21 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 			if j == 0 {
 				// end of name, if we got here via a pointer we need to return that offset, otherwise
 				// the one we've accumulated.
-				buf = append(buf, []byte{0}...)
+				copy(namebuf[namei:], []byte{0})
+				namei++
 				if ptroffset > 0 {
-					return Name(buf), ptroffset, nil
+					return Name(namebuf[:namei]), ptroffset, nil
 				}
-				return Name(buf), offset, nil
+				return Name(namebuf[:namei]), offset, nil
 			}
-			buf = append(buf, msg[i:i+int(j)+1]...)
+
+			label := msg[i : i+int(j)+1]
+			if namei+len(label) >= len(namebuf) {
+				namebuf = append(namebuf, make([]byte, len(label)+1)...) // +1 so, 00 label will always fit
+			}
+			n := copy(namebuf[namei:], label)
+			namei += n
+
 			i += int(j) + 1
 			offset += int(j) + 1
 		case j&0xC0 == 0xC0:
@@ -386,7 +493,7 @@ func unpackName(msg []byte, offset int) (Name, int, error) {
 			}
 		}
 	}
-	if len(buf) == 0 {
+	if namei == 0 {
 		return nil, offset, &WireError{fmt.Errorf("no owner name found at offset %d", offset)}
 	}
 	return nil, offset, nil
