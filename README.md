@@ -76,10 +76,21 @@ EDNS0 option are set. This means finding the OPT RR in the additional section, w
 case of TSIG it might not be) the last RR in the message. Then that (or those) RR(s) need to be
 stripped as EDNS0 (and TSIG) are hop-by-hop. And after that a new OPT RR will be added and the
 message will be forwarded (with a new message ID). In this use-case it would be nice to re-use as
-much of the buffer we already have. The following API is proposed for this:
+much of the buffer we already have. The following API is implemented for this:
 
 ~~~ go
-
+pos := 0
+err := m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
+	if s == Ar && RRType(rr) == TypeOPT {
+		pos = i
+		return errors.New("found opt RR")
+	}
+	return nil
+})
+if err != nil {
+	rrs, err := m.Strip(pos + 1)
+    opt := rrs[0]
+}
 ~~~
 
 ### Questionable things
