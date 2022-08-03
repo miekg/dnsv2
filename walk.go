@@ -43,20 +43,14 @@ func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 				return err
 			}
 
+			var typ Type
 			i++
-			typ := Type{m.Buf[i], m.Buf[i+1]}
-			rrfunc, ok := typeToRR[typ]
-			if !ok {
-				rrfunc = func() RR { return new(Unknown) }
+			typ, i, err = unpackType(m.Buf, i)
+			if err != nil {
+				return err
 			}
-			i += 2
-
-			rr := rrfunc()
+			rr := rrFromType(typ)
 			rr.Hdr().Name = name
-
-			if rfc3597, ok := rr.(*Unknown); ok {
-				rfc3597.Type = typ
-			}
 
 			// Class
 			rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]

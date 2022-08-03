@@ -216,19 +216,14 @@ func (m *Msg) RR(s Section) (RR, error) {
 	}
 
 	// we're after the name, now we have type class and ttl, from type we create the correct RR.
+	var typ Type
 	i++
-	typ := Type{m.Buf[i], m.Buf[i+1]}
-	rrfunc, ok := typeToRR[typ]
-	if !ok {
-		rrfunc = func() RR { return new(Unknown) }
+	typ, i, err = unpackType(m.Buf, i)
+	if err != nil {
+		return nil, err
 	}
-	i += 2
-
-	rr := rrfunc()
+	rr := rrFromType(typ)
 	rr.Hdr().Name = name
-	if rfc3597, ok := rr.(*Unknown); ok {
-		rfc3597.Type = typ
-	}
 
 	// Class
 	rr.Hdr().Class[0], rr.Hdr().Class[1] = m.Buf[i], m.Buf[i+1]
@@ -416,6 +411,28 @@ func unpackName(msg []byte, offset int, buf ...[]byte) (Name, int, error) {
 		return nil, offset, &WireError{fmt.Errorf("no owner name found at offset %d", offset)}
 	}
 	return nil, offset, nil
+}
+
+func unpackType(msg []byte, offset int) (Type, int, error) {
+	if offset+2 > len(msg) {
+		return Type{}, 0, &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+2, len(msg))}
+	}
+
+	typ := Type{msg[offset], msg[offset+1]}
+	return typ, offset + 2, nil
+}
+
+func rrFromType(typ Type) RR {
+	rrfunc, ok := typeToRR[typ]
+	if !ok {
+		rrfunc = func() RR { return new(Unknown) }
+	}
+
+	rr := rrfunc()
+	if rfc3597, ok := rr.(*Unknown); ok {
+		rfc3597.Type = typ
+	}
+	return rr
 }
 
 // String returns the text representation of the message m. Note this method _parses_ the message and

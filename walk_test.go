@@ -65,12 +65,15 @@ func TestWalkBackward(t *testing.T) {
 func TestWalkAndStripOPT(t *testing.T) {
 	m := &Msg{Buf: www}
 	pos := 0
-	m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
+	err := m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
 		if s == Ar && RRType(rr) == TypeOPT {
 			pos = i
 			return errors.New("found opt RR")
 		}
 		return nil
 	})
-	println(pos)
+	if err != nil {
+		println(pos)
+	}
+	// rrs := m.Strip(pos + 1)
 }
