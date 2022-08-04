@@ -35,7 +35,7 @@ type (
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//    |                      ID                       |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	//    |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
+	//    |QR|   Opcode  |AA|TC|RD|RA|Z |AD|CD|   RCODE   |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//    |                    QDCOUNT                    |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -79,14 +79,31 @@ const (
 	Ar                // Additional Resource (count)
 )
 
-// These are the flags currently defined for a DNS message
+// These are the flags currently defined for a DNS message's header.
 const (
 	QR Flag = iota // Query Response
 	AA             // Authoritative Answer
 	TC             // TrunCated
 	RD             // Recursion Desired
 	RA             // Recussion Available
+	Z              // Zero bits
+	AD             // Authenticated Data
+	CD             // Checking Disabled
 )
+
+const headerSize = 12
+
+// offsets of headers bit in the uint16.
+var headerBitmask = map[Flag]uint16{
+	QR: 1 << 15, // query/response (response=1)
+	AA: 1 << 10,
+	TC: 1 << 9,
+	RD: 1 << 8,
+	RA: 1 << 7,
+	Z:  1 << 6,
+	AD: 1 << 5,
+	CD: 1 << 4,
+}
 
 // NewMsg returns a pointer to a new Msg. Optionally a buffer can be given here, NewMsg will not allocate a buffer on
 // behalf of the caller, it will enlarge a buffer (when given and the need arises).
@@ -95,32 +112,30 @@ func NewMsg(buf ...[]byte) *Msg {
 	if len(buf) > 0 {
 		m.Buf = buf[0]
 	}
-	m.w = 12 // after header, needs buf size of at least this.
+	m.w = headerSize // after header, needs buf size of at least this.
 	m.c = compression{}
 	return m
 }
 
 // Flag returns the value of flag f.
 func (m *Msg) Flag(f Flag) bool {
-	switch f {
-	case QR:
-	case AA:
-	case TC:
-	case RD:
-	case RA:
-	}
-	return false
+	bits := binary.BigEndian.Uint16(m.Buf[2:])
+	return bits&headerBitmask[f] == headerBitmask[f]
 }
 
-// SetFlag sets the flag f to value v.
-func (m *Msg) SetFlag(f Flag, v bool) {
-	switch f {
-	case QR:
-	case AA:
-	case TC:
-	case RD:
-	case RA:
+// SetFlag sets the flag f to value v. If v is not given 'true' is assumed.
+func (m *Msg) SetFlag(f Flag, v ...bool) {
+	bits := binary.BigEndian.Uint16(m.Buf[2:])
+	defer func() { binary.BigEndian.PutUint16(m.Buf[2:], bits) }()
+	if len(v) == 0 {
+		bits |= headerBitmask[f]
+		return
 	}
+	if v[0] {
+		bits |= headerBitmask[f]
+		return
+	}
+	bits &^= headerBitmask[f]
 }
 
 // ID returns the message's ID.
@@ -171,7 +186,7 @@ func (m *Msg) Count(s Section) uint16 {
 // again. The buffer in m is not downsized. Compression pointers are NOT updated.
 func (m *Msg) Strip(n int) ([]RR, error) {
 	indices := make([]uint16, n+1) // track last indices
-	offset := 12
+	offset := headerSize
 	if offset = m.skipName(offset); offset == 0 {
 		return nil, &WireError{fmt.Errorf("buffer size to small, no owner name found in %s section", Qd.String())}
 	}
@@ -332,9 +347,9 @@ func (m *Msg) SetRRs(s Section, rrs []RR) error {
 // index walks through the message and saves the indices of where the sections start.
 func (m *Msg) index() error {
 	m.count[Qd], m.count[An], m.count[Ns], m.count[Ar] = 0, 0, 0, 0
-	offset := 12
+	offset := headerSize
 	// read counts reset too
-	m.r[Qd] = 12
+	m.r[Qd] = headerSize
 	if offset = m.skipName(offset); offset == 0 {
 		return &WireError{fmt.Errorf("buffer size to small, no owner name found in %s section", Qd.String())}
 	}
@@ -513,10 +528,15 @@ func rrFromType(typ Type) RR {
 // empty string is returned. Mostly useful for debugging.
 func (m *Msg) String() string {
 	b := &strings.Builder{}
-	b.WriteString(";; ->>HEADER<<-\n")
-	// ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 32123
-	b.WriteString(";; flags: bla; ")
-	b.WriteString(fmt.Sprintf("%s %d, %s: %d, %s: %d, %s: %d\n", Qd, m.Count(Qd), An, m.Count(An), Ns, m.Count(Ns), Ar, m.Count(Ar)))
+	b.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: ????, status ????, id: %d\n", m.ID()))
+	b.WriteString(";; flags:")
+	for f := Flag(0); f <= CD; f++ {
+		if m.Flag(f) {
+			b.WriteString(" ")
+			b.WriteString(f.String())
+		}
+	}
+	b.WriteString(fmt.Sprintf("; %s %d, %s: %d, %s: %d, %s: %d\n", Qd, m.Count(Qd), An, m.Count(An), Ns, m.Count(Ns), Ar, m.Count(Ar)))
 
 	for s := Qd; s <= Ar; s++ {
 		if m.Count(s) == 0 {

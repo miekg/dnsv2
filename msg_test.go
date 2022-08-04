@@ -33,6 +33,20 @@ func TestSetRRBufferResizing(t *testing.T) {
 	m.SetRR(Ar, rr)
 }
 
+func TestSetFlag(t *testing.T) {
+	m := NewMsg(make([]byte, 40))
+	m.SetFlag(AA)
+	if !m.Flag(AA) {
+		t.Errorf("expected %s flag to be %t, got %t", AA, true, false)
+	}
+	println(m.String())
+	m.SetFlag(AA, false)
+	if m.Flag(AA) {
+		t.Errorf("expected %s flag to be %t, got %t", AA, false, true)
+	}
+
+}
+
 func TestSkip(t *testing.T) {
 	m := &Msg{Buf: reply}
 	i := m.skipName(12)

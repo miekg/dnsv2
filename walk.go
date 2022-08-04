@@ -24,7 +24,7 @@ func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 
 	// TODO: Walk backward allocates...
 
-	name := make([]byte, 12)
+	name := make([]byte, 12) // 12 is random number
 	i := int(m.r[Qd])
 
 	type reverse struct {

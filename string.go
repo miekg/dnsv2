@@ -94,3 +94,25 @@ func (n Name) String() string {
 func (h *Header) String() string {
 	return h.Name.String() + " \t" + h.TTL.String() + " " + h.Class.String()
 }
+
+func (f Flag) String() string {
+	switch f {
+	case QR:
+		return "qr"
+	case AA:
+		return "aa"
+	case TC:
+		return "tc"
+	case RD:
+		return "rd"
+	case RA:
+		return "ra"
+	case Z:
+		return "z"
+	case AD:
+		return "ad"
+	case CD:
+		return "cd"
+	}
+	return ""
+}
