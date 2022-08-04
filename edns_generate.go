@@ -1,4 +1,4 @@
-//+build ignore
+//go:build ignore
 
 // See types_generate.go. This generator generates functions and maps for the edns0 types.
 

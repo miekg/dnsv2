@@ -47,16 +47,16 @@ var (
 /*
 OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. Each option is encoded as:
 
-               +0 (MSB)                            +1 (LSB)
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-   0: |                          OPTION-CODE                          |
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-   2: |                         OPTION-LENGTH                         |
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-   4: |                                                               |
-      /                          OPTION-DATA                          /
-      /                                                               /
-      +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+	            +0 (MSB)                            +1 (LSB)
+	   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+	0: |                          OPTION-CODE                          |
+	   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+	2: |                         OPTION-LENGTH                         |
+	   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+	4: |                                                               |
+	   /                          OPTION-DATA                          /
+	   /                                                               /
+	   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 */
 type OPT struct {
 	Header
@@ -151,7 +151,7 @@ func (o *NSID) Data() []byte {
 }
 func (o *NSID) Write(buf []byte) error { o.ID = buf; return nil }
 
-//  Cookie Option.
+// Cookie Option.
 type COOKIE struct {
 	Cookie []byte // Cookie is a hex encoded string.
 }
