@@ -43,3 +43,17 @@ func RRType(rr RR) Type {
 	}
 	return TypeNone
 }
+
+func (t Type) String() string {
+	switch t {
+	case TypeA:
+		return "A"
+	case TypeCNAME:
+		return "CNAME"
+	case TypeMX:
+		return "MX"
+	case TypeOPT:
+		return "OPT"
+	}
+	return "NONE"
+}

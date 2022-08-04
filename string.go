@@ -32,18 +32,6 @@ func (c Class) String() string {
 	return "CLASS" + strconv.FormatUint(uint64(i), 10)
 }
 
-func (t Type) String() string {
-	switch t {
-	case TypeA:
-		return "A"
-	case TypeMX:
-		return "MX"
-	case TypeOPT:
-		return "OPT"
-	}
-	return "NONE"
-}
-
 func (t TTL) String() string {
 	i := binary.BigEndian.Uint32(t[:])
 	// avoid pulling the machinary from fmt.Printf

@@ -66,6 +66,16 @@ func RRType(rr RR) Type {
 {{range .}}  func (rr *{{.}}) Hdr() *Header { return &rr.Header }
 {{end}}
 `))
+
+	str = template.Must(template.New("str").Parse(`
+func (t Type) String() string {
+	switch t {
+{{range .}}  case Type{{.}}:
+	return "{{.}}"
+{{end}} }
+	return "NONE"
+}
+`))
 )
 
 func main() {
@@ -92,6 +102,9 @@ func main() {
 	}
 	if err := rrtype.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "rrtype", err)
+	}
+	if err := str.Execute(b, typex); err != nil {
+		log.Fatal("failed to generate %s: %s", "str", err)
 	}
 	generate.SaveSource(b.Bytes(), "ztypes.go")
 }
