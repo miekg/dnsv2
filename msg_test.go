@@ -39,12 +39,10 @@ func TestSetFlag(t *testing.T) {
 	if !m.Flag(AA) {
 		t.Errorf("expected %s flag to be %t, got %t", AA, true, false)
 	}
-	println(m.String())
 	m.SetFlag(AA, false)
 	if m.Flag(AA) {
 		t.Errorf("expected %s flag to be %t, got %t", AA, false, true)
 	}
-
 }
 
 func TestSkip(t *testing.T) {
