@@ -42,10 +42,9 @@ func (t TTL) String() string {
 		return "   " + strconv.FormatUint(uint64(i), 10)
 	case i < 1000:
 		return "  " + strconv.FormatUint(uint64(i), 10)
-	case i < 10000:
+	default:
 		return " " + strconv.FormatUint(uint64(i), 10)
 	}
-	return ""
 }
 
 func (n Name) GoString() string {

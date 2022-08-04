@@ -19,12 +19,17 @@ func main() {
 	a := &dns.A{Header: dns.Header{Name: dns.NewName("example.net."), Class: dns.ClassINET}}
 	m.SetRR(dns.Qd, a)
 
-	if _, err := c.Write(m.Buf); err != nil {
+	n, err := c.Write(m.Buf[:m.Len()])
+	if err != nil {
 		log.Fatal(err)
+	}
+	if n != m.Len() {
+		log.Fatal("short write")
 	}
 
-	if _, err := c.Read(m.Buf); err != nil {
+	if n, err = c.Read(m.Buf); err != nil {
 		log.Fatal(err)
 	}
+	m.Buf = m.Buf[:n]
 	fmt.Printf("%s", m)
 }

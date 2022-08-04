@@ -117,6 +117,9 @@ func NewMsg(buf ...[]byte) *Msg {
 	return m
 }
 
+// Len returns the lenght of the message m, that actually contains RRs.
+func (m *Msg) Len() int { return int(m.w) + 1 }
+
 // Flag returns the value of flag f.
 func (m *Msg) Flag(f Flag) bool {
 	bits := binary.BigEndian.Uint16(m.Buf[2:])
@@ -547,6 +550,9 @@ func (m *Msg) String() string {
 		if err != nil {
 			return b.String()
 		}
+		if len(rrs) > 0 {
+			b.WriteString("\n")
+		}
 		for _, rr := range rrs {
 			if opt, ok := rr.(*OPT); ok {
 				b.WriteString(";; EDNS: version: ")
@@ -567,9 +573,6 @@ func (m *Msg) String() string {
 			b.WriteString(rr.Hdr().String())
 			b.WriteString("\t")
 			b.WriteString(rr.String())
-			b.WriteString("\n")
-		}
-		if len(rrs) > 0 && s != Ar {
 			b.WriteString("\n")
 		}
 	}
