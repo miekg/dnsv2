@@ -111,13 +111,15 @@ func main() {
 	}
 
 	Len(b, pkg)
+	Data(b, pkg)
 
 	if err := generate.SaveSource(b.Bytes(), "ztypes.go"); err != nil {
-		log.Fatal("failed go save source: %s", err)
+		log.Printf("%s\n", b)
+		log.Fatal("failed to save source: %s", err)
 	}
 }
 
-// Generate the Len() methods. We returns the number of fields for each resource record, except when the struct tag
+// Generate the Len() methods. We return the number of fields for each resource record, except when the struct tag
 // `dns:"len"` is seen, then we take the 'len()' of the field.
 func Len(b *bytes.Buffer, pkg *types.Package) {
 	typex := generate.Types(pkg, "Type")
@@ -135,17 +137,60 @@ func Len(b *bytes.Buffer, pkg *types.Package) {
 		l := 0
 		dyn := []string{}
 		for i := 1; i < rr.NumFields(); i++ {
-			switch rr.Tag(i) {
-			case `dns:"len"`:
+			switch {
+			case strings.Contains(rr.Tag(i), "len"):
 				dyn = append(dyn, fmt.Sprintf("len(rr.%s)", rr.Field(i).Name()))
 			default:
 				l++
 			}
 		}
 		if len(dyn) > 0 {
-			fmt.Fprintf(b, "return %d + %s\n}", l, strings.Join(dyn, "+"))
+			fmt.Fprintf(b, "return %d + %s\n}\n", l, strings.Join(dyn, "+"))
 			continue
 		}
 		fmt.Fprintf(b, "return %d\n}\n", l)
+	}
+}
+
+// Generate the Data methods where the rdata 'i' is returned as a byte slice.
+func Data(b *bytes.Buffer, pkg *types.Package) {
+	typex := generate.Types(pkg, "Type")
+	scope := pkg.Scope()
+
+Types:
+	for _, name := range typex {
+		o := scope.Lookup(name)
+		rr := generate.RR(o.Type(), scope)
+		if rr == nil {
+			continue
+		}
+		for i := 1; i < rr.NumFields(); i++ {
+			if strings.Contains(rr.Tag(i), "-data") {
+				continue Types
+			}
+		}
+
+		fmt.Fprintf(b, "func (rr *%s) Data(i int) []byte {\nswitch i {\n", name)
+
+		for i := 1; i < rr.NumFields(); i++ {
+
+			fmt.Fprintf(b, "case %d:\n", i-1)
+
+			switch rr.Field(i).Type().(type) {
+			case *types.Slice:
+				fmt.Fprintf(b, "return rr.%s\n", rr.Field(i).Name())
+			case *types.Array:
+				fmt.Fprintf(b, "return rr.%s[:]\n", rr.Field(i).Name())
+			default:
+				// check name before panicking
+				switch rr.Field(i).Type().String() {
+				case generate.Import + ".Name":
+					fmt.Fprintf(b, "return rr.%s\n", rr.Field(i).Name())
+				default:
+					panic("types_generate: unhandled type: " + rr.Field(i).Type().String())
+				}
+			}
+		}
+		fmt.Fprintf(b, "}\nreturn nil\n}\n")
 	}
 }

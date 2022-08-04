@@ -1,5 +1,8 @@
 package dns
 
+// In this file we define all the EDNS0 Options we can handle, "go generate" will generate some methods for us.
+// See types.go for the supported struct tags.
+
 import (
 	"encoding/binary"
 	"encoding/hex"
@@ -57,7 +60,7 @@ OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See
 */
 type OPT struct {
 	Header
-	Options []Option `dns:"len"`
+	Options []Option `dns:"len,-data"`
 }
 
 func (rr *OPT) Data(i int) []byte {

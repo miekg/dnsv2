@@ -69,3 +69,26 @@ func (rr *MX) Len() int {
 func (rr *OPT) Len() int {
 	return 0 + len(rr.Options)
 }
+func (rr *A) Data(i int) []byte {
+	switch i {
+	case 0:
+		return rr.A[:]
+	}
+	return nil
+}
+func (rr *CNAME) Data(i int) []byte {
+	switch i {
+	case 0:
+		return rr.Target
+	}
+	return nil
+}
+func (rr *MX) Data(i int) []byte {
+	switch i {
+	case 0:
+		return rr.Preference[:]
+	case 1:
+		return rr.Mx
+	}
+	return nil
+}

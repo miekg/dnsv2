@@ -1,6 +1,10 @@
 package dns
 
 // In this file we define all the RRs we can handle, "go generate" will generate most methods for us.
+// Supported tags:
+//
+// * `dns:"len"` - take the len of the fields instead of counting it as 1.
+// * `dns:"-data"` - skip this RR when generating the Data method, can be set on any field.
 
 import (
 	"encoding/binary"
@@ -34,13 +38,6 @@ func (rr *A) String() string {
 	return TypeToString[TypeA] + "\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
 }
 
-func (rr *A) Data(i int) []byte {
-	if i != 0 {
-		return nil
-	}
-	return rr.A[:]
-}
-
 func (rr *A) Write(msg []byte, offset, n int) error {
 	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
@@ -67,19 +64,6 @@ func (rr *MX) String() string {
 	return TypeToString[TypeMX] + "\t" + strconv.FormatUint(uint64(prio), 10) + " " + rr.Mx.String()
 }
 
-func (rr *MX) Data(i int) []byte {
-	if i < 0 || i > 2 {
-		return nil
-	}
-	switch i {
-	case 0:
-		return rr.Preference[:]
-	case 1:
-		return rr.Name
-	}
-	return nil
-}
-
 func (rr *MX) Write(msg []byte, offset, n int) error {
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
@@ -98,13 +82,6 @@ type CNAME struct {
 }
 
 func (rr *CNAME) String() string { return TypeToString[TypeCNAME] + "\t" + rr.Target.String() }
-
-func (rr *CNAME) Data(i int) []byte {
-	if i != 1 {
-		return nil
-	}
-	return rr.Target
-}
 
 func (rr *CNAME) Write(msg []byte, offset, n int) error {
 	name, _, err := unpackName(msg, offset)

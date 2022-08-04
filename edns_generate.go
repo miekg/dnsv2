@@ -73,6 +73,7 @@ func main() {
 	}
 
 	if err := generate.SaveSource(b.Bytes(), "zedns.go"); err != nil {
-		log.Fatal("failed go save source: %s", err)
+		log.Printf("%s\n", b)
+		log.Fatal("failed to save source: %s", err)
 	}
 }
