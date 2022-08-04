@@ -17,6 +17,7 @@ const Import = "github.com/miekg/dnsv2"
 // Funcs are default funcs we use in the templates.
 var Funcs = template.FuncMap{
 	"ToUpper": strings.ToUpper,
+	"ToLower": strings.ToLower,
 }
 
 // Load retrieves package description for a given module.
@@ -66,6 +67,23 @@ func Types(pkg *types.Package, prefix string) []string {
 			continue
 		}
 		typex = append(typex, name)
+	}
+	return typex
+}
+
+// TypesOf returns the types the implement the type typ.
+func TypesOf(pkg *types.Package, typ string) []string {
+	scope := pkg.Scope()
+	var typex []string
+	for _, name := range scope.Names() {
+		if name == typ {
+			continue // skip Flag
+		}
+
+		o := scope.Lookup(name)
+		if o.Type().String() == Import+"."+typ {
+			typex = append(typex, name)
+		}
 	}
 	return typex
 }

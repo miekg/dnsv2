@@ -2,6 +2,11 @@
 
 package dns
 
+import (
+	"encoding/binary"
+	"strconv"
+)
+
 var typeToRR = map[Type]func() RR{
 	TypeA:     func() RR { return new(A) },
 	TypeCNAME: func() RR { return new(CNAME) },
@@ -47,7 +52,8 @@ func (t Type) String() string {
 	case TypeOPT:
 		return "OPT"
 	}
-	return "NONE"
+	i := binary.BigEndian.Uint16(t[:])
+	return "TYPE" + strconv.FormatUint(uint64(i), 10)
 }
 func (rr *A) Len() int {
 	return 1
@@ -117,4 +123,39 @@ func (o Opcode) String() string {
 		return "UPDATE"
 	}
 	return ""
+}
+
+func (f Flag) String() string {
+	switch f {
+	case AA:
+		return "aa"
+	case AD:
+		return "ad"
+	case CD:
+		return "cd"
+	case QR:
+		return "qr"
+	case RA:
+		return "ra"
+	case RD:
+		return "rd"
+	case TC:
+		return "tc"
+	case Z:
+		return "z"
+	}
+	return ""
+}
+
+func (c Class) String() string {
+	switch c {
+	case ClassANY:
+		return "ANY"
+	case ClassIN:
+		return "IN"
+	case ClassNONE:
+		return "NONE"
+	}
+	i := binary.BigEndian.Uint16(c[:])
+	return "CLASS" + strconv.FormatUint(uint64(i), 10)
 }

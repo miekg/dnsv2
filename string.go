@@ -20,20 +20,6 @@ func (s Section) String() string {
 	return ""
 }
 
-func (c Class) String() string {
-	// via a map
-	switch c {
-	case ClassNONE:
-		return "NONE"
-	case ClassIN:
-		return "IN"
-	case ClassANY:
-		return "ANY"
-	}
-	i := binary.BigEndian.Uint16(c[:])
-	return "CLASS" + strconv.FormatUint(uint64(i), 10)
-}
-
 func (t TTL) String() string {
 	i := binary.BigEndian.Uint32(t[:])
 	// avoid pulling the machinary from fmt.Printf
@@ -94,26 +80,4 @@ func (n Name) String() string {
 
 func (h *Header) String() string {
 	return h.Name.String() + " \t" + h.TTL.String() + " " + h.Class.String()
-}
-
-func (f Flag) String() string {
-	switch f {
-	case QR:
-		return "qr"
-	case AA:
-		return "aa"
-	case TC:
-		return "tc"
-	case RD:
-		return "rd"
-	case RA:
-		return "ra"
-	case Z:
-		return "z"
-	case AD:
-		return "ad"
-	case CD:
-		return "cd"
-	}
-	return ""
 }

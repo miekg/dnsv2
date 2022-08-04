@@ -22,6 +22,11 @@ var hdr = `
 
 package dns
 
+import (
+	"encoding/binary"
+	"strconv"
+)
+
 `
 
 var (
@@ -65,7 +70,8 @@ func (t Type) String() string {
 {{range .}}  case Type{{.}}:
 	return "{{.}}"
 {{end}} }
-	return "NONE"
+	i := binary.BigEndian.Uint16(t[:])
+	return "TYPE" + strconv.FormatUint(uint64(i), 10)
 }
 `))
 
@@ -80,14 +86,35 @@ func (r Rcode) String() string {
 }
 `))
 
-	// Opcode  String()
-	opcodeStr = template.Must(template.New("opcodeToString").Funcs(generate.Funcs).Parse(`
+	// Opcode String()
+	opcodeStr = template.Must(template.New("opcodeStr").Funcs(generate.Funcs).Parse(`
 func (o Opcode) String() string {
 	switch o {
 {{range .}}  case Opcode{{.}}:
 	return "{{.|ToUpper}}"
 {{end}} }
 	return ""
+}
+`))
+	// Flag String()
+	flagStr = template.Must(template.New("flagStr").Funcs(generate.Funcs).Parse(`
+func (f Flag) String() string {
+	switch f {
+{{range .}}  case {{.}}:
+	return "{{. | ToLower}}"
+{{end}} }
+	return ""
+}
+`))
+	// Class String()
+	classStr = template.Must(template.New("classStr").Funcs(generate.Funcs).Parse(`
+func (c Class) String() string {
+	switch c {
+{{range .}}  case Class{{.}}:
+	return "{{.}}"
+{{end}} }
+	i := binary.BigEndian.Uint16(c[:])
+	return "CLASS" + strconv.FormatUint(uint64(i), 10)
 }
 `))
 )
@@ -129,6 +156,17 @@ func main() {
 	opcodex := generate.Types(pkg, "Opcode")
 	if err := opcodeStr.Execute(b, opcodex); err != nil {
 		log.Fatal("failed to generate %s: %s", "opcodeStr", err)
+	}
+
+	// doeesnt'find the correct types, Need Flag _TYPES_
+	flagx := generate.TypesOf(pkg, "Flag")
+	if err := flagStr.Execute(b, flagx); err != nil {
+		log.Fatal("failed to generate %s: %s", "flagStr", err)
+	}
+
+	classx := generate.Types(pkg, "Class")
+	if err := classStr.Execute(b, classx); err != nil {
+		log.Fatal("failed to generate %s: %s", "classStr", err)
 	}
 
 	if err := generate.SaveSource(b.Bytes(), "ztypes.go"); err != nil {
