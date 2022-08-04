@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 )
 
-// WalkFunc is the type of the function called by Walk to visit each Header. RR will only contain the header, no rdata
-// unpacked. The int parameter is where in the section this RR sits.
+// WalkFunc is the type of the function called by Walk to visit each RR. This RR will only have its header populated, no
+// no rdata is unpacked. The integer is the index of this RR in its section.
 type WalkFunc func(s Section, rr RR, i int) error
 
 // WalkDirection tells in what order to walk the message.
@@ -16,8 +16,9 @@ const (
 	WalkBackward
 )
 
-// Walk walks the section s in the message m in the direction of d. Each rr is filtered by fn. If WalkFunc returns an error the walk is
-// stopped. Note due to DNS messages are structed an [WalkBackward] requires to walk forward and then backwards.
+// Walk walks the section s in the message m in the direction of d. Each rr is filtered by fn. If WalkFunc returns an
+// error the walk is stopped. Note due to DNS messages are structed an [WalkBackward] requires to walk forward and then
+// backwards.
 func (m *Msg) Walk(d WalkDirection, fn WalkFunc) (err error) {
 	m.index() // reset any reads
 
