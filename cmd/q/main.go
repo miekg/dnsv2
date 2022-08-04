@@ -14,10 +14,9 @@ func main() {
 		log.Fatal(err)
 	}
 	m := dns.NewMsg(make([]byte, 512))
-	m.SetID(42)
 
-	a := &dns.A{Header: dns.Header{Name: dns.NewName("example.net."), Class: dns.ClassIN}}
-	m.SetRR(dns.Qd, a)
+	m.SetID(42)
+	m.SetRR(dns.Qd, &dns.A{Header: dns.Header{Name: dns.NewName("example.net."), Class: dns.ClassIN}})
 
 	n, err := c.Write(m.Buf[:m.Len()])
 	if err != nil {
