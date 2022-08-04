@@ -539,19 +539,16 @@ func (m *Msg) String() string {
 			b.WriteString(f.String())
 		}
 	}
-	b.WriteString(fmt.Sprintf("; %s %d, %s: %d, %s: %d, %s: %d\n", Qd, m.Count(Qd), An, m.Count(An), Ns, m.Count(Ns), Ar, m.Count(Ar)))
+	b.WriteString(fmt.Sprintf("; %s %d, %s: %d, %s: %d, %s: %d", Qd, m.Count(Qd), An, m.Count(An), Ns, m.Count(Ns), Ar, m.Count(Ar)))
 
 	for s := Qd; s <= Ar; s++ {
 		if m.Count(s) == 0 {
 			continue
 		}
-		b.WriteString(fmt.Sprintf(";; %s SECTION:\n", s))
+		b.WriteString(fmt.Sprintf("\n;; %s SECTION:\n", s))
 		rrs, err := m.RRs(s)
 		if err != nil {
 			return b.String()
-		}
-		if len(rrs) > 0 {
-			b.WriteString("\n")
 		}
 		for _, rr := range rrs {
 			if opt, ok := rr.(*OPT); ok {
