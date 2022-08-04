@@ -5,6 +5,7 @@ import (
 	"go/format"
 	"go/types"
 	"os"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -21,6 +22,7 @@ func Load() (*types.Package, error) {
 	return pkgs[0].Types, nil
 }
 
+// SaveSource formats the source in buf and saves it into filename. Filename should start with a 'z'.
 func SaveSource(buf []byte, filename string) error {
 	// gofmt
 	res, err := format.Source(buf)
@@ -35,4 +37,28 @@ func SaveSource(buf []byte, filename string) error {
 	}
 	f.Write(res)
 	return f.Close()
+}
+
+// Types returns the types that share the prefix, prefix<None> is always excluded.
+func Types(pkg *types.Package, prefix string) []string {
+	scope := pkg.Scope()
+	var typex []string
+	for _, name := range scope.Names() {
+		o := scope.Lookup(name)
+		if o == nil || !o.Exported() {
+			continue
+		}
+		if !strings.HasPrefix(o.Name(), prefix) {
+			continue
+		}
+		name := strings.TrimPrefix(o.Name(), prefix)
+		if name == "" || name == "None" {
+			continue
+		}
+		if o.Type().String() != Import+"."+prefix {
+			continue
+		}
+		typex = append(typex, name)
+	}
+	return typex
 }

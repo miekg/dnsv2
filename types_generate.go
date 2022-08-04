@@ -9,9 +9,7 @@ package main
 
 import (
 	"bytes"
-	"go/types"
 	"log"
-	"strings"
 	"text/template"
 
 	"github.com/miekg/dnsv2/internal/generate"
@@ -63,6 +61,11 @@ func RRType(rr RR) Type {
 	return TypeNone
 }
 `))
+
+	headerFunc = template.Must(template.New("headerFunc").Parse(`
+{{range .}}  func (rr *{{.}}) Hdr() *Header { return &rr.Header }
+{{end}}
+`))
 )
 
 func main() {
@@ -70,7 +73,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	typex := Types(pkg)
+	typex := generate.Types(pkg, "Type")
 
 	b := &bytes.Buffer{}
 	b.WriteString(hdr)
@@ -84,32 +87,11 @@ func main() {
 	if err := iface.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "iface", err)
 	}
+	if err := headerFunc.Execute(b, typex); err != nil {
+		log.Fatal("failed to generate %s: %s", "headerFunc", err)
+	}
 	if err := rrtype.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "rrtype", err)
 	}
 	generate.SaveSource(b.Bytes(), "ztypes.go")
-}
-
-func Types(pkg *types.Package) []string {
-	scope := pkg.Scope()
-	// Collect constants like TypeX
-	var typex []string
-	for _, name := range scope.Names() {
-		o := scope.Lookup(name)
-		if o == nil || !o.Exported() {
-			continue
-		}
-		if !strings.HasPrefix(o.Name(), "Type") {
-			continue
-		}
-		name := strings.TrimPrefix(o.Name(), "Type")
-		if name == "" || name == "None" {
-			continue
-		}
-		if o.Type().String() != generate.Import+".Type" {
-			continue
-		}
-		typex = append(typex, name)
-	}
-	return typex
 }

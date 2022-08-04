@@ -24,6 +24,11 @@ var (
 	_ RR = new(OPT)
 )
 
+func (rr *A) Hdr() *Header     { return &rr.Header }
+func (rr *CNAME) Hdr() *Header { return &rr.Header }
+func (rr *MX) Hdr() *Header    { return &rr.Header }
+func (rr *OPT) Hdr() *Header   { return &rr.Header }
+
 // RRType returns the type of the RR.
 func RRType(rr RR) Type {
 	switch rr.(type) {

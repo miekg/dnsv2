@@ -60,8 +60,7 @@ type OPT struct {
 	Options []Option
 }
 
-func (rr *OPT) Hdr() *Header { return &rr.Header }
-func (rr *OPT) Len() int     { return len(rr.Options) }
+func (rr *OPT) Len() int { return len(rr.Options) }
 func (rr *OPT) Data(i int) []byte {
 	if i < 0 || i >= rr.Len() {
 		return nil
@@ -110,17 +109,6 @@ func (rr *OPT) Version() uint8 { return rr.Hdr().TTL[1] }
 func (rr *OPT) Do() bool { return false }
 
 func (rr *OPT) Size() uint16 { return binary.BigEndian.Uint16(rr.Hdr().Class[:]) }
-
-// OptionCode returns the option code of the Option.
-func OptionCode(e Option) Code {
-	switch e.(type) {
-	case *NSID:
-		return CodeNSID
-	case *COOKIE:
-		return CodeCookie
-	}
-	return CodeNone
-}
 
 // optionHeader return the code and length as bytes of the EDNS0 Option code.
 func optionHeader(e Option) [4]byte {
@@ -174,13 +162,3 @@ func (o *COOKIE) Data() []byte {
 	return append(header[:], o.Cookie...)
 }
 func (o *COOKIE) Write(buf []byte) error { o.Cookie = buf; return nil }
-
-var codeToOption = map[Code]func() Option{
-	CodeNSID:   func() Option { return new(NSID) },
-	CodeCookie: func() Option { return new(COOKIE) },
-}
-
-var (
-	_ Option = new(NSID)
-	_ Option = new(COOKIE)
-)
