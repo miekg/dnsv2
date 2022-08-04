@@ -57,10 +57,9 @@ OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See
 */
 type OPT struct {
 	Header
-	Options []Option
+	Options []Option `dns:"len"`
 }
 
-func (rr *OPT) Len() int { return len(rr.Options) }
 func (rr *OPT) Data(i int) []byte {
 	if i < 0 || i >= rr.Len() {
 		return nil

@@ -62,3 +62,18 @@ func Types(pkg *types.Package, prefix string) []string {
 	}
 	return typex
 }
+
+// RR will take a type and the package scope, and return the (innermost) struct if the type is considered a RR type
+func RR(t types.Type, scope *types.Scope) *types.Struct {
+	st, ok := t.Underlying().(*types.Struct)
+	if !ok {
+		return nil
+	}
+	if st.NumFields() == 0 {
+		return nil
+	}
+	if st.Field(0).Type() == scope.Lookup("Header").Type() {
+		return st
+	}
+	return nil
+}

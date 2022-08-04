@@ -4,8 +4,8 @@ package dns
 
 // OptionCode returns the option code of the Option.
 func OptionCode(e Option) Code {
-	switch e.(Code) {
-	case *Cookie:
+	switch e.(type) {
+	case *COOKIE:
 		return CodeCookie
 	case *NSID:
 		return CodeNSID

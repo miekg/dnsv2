@@ -1,5 +1,7 @@
 package dns
 
+// In this file we define all the RRs we can handle, "go generate" will generate most methods for us.
+
 import (
 	"encoding/binary"
 	"encoding/hex"
@@ -28,7 +30,6 @@ type A struct {
 	A [4]byte
 }
 
-func (rr *A) Len() int { return 1 }
 func (rr *A) String() string {
 	return TypeToString[TypeA] + "\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
 }
@@ -61,7 +62,6 @@ type MX struct {
 	Mx         Name
 }
 
-func (rr *MX) Len() int { return 2 }
 func (rr *MX) String() string {
 	prio := binary.BigEndian.Uint16(rr.Preference[:])
 	return TypeToString[TypeMX] + "\t" + strconv.FormatUint(uint64(prio), 10) + " " + rr.Mx.String()
@@ -97,7 +97,6 @@ type CNAME struct {
 	Target Name
 }
 
-func (rr *CNAME) Len() int       { return 1 }
 func (rr *CNAME) String() string { return TypeToString[TypeCNAME] + "\t" + rr.Target.String() }
 
 func (rr *CNAME) Data(i int) []byte {

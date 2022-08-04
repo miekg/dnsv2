@@ -9,7 +9,10 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"go/types"
 	"log"
+	"strings"
 	"text/template"
 
 	"github.com/miekg/dnsv2/internal/generate"
@@ -106,5 +109,43 @@ func main() {
 	if err := str.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "str", err)
 	}
-	generate.SaveSource(b.Bytes(), "ztypes.go")
+
+	Len(b, pkg)
+
+	if err := generate.SaveSource(b.Bytes(), "ztypes.go"); err != nil {
+		log.Fatal("failed go save source: %s", err)
+	}
+}
+
+// Generate the Len() methods. We returns the number of fields for each resource record, except when the struct tag
+// `dns:"len"` is seen, then we take the 'len()' of the field.
+func Len(b *bytes.Buffer, pkg *types.Package) {
+	typex := generate.Types(pkg, "Type")
+	scope := pkg.Scope()
+
+	for _, name := range typex {
+		o := scope.Lookup(name)
+		rr := generate.RR(o.Type(), scope)
+		if rr == nil {
+			continue
+		}
+
+		fmt.Fprintf(b, "func (rr *%s) Len() int {\n", name)
+
+		l := 0
+		dyn := []string{}
+		for i := 1; i < rr.NumFields(); i++ {
+			switch rr.Tag(i) {
+			case `dns:"len"`:
+				dyn = append(dyn, fmt.Sprintf("len(rr.%s)", rr.Field(i).Name()))
+			default:
+				l++
+			}
+		}
+		if len(dyn) > 0 {
+			fmt.Fprintf(b, "return %d + %s\n}", l, strings.Join(dyn, "+"))
+			continue
+		}
+		fmt.Fprintf(b, "return %d\n}\n", l)
+	}
 }

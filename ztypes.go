@@ -57,3 +57,15 @@ func (t Type) String() string {
 	}
 	return "NONE"
 }
+func (rr *A) Len() int {
+	return 1
+}
+func (rr *CNAME) Len() int {
+	return 1
+}
+func (rr *MX) Len() int {
+	return 2
+}
+func (rr *OPT) Len() int {
+	return 0 + len(rr.Options)
+}

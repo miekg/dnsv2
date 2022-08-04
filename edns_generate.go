@@ -33,11 +33,11 @@ var (
 `))
 
 	// OptioncCode
-	optionCode = template.Must(template.New("optionCode").Parse(`
+	optionCode = template.Must(template.New("optionCode").Funcs(funcs).Parse(`
 // OptionCode returns the option code of the Option.
 func OptionCode(e Option) Code {
-	switch e.(Code) {
-{{range .}} case *{{.}}:
+	switch e.(type) {
+{{range .}} case *{{. | ToUpper}}:
 	return Code{{.}}
 {{end}} }
 	return CodeNone
@@ -71,5 +71,8 @@ func main() {
 	if err := codeToOption.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "codeToOption", err)
 	}
-	generate.SaveSource(b.Bytes(), "zedns.go")
+
+	if err := generate.SaveSource(b.Bytes(), "zedns.go"); err != nil {
+		log.Fatal("failed go save source: %s", err)
+	}
 }
