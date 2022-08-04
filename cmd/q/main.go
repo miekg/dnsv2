@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	dns "github.com/miekg/dnsv2"
 )
@@ -18,6 +19,7 @@ func main() {
 	m.SetID(42)
 	m.SetRR(dns.Qd, &dns.A{Header: dns.Header{Name: dns.NewName("example.net."), Class: dns.ClassIN}})
 
+	c.SetWriteDeadline(time.Now().Add(2 * time.Second))
 	n, err := c.Write(m.Buf[:m.Len()])
 	if err != nil {
 		log.Fatal(err)
@@ -26,6 +28,7 @@ func main() {
 		log.Fatal("short write")
 	}
 
+	c.SetReadDeadline(time.Now().Add(2 * time.Second))
 	if n, err = c.Read(m.Buf); err != nil {
 		log.Fatal(err)
 	}

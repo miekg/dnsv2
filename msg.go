@@ -184,12 +184,17 @@ func (m *Msg) SetRcode(r Rcode) {
 	binary.BigEndian.PutUint16(m.Buf[2:], bits)
 }
 
-// do something here....
 // Opcode returns the Operation Code from the message m.
-func (m *Msg) Opcode() Opcode { return 0 }
+func (m *Msg) Opcode() Opcode {
+	bits := binary.BigEndian.Uint16(m.Buf[2:])
+	return Opcode(bits << 11)
+}
 
 // Opcode sets the Operation Code in the message m.
 func (m *Msg) SetOpcode(o Opcode) {
+	bits := binary.BigEndian.Uint16(m.Buf[2:])
+	// something
+	binary.BigEndian.PutUint16(m.Buf[2:], bits)
 }
 
 func (m *Msg) SetCount(s Section, i uint16) {
@@ -566,7 +571,7 @@ func rrFromType(typ Type) RR {
 // empty string is returned. Mostly useful for debugging.
 func (m *Msg) String() string {
 	b := &strings.Builder{}
-	b.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: %s, status %s, id: %d\n", m.Opcode(), m.Rcode(), m.ID()))
+	b.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n", m.Opcode(), m.Rcode(), m.ID()))
 	b.WriteString(";; flags:")
 	for f := Flag(0); f <= CD; f++ {
 		if m.Flag(f) {
