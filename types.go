@@ -35,7 +35,7 @@ type A struct {
 }
 
 func (rr *A) String() string {
-	return TypeToString[TypeA] + "\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
+	return TypeA.String() + "\t" + net.IP{rr.A[0], rr.A[1], rr.A[2], rr.A[3]}.String()
 }
 
 func (rr *A) Write(msg []byte, offset, n int) error {
@@ -61,7 +61,7 @@ type MX struct {
 
 func (rr *MX) String() string {
 	prio := binary.BigEndian.Uint16(rr.Preference[:])
-	return TypeToString[TypeMX] + "\t" + strconv.FormatUint(uint64(prio), 10) + " " + rr.Mx.String()
+	return TypeMX.String() + "\t" + strconv.FormatUint(uint64(prio), 10) + " " + rr.Mx.String()
 }
 
 func (rr *MX) Write(msg []byte, offset, n int) error {
@@ -81,7 +81,7 @@ type CNAME struct {
 	Target Name
 }
 
-func (rr *CNAME) String() string { return TypeToString[TypeCNAME] + "\t" + rr.Target.String() }
+func (rr *CNAME) String() string { return TypeCNAME.String() + "\t" + rr.Target.String() }
 
 func (rr *CNAME) Write(msg []byte, offset, n int) error {
 	name, _, err := unpackName(msg, offset)

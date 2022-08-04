@@ -30,5 +30,6 @@ func main() {
 		log.Fatal(err)
 	}
 	m.Buf = m.Buf[:n]
+	m.Reset()
 	fmt.Printf("%s", m)
 }

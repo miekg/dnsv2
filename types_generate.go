@@ -1,9 +1,8 @@
 //go:build ignore
 
 // types_generate.go is meant to run with go generate. It will use go/{importer,types} to track down all the RR struct
-// types. Then for each type it will generate conversion tables (typeToRR and TypeToString) and banal methods (len,
-// Header, copy) based on the struct tags. The generated source is written to ztypes.go, and is meant to be checked into
-// git.
+// types. Then for each type it will generate conversion tables for String() and banal methods (len, Header, copy) based
+// on the struct tags. The generated source is written to ztypes.go, and is meant to be checked into git.
 
 package main
 
@@ -32,17 +31,6 @@ var typeToRR = map[Type]func() RR{
 {{range .}}  Type{{.}}:  func() RR { return new({{.}}) },
 {{end}}
 }
-
-`))
-
-	// TypeToString map.
-	typeToString = template.Must(template.New("typeToString").Parse(`
-// TypeToString is a map of strings for each RR type.
-var TypeToString = map[Type]string{
-{{range .}}  Type{{.}}: "{{.}}",
-{{end}}
-}
-
 `))
 
 	// Interface implementation check for all RRs.
@@ -70,13 +58,36 @@ func RRType(rr RR) Type {
 {{end}}
 `))
 
-	str = template.Must(template.New("str").Parse(`
+	// Type String()
+	typeStr = template.Must(template.New("str").Parse(`
 func (t Type) String() string {
 	switch t {
 {{range .}}  case Type{{.}}:
 	return "{{.}}"
 {{end}} }
 	return "NONE"
+}
+`))
+
+	// Rcode String()
+	rcodeStr = template.Must(template.New("rcodeStr").Funcs(generate.Funcs).Parse(`
+func (r Rcode) String() string {
+	switch r {
+{{range .}}  case Rcode{{.}}:
+	return "{{.|ToUpper}}"
+{{end}} }
+	return ""
+}
+`))
+
+	// Opcode  String()
+	opcodeStr = template.Must(template.New("opcodeToString").Funcs(generate.Funcs).Parse(`
+func (o Opcode) String() string {
+	switch o {
+{{range .}}  case Opcode{{.}}:
+	return "{{.|ToUpper}}"
+{{end}} }
+	return ""
 }
 `))
 )
@@ -94,9 +105,6 @@ func main() {
 	if err := typeToRR.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "typeToRR", err)
 	}
-	if err := typeToString.Execute(b, typex); err != nil {
-		log.Fatal("failed to generate %s: %s", "TypeToString", err)
-	}
 	if err := iface.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "iface", err)
 	}
@@ -106,12 +114,22 @@ func main() {
 	if err := rrtype.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "rrtype", err)
 	}
-	if err := str.Execute(b, typex); err != nil {
-		log.Fatal("failed to generate %s: %s", "str", err)
+	if err := typeStr.Execute(b, typex); err != nil {
+		log.Fatal("failed to generate %s: %s", "typeStr", err)
 	}
 
 	Len(b, pkg)
 	Data(b, pkg)
+
+	rcodex := generate.Types(pkg, "Rcode")
+	if err := rcodeStr.Execute(b, rcodex); err != nil {
+		log.Fatal("failed to generate %s: %s", "RcodeStr", err)
+	}
+
+	opcodex := generate.Types(pkg, "Opcode")
+	if err := opcodeStr.Execute(b, opcodex); err != nil {
+		log.Fatal("failed to generate %s: %s", "opcodeStr", err)
+	}
 
 	if err := generate.SaveSource(b.Bytes(), "ztypes.go"); err != nil {
 		log.Printf("%s\n", b)

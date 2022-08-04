@@ -15,10 +15,10 @@ type (
 
 	// Header is the header each RR has.
 	Header struct {
-		Name
-		// Implicit type.
-		Class
-		TTL
+		Name // Owner name of the Resource Record.
+		// Type is implicit and retrieved via the RR's Go type.
+		Class // Class of the Resource Record.
+		TTL   // Time to Live of the Resource Record.
 	}
 
 	// RR defines a Resource Record. Note that even the special RR in the question section is handled as a normal

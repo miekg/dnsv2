@@ -10,7 +10,7 @@ type (
 	// Msg is a DNS message which is used in the query and the response. It's defined as follows:
 	//
 	//   +---------------------+
-	//   |        Header       |
+	//   |    Message Header   |
 	//   +---------------------+
 	//   |       Question      | the question for the name server, [Qd].
 	//   +---------------------+
@@ -21,13 +21,13 @@ type (
 	//   |      Additional     | RRs holding additional information, [Ar].
 	//   +---------------------+
 	//
-	// A Msg allows RRs to be added (in order) or retrieved (in order per section, but each section can accessed in
-	// any order).
+	// A Msg allows RRs to be added (in order) or retrieved (in order per section, but sections can accessed in any
+	// order).
 	//
 	// Even though the protocol allows multiple questions, in practice only 1 is allowed, this package enforces that
-	// convention. After setting any RR, Buf may be written to the wire as it will contain a valid DNS message.
-	// In this package the question section's RR is handled as a normal RR, just without any rdata - as is also done
-	// in dynamic updates (RFC 2136).
+	// convention. After setting any RR, the message's buffer may be written to the wire as it will contain a valid
+	// DNS message. In this package the question section's RR is handled as a normal RR, just without any rdata - as
+	// is also done in dynamic updates (RFC 2136).
 	//
 	// The message header is defined as follows:
 	//                                    1  1  1  1  1  1
@@ -46,7 +46,9 @@ type (
 	//    |                    ARCOUNT                    |
 	//    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	//
-	// If the buffer in Msg is too small it will be resized and creating a message.
+	// If the buffer in Msg is too small it will be resized while creating a message. Domain names that can be
+	// compressed will be compressed. If you assign a new byte slice to Buf, [Reset()] must be called to reset all
+	// internal counters and the compression map.
 	Msg struct {
 		Buf []byte // Buf is the message as read from the wire or as created.
 
@@ -65,10 +67,16 @@ type (
 	}
 
 	// Section signifies a message's section. Four sections are defined (in order): Qd, An, Ns, and Ar.
-	Section int
+	Section uint8
 
 	// Flag is a (boolean) message header flag.
-	Flag int
+	Flag uint16
+
+	// Rcode is the return (status) code for a message.
+	Rcode uint16
+
+	// Opcode is the operation code for a message.
+	Opcode uint8
 )
 
 // These are the sections in a Msg.
@@ -81,29 +89,36 @@ const (
 
 // These are the flags currently defined for a DNS message's header.
 const (
-	QR Flag = iota // Query Response
-	AA             // Authoritative Answer
-	TC             // TrunCated
-	RD             // Recursion Desired
-	RA             // Recussion Available
-	Z              // Zero bits
-	AD             // Authenticated Data
-	CD             // Checking Disabled
+	QR Flag = 1 << 15 // Query Response
+	AA Flag = 1 << 10 // Authoritative Answer
+	TC Flag = 1 << 9  // TrunCated
+	RD Flag = 1 << 8  // Recursion Desired
+	RA Flag = 1 << 7  // Recussion Available
+	Z  Flag = 1 << 6  // Zero bits
+	AD Flag = 1 << 5  // Authenticated Data
+	CD Flag = 1 << 4  // Checking Disabled
+)
+
+// The defined Return Codes. Note about extended rcodes. TODO
+const (
+	RcodeNoError  Rcode = 0
+	RcodeFormErr  Rcode = 1
+	RcodeServFail Rcode = 2
+	RcodeNXDomain Rcode = 3
+	RcodeNotImp   Rcode = 4
+	RcodeRefused  Rcode = 5
+)
+
+// The defined Operation Codes.
+const (
+	OpcodeQuery  Opcode = 0
+	OpcodeIQuery Opcode = 1
+	OpcodeStatus Opcode = 2
+	OpcodeNotify Opcode = 3
+	OpcodeUpdate Opcode = 4
 )
 
 const headerSize = 12
-
-// offsets of headers bit in the uint16.
-var headerBitmask = map[Flag]uint16{
-	QR: 1 << 15, // query/response (response=1)
-	AA: 1 << 10,
-	TC: 1 << 9,
-	RD: 1 << 8,
-	RA: 1 << 7,
-	Z:  1 << 6,
-	AD: 1 << 5,
-	CD: 1 << 4,
-}
 
 // NewMsg returns a pointer to a new Msg. Optionally a buffer can be given here, NewMsg will not allocate a buffer on
 // behalf of the caller, it will enlarge a buffer (when given and the need arises).
@@ -117,13 +132,21 @@ func NewMsg(buf ...[]byte) *Msg {
 	return m
 }
 
-// Len returns the lenght of the message m, that actually contains RRs.
+// Len returns the length of the buffer in m that has been written thus far.
 func (m *Msg) Len() int { return int(m.w) + 1 }
+
+// Reset resets all internal counters in m. This must be called after a new buffer is assigned to m.
+func (m *Msg) Reset() {
+	m.w = uint16(len(m.Buf) - 1)
+	m.r[0], m.r[1], m.r[2], m.r[3] = 0, 0, 0, 0
+	m.count[0], m.count[1], m.count[2], m.count[3] = 0, 0, 0, 0
+	m.c = compression(make(map[string]uint16))
+}
 
 // Flag returns the value of flag f.
 func (m *Msg) Flag(f Flag) bool {
 	bits := binary.BigEndian.Uint16(m.Buf[2:])
-	return bits&headerBitmask[f] == headerBitmask[f]
+	return bits&uint16(f) == uint16(f)
 }
 
 // SetFlag sets the flag f to value v. If v is not given 'true' is assumed.
@@ -131,14 +154,14 @@ func (m *Msg) SetFlag(f Flag, v ...bool) {
 	bits := binary.BigEndian.Uint16(m.Buf[2:])
 	defer func() { binary.BigEndian.PutUint16(m.Buf[2:], bits) }()
 	if len(v) == 0 {
-		bits |= headerBitmask[f]
+		bits |= uint16(f)
 		return
 	}
 	if v[0] {
-		bits |= headerBitmask[f]
+		bits |= uint16(f)
 		return
 	}
-	bits &^= headerBitmask[f]
+	bits &^= uint16(f)
 }
 
 // ID returns the message's ID.
@@ -147,15 +170,27 @@ func (m *Msg) ID() uint16 { return binary.BigEndian.Uint16(m.Buf[0:]) }
 // SetID sets the message to i.
 func (m *Msg) SetID(i uint16) { binary.BigEndian.PutUint16(m.Buf[0:], i) }
 
-// Rcode is a function
-func (m *Msg) Rcode() {
-	// check extended Rcode
+// Rcode returns the return code from the message m.
+func (m *Msg) Rcode() Rcode {
+	// Rcode is a function beause of extended opcode. TODO
+	bits := binary.BigEndian.Uint16(m.Buf[2:])
+	return Rcode(bits & 0xF)
 }
 
-func (m *Msg) SetRcode() {}
+// Rcode sets the Return Code in the message m.
+func (m *Msg) SetRcode(r Rcode) {
+	bits := binary.BigEndian.Uint16(m.Buf[2:])
+	bits |= uint16(r) & 0xF // doesn't this clear stuff?
+	binary.BigEndian.PutUint16(m.Buf[2:], bits)
+}
 
-func (m *Msg) Opcode()    {}
-func (m *Msg) SetOpcode() {}
+// do something here....
+// Opcode returns the Operation Code from the message m.
+func (m *Msg) Opcode() Opcode { return 0 }
+
+// Opcode sets the Operation Code in the message m.
+func (m *Msg) SetOpcode(o Opcode) {
+}
 
 func (m *Msg) SetCount(s Section, i uint16) {
 	switch s {
@@ -531,7 +566,7 @@ func rrFromType(typ Type) RR {
 // empty string is returned. Mostly useful for debugging.
 func (m *Msg) String() string {
 	b := &strings.Builder{}
-	b.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: ????, status ????, id: %d\n", m.ID()))
+	b.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: %s, status %s, id: %d\n", m.Opcode(), m.Rcode(), m.ID()))
 	b.WriteString(";; flags:")
 	for f := Flag(0); f <= CD; f++ {
 		if m.Flag(f) {

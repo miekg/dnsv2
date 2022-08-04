@@ -4,13 +4,20 @@ import (
 	"fmt"
 	"go/format"
 	"go/types"
+	"html/template"
 	"os"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
 
+// Import is our package name.
 const Import = "github.com/miekg/dnsv2"
+
+// Funcs are default funcs we use in the templates.
+var Funcs = template.FuncMap{
+	"ToUpper": strings.ToUpper,
+}
 
 // Load retrieves package description for a given module.
 func Load() (*types.Package, error) {

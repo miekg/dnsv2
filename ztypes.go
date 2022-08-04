@@ -9,14 +9,6 @@ var typeToRR = map[Type]func() RR{
 	TypeOPT:   func() RR { return new(OPT) },
 }
 
-// TypeToString is a map of strings for each RR type.
-var TypeToString = map[Type]string{
-	TypeA:     "A",
-	TypeCNAME: "CNAME",
-	TypeMX:    "MX",
-	TypeOPT:   "OPT",
-}
-
 var (
 	_ RR = new(A)
 	_ RR = new(CNAME)
@@ -91,4 +83,38 @@ func (rr *MX) Data(i int) []byte {
 		return rr.Mx
 	}
 	return nil
+}
+
+func (r Rcode) String() string {
+	switch r {
+	case RcodeFormErr:
+		return "FORMERR"
+	case RcodeNXDomain:
+		return "NXDOMAIN"
+	case RcodeNoError:
+		return "NOERROR"
+	case RcodeNotImp:
+		return "NOTIMP"
+	case RcodeRefused:
+		return "REFUSED"
+	case RcodeServFail:
+		return "SERVFAIL"
+	}
+	return ""
+}
+
+func (o Opcode) String() string {
+	switch o {
+	case OpcodeIQuery:
+		return "IQUERY"
+	case OpcodeNotify:
+		return "NOTIFY"
+	case OpcodeQuery:
+		return "QUERY"
+	case OpcodeStatus:
+		return "STATUS"
+	case OpcodeUpdate:
+		return "UPDATE"
+	}
+	return ""
 }

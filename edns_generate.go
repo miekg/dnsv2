@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"log"
-	"strings"
 	"text/template"
 
 	"github.com/miekg/dnsv2/internal/generate"
@@ -19,13 +18,9 @@ var hdr = `
 package dns
 
 `
-var funcs = template.FuncMap{
-	"ToUpper": strings.ToUpper,
-}
-
 var (
 	// Interface implementation check for all RRs.
-	iface = template.Must(template.New("iface").Funcs(funcs).Parse(`
+	iface = template.Must(template.New("iface").Funcs(generate.Funcs).Parse(`
 var (
 {{range .}} _ Option = new({{. | ToUpper}})
 {{end}}
@@ -33,7 +28,7 @@ var (
 `))
 
 	// OptioncCode
-	optionCode = template.Must(template.New("optionCode").Funcs(funcs).Parse(`
+	optionCode = template.Must(template.New("optionCode").Funcs(generate.Funcs).Parse(`
 // OptionCode returns the option code of the Option.
 func OptionCode(e Option) Code {
 	switch e.(type) {
@@ -45,7 +40,7 @@ func OptionCode(e Option) Code {
 `))
 
 	// codeToOption
-	codeToOption = template.Must(template.New("optionCode").Funcs(funcs).Parse(`
+	codeToOption = template.Must(template.New("optionCode").Funcs(generate.Funcs).Parse(`
 var codeToOption = map[Code]func() Option{
 {{range .}} Code{{.}}: func() Option { return new({{. | ToUpper}}) },
 {{end}} }
