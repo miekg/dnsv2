@@ -16,9 +16,9 @@ import (
 
 var (
 	// Valid Classes.
+	ClassIN   = Class{0, 1}
 	ClassNONE = Class{0, 254}
-	ClassINET = Class{0, 1}
-	classANY  = Class{0, 255}
+	ClassANY  = Class{0, 255}
 
 	// Supported RR Types.
 	TypeNone  = Type{0, 0}

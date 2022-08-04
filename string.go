@@ -25,8 +25,10 @@ func (c Class) String() string {
 	switch c {
 	case ClassNONE:
 		return "NONE"
-	case ClassINET:
+	case ClassIN:
 		return "IN"
+	case ClassANY:
+		return "ANY"
 	}
 	i := binary.BigEndian.Uint16(c[:])
 	return "CLASS" + strconv.FormatUint(uint64(i), 10)

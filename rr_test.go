@@ -30,7 +30,7 @@ func TestNameFromString(t *testing.T) {
 /*
 func TestBytes(t *testing.T) {
 	rr := &A{
-		Header{NewName("example.net."), ClassINET, NewTTL(15)},
+		Header{NewName("example.net."), ClassIN, NewTTL(15)},
 		NewIPv4(net.ParseIP("127.0.0.1")),
 	}
 

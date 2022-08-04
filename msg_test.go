@@ -23,7 +23,7 @@ func TestSetRRBufferResizing(t *testing.T) {
 	// this should not crash, as the buffer is resized.
 	m := NewMsg(make([]byte, 40))
 	rr := &A{
-		Header{NewName("example.net."), ClassINET, NewTTL(15)},
+		Header{NewName("example.net."), ClassIN, NewTTL(15)},
 		NewIPv4(net.ParseIP("127.0.0.1")),
 	}
 
