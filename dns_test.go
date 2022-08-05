@@ -2,6 +2,8 @@ package dns
 
 import (
 	"fmt"
+	"strings"
+	"testing"
 )
 
 // miek.nl. IN MX request and reply. Both contains OPT RR as well.
@@ -94,4 +96,14 @@ func ExampleMsg_String() {
 	   ;; ADDITIONAL SECTION:
 	   ;; EDNS: version: 0, flags:; udp: 512
 	*/
+}
+
+func TestMsgString(t *testing.T) {
+	buf := []byte{114, 9, 129, 128, 0, 1, 0, 1, 0, 0, 0, 0, 7, 101, 120, 97, 109, 112, 108, 101, 3, 110, 101, 116, 0, 0, 1, 0, 1, 192, 12, 0, 1, 0, 1, 0, 0, 83, 180, 0, 4, 93, 184, 216, 34}
+	m := &Msg{Buf: buf}
+
+	// Had off-by-one error that messed up overflow check, resulting in answer not being printed.
+	if !strings.HasSuffix(m.String(), ";; ANSWER SECTION:\nexample.net. 	 21428 IN	A	93.184.216.34\n") {
+		t.Fatal("expected message to have ANSWER section with A record, got none")
+	}
 }
