@@ -724,7 +724,6 @@ func (m *Msg) bytes(s Section, rr RR) {
 		offset += 3
 	}
 
-	// don't compress after certain offset, compression pointer can't reach.
 	m.c.insert(rr.Hdr().Name, m.w)
 
 	m.Buf[offset+0] = RRType(rr)[0]
@@ -733,7 +732,7 @@ func (m *Msg) bytes(s Section, rr RR) {
 	m.Buf[offset+3] = rr.Hdr().Class[1]
 	offset += 3
 
-	// return here if question section
+	// Return here if question section.
 	if s == Qd {
 		m.w = offset
 		return
@@ -752,12 +751,40 @@ func (m *Msg) bytes(s Section, rr RR) {
 	j := offset
 	for i := 0; i < rr.Len(); i++ {
 		data := rr.Data(i)
+
+		// Compression for well known types (those from RFC 1035).
+		compi, pointer := uint16(0), uint16(0)
+		switch RRType(rr) {
+		// case TypeSOA
+		case TypeMX:
+			if i != 1 {
+				break
+			}
+			compi, pointer = m.c.find(Name(data))
+			m.c.insert(Name(data), j+1)
+		case TypeNS:
+			fallthrough
+		case TypePTR:
+			fallthrough
+		case TypeCNAME:
+			if i != 0 {
+				break
+			}
+			compi, pointer = m.c.find(Name(data))
+			m.c.insert(Name(data), j+1)
+		}
+
+		if pointer > 0 {
+			binary.BigEndian.PutUint16(data[compi:], pointer)
+			data = data[:compi+2]
+		}
+
 		if len(data)+int(j)+1 >= len(m.Buf) {
 			m.Buf = append(m.Buf, make([]byte, len(data))...)
 		}
 
 		// for compression I need to knows which rdata of which RR is compressible, finite set, so can be done here
-		n := copy(m.Buf[j+1:], rr.Data(i))
+		n := copy(m.Buf[j+1:], data)
 		j += uint16(n)
 		l += uint16(n)
 	}

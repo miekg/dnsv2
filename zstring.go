@@ -12,5 +12,11 @@ func (rr *CNAME) String() string {
 }
 func (rr *MX) String() string {
 	xxx := binary.BigEndian.Uint16(rr.Preference[:])
-	return TypeMX.String() + "\t" + strconv.FormatUint(uint64(xxx), 10) + " " + rr.Mx.String()
+	return TypeMX.String() + "\t" + strconv.FormatUint(uint64(xxx), 10) + " " + rr.Exchange.String()
+}
+func (rr *NS) String() string {
+	return TypeNS.String() + "\t" + rr.Target.String()
+}
+func (rr *PTR) String() string {
+	return TypePTR.String() + "\t" + rr.Target.String()
 }

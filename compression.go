@@ -6,6 +6,11 @@ type compression map[string]uint16
 
 // insert inserts name into the compression map. Name starts at offset in the message.
 func (c compression) insert(n Name, offset uint16) {
+	// There is only 14 bits for compression pointer targets, so we can't use names after that as target for
+	// compression pointers.
+	if offset >= 2<<13 {
+		return
+	}
 	for i, stop := 0, false; !stop; i, stop = n.Next(i) {
 		if len(n[i:]) == 1 {
 			return

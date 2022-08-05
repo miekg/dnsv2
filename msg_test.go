@@ -95,3 +95,18 @@ func TestStrip(t *testing.T) {
 		t.Errorf("expected AR count %d, got %d or expected AN count %d, got %d", 0, m.Count(Ar), 4, m.Count(An))
 	}
 }
+
+func TestWellKnownCompression(t *testing.T) {
+	t.Parallel()
+	// this should not crash, as the buffer is resized.
+	m := NewMsg(make([]byte, 40))
+	rr := &A{Header{NewName("example.net."), IN, NewTTL(15)}, NewIPv4(net.ParseIP("127.0.0.1"))}
+
+	m.SetRR(Qd, rr)
+	m.SetRR(An, rr)
+	m.SetRR(Ns, rr)
+	m.SetRR(Ar, rr)
+
+	cname := &CNAME{Header{NewName("example.net."), IN, NewTTL(15)}, NewName("www.example.net.")}
+	m.SetRR(An, cname)
+}

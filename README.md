@@ -105,6 +105,7 @@ if err != nil {
     them as strings looks a bit weird (compared to dig).
 * OPT RR's header needs special some special functions, make them work on all RRs??
 * Question "RR" needs special casing because it obvs isn't a real RR either.
+* Len() for RRs and Len() for Options do different things...
 
 ### TODO
 
@@ -131,3 +132,5 @@ if err != nil {
 * Implement compression for CNAME, MX, NS, PTR, and SOA.
 
 * unpackXXXX need to take uint16, instead of int.
+
+* Generate Write() methods too.

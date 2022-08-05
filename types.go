@@ -24,7 +24,9 @@ var (
 	// Supported RR Types.
 	TypeNone  = Type{0, 0}
 	TypeA     = Type{0, 1}
+	TypeNS    = Type{0, 2}
 	TypeCNAME = Type{0, 5}
+	TypePTR   = Type{0, 12}
 	TypeMX    = Type{0, 15}
 	TypeOPT   = Type{0, 41}
 )
@@ -57,7 +59,7 @@ func (rr *A) Write(msg []byte, offset, n int) error {
 type MX struct {
 	Header
 	Preference [2]byte
-	Mx         Name
+	Exchange   Name
 }
 
 func (rr *MX) Write(msg []byte, offset, n int) error {
@@ -67,7 +69,7 @@ func (rr *MX) Write(msg []byte, offset, n int) error {
 	if err != nil {
 		return err
 	}
-	rr.Mx = name
+	rr.Exchange = name
 	return nil
 }
 
@@ -78,6 +80,36 @@ type CNAME struct {
 }
 
 func (rr *CNAME) Write(msg []byte, offset, n int) error {
+	name, _, err := unpackName(msg, offset)
+	if err != nil {
+		return err
+	}
+	rr.Target = name
+	return nil
+}
+
+// NS RR. See RFC 1035.
+type NS struct {
+	Header
+	Target Name
+}
+
+func (rr *NS) Write(msg []byte, offset, n int) error {
+	name, _, err := unpackName(msg, offset)
+	if err != nil {
+		return err
+	}
+	rr.Target = name
+	return nil
+}
+
+// PTR RR. See RFC 1035.
+type PTR struct {
+	Header
+	Target Name
+}
+
+func (rr *PTR) Write(msg []byte, offset, n int) error {
 	name, _, err := unpackName(msg, offset)
 	if err != nil {
 		return err

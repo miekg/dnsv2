@@ -11,20 +11,26 @@ var typeToRR = map[Type]func() RR{
 	TypeA:     func() RR { return new(A) },
 	TypeCNAME: func() RR { return new(CNAME) },
 	TypeMX:    func() RR { return new(MX) },
+	TypeNS:    func() RR { return new(NS) },
 	TypeOPT:   func() RR { return new(OPT) },
+	TypePTR:   func() RR { return new(PTR) },
 }
 
 var (
 	_ RR = new(A)
 	_ RR = new(CNAME)
 	_ RR = new(MX)
+	_ RR = new(NS)
 	_ RR = new(OPT)
+	_ RR = new(PTR)
 )
 
 func (rr *A) Hdr() *Header     { return &rr.Header }
 func (rr *CNAME) Hdr() *Header { return &rr.Header }
 func (rr *MX) Hdr() *Header    { return &rr.Header }
+func (rr *NS) Hdr() *Header    { return &rr.Header }
 func (rr *OPT) Hdr() *Header   { return &rr.Header }
+func (rr *PTR) Hdr() *Header   { return &rr.Header }
 
 // RRType returns the type of the RR.
 func RRType(rr RR) Type {
@@ -35,8 +41,12 @@ func RRType(rr RR) Type {
 		return TypeCNAME
 	case *MX:
 		return TypeMX
+	case *NS:
+		return TypeNS
 	case *OPT:
 		return TypeOPT
+	case *PTR:
+		return TypePTR
 	}
 	return TypeNone
 }
@@ -49,8 +59,12 @@ func (t Type) String() string {
 		return "CNAME"
 	case TypeMX:
 		return "MX"
+	case TypeNS:
+		return "NS"
 	case TypeOPT:
 		return "OPT"
+	case TypePTR:
+		return "PTR"
 	}
 	i := binary.BigEndian.Uint16(t[:])
 	return "TYPE" + strconv.FormatUint(uint64(i), 10)
@@ -64,8 +78,14 @@ func (rr *CNAME) Len() int {
 func (rr *MX) Len() int {
 	return 2
 }
+func (rr *NS) Len() int {
+	return 1
+}
 func (rr *OPT) Len() int {
 	return 0 + len(rr.Options)
+}
+func (rr *PTR) Len() int {
+	return 1
 }
 func (rr *A) Data(i int) []byte {
 	switch i {
@@ -86,7 +106,21 @@ func (rr *MX) Data(i int) []byte {
 	case 0:
 		return rr.Preference[:]
 	case 1:
-		return rr.Mx
+		return rr.Exchange
+	}
+	return nil
+}
+func (rr *NS) Data(i int) []byte {
+	switch i {
+	case 0:
+		return rr.Target
+	}
+	return nil
+}
+func (rr *PTR) Data(i int) []byte {
+	switch i {
+	case 0:
+		return rr.Target
 	}
 	return nil
 }
