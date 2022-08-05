@@ -110,6 +110,8 @@ if err != nil {
 
 * From string conversion, also need for scanning zone files.
 
+* Unprintables escaping \DDD in text and domain names.
+
 * TCP writes, with message length - how to optimize and don't have 2 syscalls?
     Leave to user? append(len, oldbuf)
 
@@ -136,5 +138,3 @@ if err != nil {
 * Implement compression for CNAME, MX, NS, PTR, and SOA.
 
 * unpackXXXX need to take uint16, instead of int.
-
-* Generate Write() methods too.
