@@ -138,3 +138,5 @@ if err != nil {
 * Implement compression for CNAME, MX, NS, PTR, and SOA.
 
 * unpackXXXX need to take uint16, instead of int.
+
+* strconv.Name, and strconv.IPv4 etc? Should we add these? strconv.Type(t string) Type ??
