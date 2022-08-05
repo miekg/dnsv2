@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -10,14 +11,26 @@ import (
 )
 
 func main() {
-	c, err := net.Dial("udp", "8.8.8.8:53")
+	flag.Parse()
+	if flag.NArg() == 0 {
+		log.Fatal("synopsis: q name [TYPE]")
+	}
+
+	m := dns.NewMsg(make([]byte, 512))
+
+	dn := dns.NewName(flag.Arg(0))
+	if dn == nil {
+		log.Fatalf("%s is not a valid domain name", dn)
+	}
+	h := dns.Header{Name: dn, Class: dns.IN}
+	m.SetRR(dns.Qd, &dns.A{Header: h})
+	m.SetID()
+	m.SetFlag(dns.RD)
+
+	c, err := net.Dial("udp", "8.8.4.4:53")
 	if err != nil {
 		log.Fatal(err)
 	}
-	m := dns.NewMsg(make([]byte, 512))
-
-	m.SetID(42)
-	m.SetRR(dns.Qd, &dns.A{Header: dns.Header{Name: dns.NewName("example.net."), Class: dns.IN}})
 
 	c.SetWriteDeadline(time.Now().Add(2 * time.Second))
 	n, err := c.Write(m.Buf[:m.Len()])

@@ -109,6 +109,10 @@ if err != nil {
 
 ### TODO
 
+* From string conversion, also need for scanning zone files.
+
+* TCP writes, with message length - how to optimize and don't have 2 syscalls?
+
 * Label manipulation functions still need to be defined, and seeing what other things might be helpful
     without bloating the package. Name.Next() is a first of these.
 
