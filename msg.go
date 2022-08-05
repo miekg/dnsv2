@@ -755,7 +755,11 @@ func (m *Msg) bytes(s Section, rr RR) {
 		// Compression for well known types (those from RFC 1035).
 		compi, pointer := uint16(0), uint16(0)
 		switch RRType(rr) {
-		// case TypeSOA
+		case TypeSOA:
+			if i == 0 || i == 1 {
+				compi, pointer = m.c.find(Name(data))
+				m.c.insert(Name(data), j+1)
+			}
 		case TypeMX:
 			if i != 1 {
 				break
@@ -783,7 +787,6 @@ func (m *Msg) bytes(s Section, rr RR) {
 			m.Buf = append(m.Buf, make([]byte, len(data))...)
 		}
 
-		// for compression I need to knows which rdata of which RR is compressible, finite set, so can be done here
 		n := copy(m.Buf[j+1:], data)
 		j += uint16(n)
 		l += uint16(n)

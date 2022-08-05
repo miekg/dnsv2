@@ -14,6 +14,7 @@ var typeToRR = map[Type]func() RR{
 	TypeNS:    func() RR { return new(NS) },
 	TypeOPT:   func() RR { return new(OPT) },
 	TypePTR:   func() RR { return new(PTR) },
+	TypeSOA:   func() RR { return new(SOA) },
 }
 
 var (
@@ -23,6 +24,7 @@ var (
 	_ RR = new(NS)
 	_ RR = new(OPT)
 	_ RR = new(PTR)
+	_ RR = new(SOA)
 )
 
 func (rr *A) Hdr() *Header     { return &rr.Header }
@@ -31,6 +33,7 @@ func (rr *MX) Hdr() *Header    { return &rr.Header }
 func (rr *NS) Hdr() *Header    { return &rr.Header }
 func (rr *OPT) Hdr() *Header   { return &rr.Header }
 func (rr *PTR) Hdr() *Header   { return &rr.Header }
+func (rr *SOA) Hdr() *Header   { return &rr.Header }
 
 // RRType returns the type of the RR.
 func RRType(rr RR) Type {
@@ -47,6 +50,8 @@ func RRType(rr RR) Type {
 		return TypeOPT
 	case *PTR:
 		return TypePTR
+	case *SOA:
+		return TypeSOA
 	}
 	return TypeNone
 }
@@ -65,6 +70,8 @@ func (t Type) String() string {
 		return "OPT"
 	case TypePTR:
 		return "PTR"
+	case TypeSOA:
+		return "SOA"
 	}
 	i := binary.BigEndian.Uint16(t[:])
 	return "TYPE" + strconv.FormatUint(uint64(i), 10)
@@ -86,6 +93,9 @@ func (rr *OPT) Len() int {
 }
 func (rr *PTR) Len() int {
 	return 1
+}
+func (rr *SOA) Len() int {
+	return 7
 }
 func (rr *A) Data(i int) []byte {
 	switch i {
@@ -121,6 +131,25 @@ func (rr *PTR) Data(i int) []byte {
 	switch i {
 	case 0:
 		return rr.Target
+	}
+	return nil
+}
+func (rr *SOA) Data(i int) []byte {
+	switch i {
+	case 0:
+		return rr.Ns
+	case 1:
+		return rr.Mbox
+	case 2:
+		return rr.Serial[:]
+	case 3:
+		return rr.Refresh[:]
+	case 4:
+		return rr.Retry[:]
+	case 5:
+		return rr.Expire[:]
+	case 6:
+		return rr.MinTTL[:]
 	}
 	return nil
 }

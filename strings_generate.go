@@ -77,10 +77,14 @@ Types:
 					switch x.Len() {
 					case 2:
 
-						fmt.Fprintf(b, "xxx := binary.BigEndian.Uint16(rr.%s[:])\n", f)
+						fmt.Fprintf(b, "xxx%d := binary.BigEndian.Uint16(rr.%s[:])\n", i, f)
 
-						expr = fmt.Sprintf("strconv.FormatUint(uint64(%s), 10)", "xxx")
+						expr = fmt.Sprintf("strconv.FormatUint(uint64(%s%d), 10)", "xxx", i)
+					case 4:
 
+						fmt.Fprintf(b, "xxx%d := binary.BigEndian.Uint32(rr.%s[:])\n", i, f)
+
+						expr = fmt.Sprintf("strconv.FormatUint(uint64(%s%d), 10)", "xxx", i)
 					}
 					fields = append(fields, expr)
 				default:

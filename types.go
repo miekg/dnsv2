@@ -26,6 +26,7 @@ var (
 	TypeA     = Type{0, 1}
 	TypeNS    = Type{0, 2}
 	TypeCNAME = Type{0, 5}
+	TypeSOA   = Type{0, 6}
 	TypePTR   = Type{0, 12}
 	TypeMX    = Type{0, 15}
 	TypeOPT   = Type{0, 41}
@@ -115,6 +116,59 @@ func (rr *PTR) Write(msg []byte, offset, n int) error {
 		return err
 	}
 	rr.Target = name
+	return nil
+}
+
+// SOA RR. See RFC 1035.
+type SOA struct {
+	Header
+	Ns      Name
+	Mbox    Name
+	Serial  [4]byte
+	Refresh [4]byte
+	Retry   [4]byte
+	Expire  [4]byte
+	MinTTL  [4]byte
+}
+
+func (rr *SOA) Write(msg []byte, offset, n int) error {
+	name, offset, err := unpackName(msg, offset)
+	if err != nil {
+		return err
+	}
+	rr.Ns = name
+	name, offset, err = unpackName(msg, offset+1)
+	if err != nil {
+		return err
+	}
+	rr.Mbox = name
+	offset++
+
+	rr.Serial[0] = msg[offset]
+	rr.Serial[1] = msg[offset+1]
+	rr.Serial[2] = msg[offset+2]
+	rr.Serial[3] = msg[offset+3]
+
+	rr.Refresh[0] = msg[offset+4]
+	rr.Refresh[1] = msg[offset+5]
+	rr.Refresh[2] = msg[offset+6]
+	rr.Refresh[3] = msg[offset+7]
+
+	rr.Retry[0] = msg[offset+8]
+	rr.Retry[1] = msg[offset+9]
+	rr.Retry[2] = msg[offset+10]
+	rr.Retry[3] = msg[offset+11]
+
+	rr.Expire[0] = msg[offset+12]
+	rr.Expire[1] = msg[offset+13]
+	rr.Expire[2] = msg[offset+14]
+	rr.Expire[3] = msg[offset+15]
+
+	rr.MinTTL[0] = msg[offset+16]
+	rr.MinTTL[1] = msg[offset+17]
+	rr.MinTTL[2] = msg[offset+18]
+	rr.MinTTL[3] = msg[offset+19]
+
 	return nil
 }
 

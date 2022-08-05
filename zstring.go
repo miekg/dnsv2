@@ -11,12 +11,20 @@ func (rr *CNAME) String() string {
 	return TypeCNAME.String() + "\t" + rr.Target.String()
 }
 func (rr *MX) String() string {
-	xxx := binary.BigEndian.Uint16(rr.Preference[:])
-	return TypeMX.String() + "\t" + strconv.FormatUint(uint64(xxx), 10) + " " + rr.Exchange.String()
+	xxx1 := binary.BigEndian.Uint16(rr.Preference[:])
+	return TypeMX.String() + "\t" + strconv.FormatUint(uint64(xxx1), 10) + " " + rr.Exchange.String()
 }
 func (rr *NS) String() string {
 	return TypeNS.String() + "\t" + rr.Target.String()
 }
 func (rr *PTR) String() string {
 	return TypePTR.String() + "\t" + rr.Target.String()
+}
+func (rr *SOA) String() string {
+	xxx3 := binary.BigEndian.Uint32(rr.Serial[:])
+	xxx4 := binary.BigEndian.Uint32(rr.Refresh[:])
+	xxx5 := binary.BigEndian.Uint32(rr.Retry[:])
+	xxx6 := binary.BigEndian.Uint32(rr.Expire[:])
+	xxx7 := binary.BigEndian.Uint32(rr.MinTTL[:])
+	return TypeSOA.String() + "\t" + rr.Ns.String() + " " + rr.Mbox.String() + " " + strconv.FormatUint(uint64(xxx3), 10) + " " + strconv.FormatUint(uint64(xxx4), 10) + " " + strconv.FormatUint(uint64(xxx5), 10) + " " + strconv.FormatUint(uint64(xxx6), 10) + " " + strconv.FormatUint(uint64(xxx7), 10)
 }
