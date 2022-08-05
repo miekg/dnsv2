@@ -6,7 +6,8 @@ import (
 )
 
 func TestWalkForward(t *testing.T) {
-	m := &Msg{Buf: www}
+	t.Parallel()
+	m := &Msg{Buf: tmpbuf(www)}
 	err := m.Walk(WalkForward, func(s Section, rr RR, i int) error {
 		switch s {
 		case Qd:
@@ -44,7 +45,8 @@ func TestWalkForward(t *testing.T) {
 }
 
 func TestWalkBackward(t *testing.T) {
-	m := &Msg{Buf: www}
+	t.Parallel()
+	m := &Msg{Buf: tmpbuf(www)}
 	j := 0
 	err := m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
 		if j == 0 && RRType(rr) != TypeOPT {
@@ -61,7 +63,8 @@ func TestWalkBackward(t *testing.T) {
 // TestWalkAndStripOPT shows how to detect and remove the OPT record, so a) you can reuse the message buffer and b)
 // slap a new OPT RR on it.
 func TestWalkAndStripOPT(t *testing.T) {
-	m := &Msg{Buf: www}
+	t.Parallel()
+	m := &Msg{Buf: tmpbuf(reply)}
 	pos := 0
 	err := m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
 		if s == Ar && RRType(rr) == TypeOPT {
@@ -78,6 +81,11 @@ func TestWalkAndStripOPT(t *testing.T) {
 		if len(rrs) != 1 {
 			t.Errorf("expected to have stripped 1, got %d", len(rrs))
 		}
-		// check type etc.
+		if x, ok := rrs[0].(*OPT); !ok {
+			t.Errorf("expected to have OPT RR,got %T", x)
+		}
+		if m.Count(Ar) != 0 {
+			t.Errorf("expected count to be %d, got %d", 0, m.Count(Ar))
+		}
 	}
 }

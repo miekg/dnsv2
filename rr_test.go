@@ -6,6 +6,7 @@ import (
 )
 
 func TestNameFromString(t *testing.T) {
+	t.Parallel()
 	tcs := []struct {
 		in  string
 		out string
@@ -26,20 +27,8 @@ func TestNameFromString(t *testing.T) {
 	}
 }
 
-/*
-func TestBytes(t *testing.T) {
-	rr := &A{
-		Header{NewName("example.net."), ClassIN, NewTTL(15)},
-		NewIPv4(net.ParseIP("127.0.0.1")),
-	}
-
-	wirebuf := Bytes(rr)
-	fmt.Printf("This is its complete wireformat: %+v\n", wirebuf)
-	// convert this back into an A record, via some convience function.
-}
-*/
-
 func TestNameNext(t *testing.T) {
+	t.Parallel()
 	n := NewName("www.a.miek.nl.")
 
 	for j, i, stop := 0, 0, false; !stop; i, stop = n.Next(i) {

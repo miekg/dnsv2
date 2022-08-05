@@ -51,8 +51,14 @@ var (
 	}
 )
 
+func tmpbuf(buf []byte) []byte {
+	tmpbuf := make([]byte, len(buf))
+	copy(tmpbuf, buf)
+	return tmpbuf
+}
+
 func ExampleMsg_RRs() {
-	m := &Msg{Buf: reply}
+	m := &Msg{Buf: tmpbuf(reply)}
 
 	answer, err := m.RRs(An)
 	if err != nil {
@@ -69,7 +75,7 @@ func ExampleMsg_RRs() {
 }
 
 func ExampleMsg_String() {
-	m := &Msg{Buf: reply}
+	m := &Msg{Buf: tmpbuf(reply)}
 
 	fmt.Printf("%s\n", m)
 	/*

@@ -142,7 +142,7 @@ func (m *Msg) Reset() {
 	m.w = uint16(len(m.Buf) - 1)
 	m.r[0], m.r[1], m.r[2], m.r[3] = 0, 0, 0, 0
 	m.count[0], m.count[1], m.count[2], m.count[3] = 0, 0, 0, 0
-	m.c = compression(make(map[string]uint16))
+	m.c = compression{}
 }
 
 // Flag returns the value of flag f.
@@ -251,6 +251,14 @@ func (m *Msg) Count(s Section) uint16 {
 // necessary. Strips disregards any section boundaries. After a call to Strip any reads from m start from the beginning
 // again. The buffer in m is not downsized. Compression pointers are NOT updated.
 func (m *Msg) Strip(n int) ([]RR, error) {
+	if n == 0 {
+		return nil, nil
+	}
+
+	if n > int(m.Count(Qd)+m.Count(An)+m.Count(Ns)+m.Count(Ar)) {
+		return nil, nil
+	}
+
 	indices := make([]uint16, n+1) // track last indices
 	offset := headerSize
 	if offset = m.skipName(offset); offset == 0 {
@@ -301,15 +309,44 @@ func (m *Msg) Strip(n int) ([]RR, error) {
 		j++
 	}
 
-	// counters!!!! TODO
-
-	// TODO: m.w needs to be set more often, index???
 	m.w = uint16(len(m.Buf))
 	for _, offset := range indices {
 		if offset < m.w {
 			m.w = offset
 		}
 	}
+	m.Buf = m.Buf[:m.w]
+	m.Reset()
+
+	// feel there must be something mathier that can be done here...
+	c := int(m.Count(Ar)) - n
+	if c > 0 {
+		m.SetCount(Ar, uint16(c))
+		return rrs, nil
+	}
+	m.SetCount(Ar, 0) // depleted
+
+	c = int(m.Count(Ns)) + c
+	if c > 0 {
+		m.SetCount(Ns, uint16(c))
+		return rrs, nil
+	}
+	m.SetCount(Ns, 0) // depleted
+
+	c = int(m.Count(An)) + c
+	if c > 0 {
+		m.SetCount(An, uint16(c))
+		return rrs, nil
+	}
+	m.SetCount(An, 0)
+
+	c = int(m.Count(Qd)) + c
+	if c > 0 {
+		m.SetCount(Qd, uint16(c))
+		return rrs, nil
+	}
+	m.SetCount(Qd, 0)
+
 	return rrs, nil
 }
 

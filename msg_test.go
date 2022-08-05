@@ -6,7 +6,8 @@ import (
 )
 
 func TestRRQdDepletion(t *testing.T) {
-	m := &Msg{Buf: query}
+	t.Parallel()
+	m := &Msg{Buf: tmpbuf(query)}
 
 	rr, err := m.RR(Qd)
 	if err != nil {
@@ -20,6 +21,7 @@ func TestRRQdDepletion(t *testing.T) {
 }
 
 func TestSetRRBufferResizing(t *testing.T) {
+	t.Parallel()
 	// this should not crash, as the buffer is resized.
 	m := NewMsg(make([]byte, 40))
 	rr := &A{
@@ -34,6 +36,7 @@ func TestSetRRBufferResizing(t *testing.T) {
 }
 
 func TestSetFlag(t *testing.T) {
+	t.Parallel()
 	m := NewMsg(make([]byte, 40))
 	m.SetFlag(AA)
 	if !m.Flag(AA) {
@@ -46,7 +49,8 @@ func TestSetFlag(t *testing.T) {
 }
 
 func TestSkip(t *testing.T) {
-	m := &Msg{Buf: reply}
+	t.Parallel()
+	m := &Msg{Buf: tmpbuf(reply)}
 	i := m.skipName(12)
 	if i != 20 {
 		t.Errorf("expected offset after qname %d, got %d", 20, i)
@@ -80,5 +84,14 @@ func TestSkip(t *testing.T) {
 	i = m.skipRR(i + 1)
 	if i != 0 {
 		t.Errorf("expected offset after msg length %d, got %d", 0, i)
+	}
+}
+
+func TestStrip(t *testing.T) {
+	t.Parallel()
+	m := &Msg{Buf: tmpbuf(reply)}
+	m.Strip(2)
+	if m.Count(Ar) != 0 || m.Count(An) != 4 {
+		t.Errorf("expected AR count %d, got %d or expected AN count %d, got %d", 0, m.Count(Ar), 4, m.Count(An))
 	}
 }
