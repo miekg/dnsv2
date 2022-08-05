@@ -103,7 +103,6 @@ if err != nil {
     this requires updating compression pointers which need to be found?
 * The `Header` doesn't contain the type, as this is encoded in the Go Type of the RR, so printing
     them as strings looks a bit weird (compared to dig).
-* OPT RR's header needs special some special functions, make them work on all RRs??
 * Question "RR" needs special casing because it obvs isn't a real RR either.
 * Len() for RRs and Len() for Options do different things...
 
@@ -112,6 +111,7 @@ if err != nil {
 * From string conversion, also need for scanning zone files.
 
 * TCP writes, with message length - how to optimize and don't have 2 syscalls?
+    Leave to user? append(len, oldbuf)
 
 * Label manipulation functions still need to be defined, and seeing what other things might be helpful
     without bloating the package. Name.Next() is a first of these.
