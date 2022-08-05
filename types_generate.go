@@ -30,9 +30,9 @@ import (
 `
 
 var (
-	// typeToRR map.
 	typeToRR = template.Must(template.New("typeToRR").Parse(`
-var typeToRR = map[Type]func() RR{
+// TypeToRR is a mapping from Type to a function that returns the type.
+var TypeToRR = map[Type]func() RR{
 {{range .}}  Type{{.}}:  func() RR { return new({{.}}) },
 {{end}}
 }
@@ -48,8 +48,8 @@ var (
 
 	// RRtype
 	rrtype = template.Must(template.New("rrtype").Parse(`
-// RRType returns the type of the RR.
-func RRType(rr RR) Type {
+// RRToType returns the type of the RR.
+func RRToType(rr RR) Type {
 	switch rr.(type) {
 {{range .}} case *{{.}}:
 	return Type{{.}}
@@ -150,7 +150,7 @@ func main() {
 
 	rcodex := generate.Types(pkg, "Rcode")
 	if err := rcodeStr.Execute(b, rcodex); err != nil {
-		log.Fatal("failed to generate %s: %s", "RcodeStr", err)
+		log.Fatal("failed to generate %s: %s", "rcodeStr", err)
 	}
 
 	opcodex := generate.Types(pkg, "Opcode")

@@ -356,7 +356,7 @@ func (m *Msg) SetRR(s Section, rr RR) error {
 	c := m.Count(s)
 	if s == Qd {
 		if c == 1 {
-			return &WireError{fmt.Errorf("question section occupied, no room for %s", RRType(rr))}
+			return &WireError{fmt.Errorf("question section occupied, no room for %s", RRToType(rr))}
 		}
 		m.bytes(s, rr)
 		m.SetCount(Qd, 1)
@@ -614,7 +614,7 @@ func unpackTTL(msg []byte, offset int) (TTL, int, error) {
 }
 
 func rrFromType(typ Type) RR {
-	rrfunc, ok := typeToRR[typ]
+	rrfunc, ok := TypeToRR[typ]
 	if !ok {
 		rrfunc = func() RR { return new(Unknown) }
 	}
@@ -663,7 +663,7 @@ func (m *Msg) String() string {
 				b.WriteString(" ")
 				b.WriteString(rr.Hdr().Class.String())
 				b.WriteString(" ")
-				b.WriteString(RRType(rr).String())
+				b.WriteString(RRToType(rr).String())
 				b.WriteString("\n")
 				continue
 			}
@@ -726,8 +726,8 @@ func (m *Msg) bytes(s Section, rr RR) {
 
 	m.c.insert(rr.Hdr().Name, m.w)
 
-	m.Buf[offset+0] = RRType(rr)[0]
-	m.Buf[offset+1] = RRType(rr)[1]
+	m.Buf[offset+0] = RRToType(rr)[0]
+	m.Buf[offset+1] = RRToType(rr)[1]
 	m.Buf[offset+2] = rr.Hdr().Class[0]
 	m.Buf[offset+3] = rr.Hdr().Class[1]
 	offset += 3
@@ -754,7 +754,7 @@ func (m *Msg) bytes(s Section, rr RR) {
 
 		// Compression for well known types (those from RFC 1035).
 		compi, pointer := uint16(0), uint16(0)
-		switch RRType(rr) {
+		switch RRToType(rr) {
 		case TypeSOA:
 			if i == 0 || i == 1 {
 				compi, pointer = m.c.find(Name(data))

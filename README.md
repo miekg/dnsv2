@@ -83,7 +83,7 @@ much of the buffer we already have. The following API is implemented for this:
 ~~~ go
 pos := 0
 err := m.Walk(WalkBackward, func(s Section, rr RR, i int) error {
-    if s == Ar && RRType(rr) == TypeOPT {
+    if s == Ar && RRToType(rr) == TypeOPT {
         pos = i
         return errors.New("found opt RR")
     }

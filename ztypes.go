@@ -7,7 +7,8 @@ import (
 	"strconv"
 )
 
-var typeToRR = map[Type]func() RR{
+// TypeToRR is a mapping from Type to a function that returns the type.
+var TypeToRR = map[Type]func() RR{
 	TypeA:     func() RR { return new(A) },
 	TypeCNAME: func() RR { return new(CNAME) },
 	TypeMX:    func() RR { return new(MX) },
@@ -35,8 +36,8 @@ func (rr *OPT) Hdr() *Header   { return &rr.Header }
 func (rr *PTR) Hdr() *Header   { return &rr.Header }
 func (rr *SOA) Hdr() *Header   { return &rr.Header }
 
-// RRType returns the type of the RR.
-func RRType(rr RR) Type {
+// RRToType returns the type of the RR.
+func RRToType(rr RR) Type {
 	switch rr.(type) {
 	case *A:
 		return TypeA

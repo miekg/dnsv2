@@ -23,6 +23,7 @@ func main() {
 		log.Fatalf("%s is not a valid domain name", dn)
 	}
 	h := dns.Header{Name: dn, Class: dns.IN}
+
 	m.SetRR(dns.Qd, &dns.A{Header: h})
 	m.SetID()
 	m.SetFlag(dns.RD)
