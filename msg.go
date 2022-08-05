@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -121,7 +122,8 @@ const (
 const headerSize = 12
 
 // NewMsg returns a pointer to a new Msg. Optionally a buffer can be given here, NewMsg will not allocate a buffer on
-// behalf of the caller, it will enlarge a buffer (when given and the need arises).
+// behalf of the caller, it will enlarge a buffer when the need arises. After assigning a new buffer to a Msg you must
+// call [Reset].
 func NewMsg(buf ...[]byte) *Msg {
 	m := new(Msg)
 	if len(buf) > 0 {
@@ -164,11 +166,30 @@ func (m *Msg) SetFlag(f Flag, v ...bool) {
 	bits &^= uint16(f)
 }
 
+// IDFunc returns a 16-bit random number that is used as the message's ID. This can be overriden if so desired.
+var IDFunc = id
+
+func id() uint16 {
+	var id uint16
+	err := binary.Read(rand.Reader, binary.BigEndian, &id)
+	if err != nil {
+		panic("dns: reading random id failed: " + err.Error())
+	}
+	return id
+}
+
 // ID returns the message's ID.
 func (m *Msg) ID() uint16 { return binary.BigEndian.Uint16(m.Buf[0:]) }
 
-// SetID sets the message to i.
-func (m *Msg) SetID(i uint16) { binary.BigEndian.PutUint16(m.Buf[0:], i) }
+// SetID sets the message to i. If i is not given, [IDFunc] is used to generate one.
+func (m *Msg) SetID(i ...uint16) {
+	if len(i) > 0 {
+		binary.BigEndian.PutUint16(m.Buf[0:], i[0])
+		return
+	}
+	j := IDFunc()
+	binary.BigEndian.PutUint16(m.Buf[0:], j)
+}
 
 // Rcode returns the return code from the message m.
 func (m *Msg) Rcode() Rcode {
@@ -193,10 +214,11 @@ func (m *Msg) Opcode() Opcode {
 // Opcode sets the Operation Code in the message m.
 func (m *Msg) SetOpcode(o Opcode) {
 	bits := binary.BigEndian.Uint16(m.Buf[2:])
-	// something
+	bits |= uint16(o << 3) // 11-8 // TODO- test, check
 	binary.BigEndian.PutUint16(m.Buf[2:], bits)
 }
 
+// SetCount sets the section counter for s to i.
 func (m *Msg) SetCount(s Section, i uint16) {
 	switch s {
 	case Qd:
@@ -210,6 +232,7 @@ func (m *Msg) SetCount(s Section, i uint16) {
 	}
 }
 
+// Count returns the section count for section s.
 func (m *Msg) Count(s Section) uint16 {
 	switch s {
 	case Qd:
@@ -571,9 +594,9 @@ func rrFromType(typ Type) RR {
 // empty string is returned. Mostly useful for debugging.
 func (m *Msg) String() string {
 	b := &strings.Builder{}
-	b.WriteString(fmt.Sprintf(";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n", m.Opcode(), m.Rcode(), m.ID()))
+	b.WriteString(fmt.Sprintf(";; MESSAGE HEADER: opcode: %s, status: %s, id: %d\n", m.Opcode(), m.Rcode(), m.ID()))
 	b.WriteString(";; flags:")
-	for f := Flag(0); f <= CD; f++ {
+	for _, f := range []Flag{QR, AA, TC, RD, RA, Z, AD, CD} {
 		if m.Flag(f) {
 			b.WriteString(" ")
 			b.WriteString(f.String())

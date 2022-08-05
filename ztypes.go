@@ -149,11 +149,11 @@ func (f Flag) String() string {
 
 func (c Class) String() string {
 	switch c {
-	case ClassANY:
+	case ANY:
 		return "ANY"
-	case ClassIN:
+	case IN:
 		return "IN"
-	case ClassNONE:
+	case NONE:
 		return "NONE"
 	}
 	i := binary.BigEndian.Uint16(c[:])

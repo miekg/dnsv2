@@ -3,8 +3,9 @@ package dns
 // In this file we define all the RRs we can handle, "go generate" will generate most methods for us.
 // Supported tags:
 //
-// * `dns:"len"` - take the len of the fields instead of counting it as 1.
-// * `dns:"-data"` - skip this RR when generating the Data method, can be set on any field.
+// * `len` - take the len of the field instead of counting it as 1.
+// * `-data` - skip this RR when generating the Data method, can be set on any field.
+// * `-string` - skip this RR when generating the String method, can be set on any field.
 
 import (
 	"encoding/binary"
@@ -16,9 +17,9 @@ import (
 
 var (
 	// Valid Classes.
-	ClassIN   = Class{0, 1}
-	ClassNONE = Class{0, 254}
-	ClassANY  = Class{0, 255}
+	IN   = Class{0, 1}
+	NONE = Class{0, 254}
+	ANY  = Class{0, 255}
 
 	// Supported RR Types.
 	TypeNone  = Type{0, 0}
@@ -31,7 +32,7 @@ var (
 // A RR. See RFC 1035.
 type A struct {
 	Header
-	A [4]byte
+	A [4]byte `dns:"-string"`
 }
 
 func (rr *A) String() string {
@@ -59,11 +60,6 @@ type MX struct {
 	Mx         Name
 }
 
-func (rr *MX) String() string {
-	prio := binary.BigEndian.Uint16(rr.Preference[:])
-	return TypeMX.String() + "\t" + strconv.FormatUint(uint64(prio), 10) + " " + rr.Mx.String()
-}
-
 func (rr *MX) Write(msg []byte, offset, n int) error {
 	rr.Preference[0] = msg[offset]
 	rr.Preference[1] = msg[offset+1]
@@ -80,8 +76,6 @@ type CNAME struct {
 	Header
 	Target Name
 }
-
-func (rr *CNAME) String() string { return TypeCNAME.String() + "\t" + rr.Target.String() }
 
 func (rr *CNAME) Write(msg []byte, offset, n int) error {
 	name, _, err := unpackName(msg, offset)

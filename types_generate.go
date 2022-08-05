@@ -110,7 +110,7 @@ func (f Flag) String() string {
 	classStr = template.Must(template.New("classStr").Funcs(generate.Funcs).Parse(`
 func (c Class) String() string {
 	switch c {
-{{range .}}  case Class{{.}}:
+{{range .}}  case {{.}}:
 	return "{{.}}"
 {{end}} }
 	i := binary.BigEndian.Uint16(c[:])
@@ -164,7 +164,7 @@ func main() {
 		log.Fatal("failed to generate %s: %s", "flagStr", err)
 	}
 
-	classx := generate.Types(pkg, "Class")
+	classx := generate.TypesOf(pkg, "Class")
 	if err := classStr.Execute(b, classx); err != nil {
 		log.Fatal("failed to generate %s: %s", "classStr", err)
 	}
@@ -220,6 +220,8 @@ Types:
 		if rr == nil {
 			continue
 		}
+
+		// check if this type doesn't need a Data() method to be generated.
 		for i := 1; i < rr.NumFields(); i++ {
 			if strings.Contains(rr.Tag(i), "-data") {
 				continue Types

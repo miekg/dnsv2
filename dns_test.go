@@ -51,7 +51,7 @@ var (
 	}
 )
 
-func ExampleMsg_String() {
+func ExampleMsg_RRs() {
 	m := &Msg{Buf: reply}
 
 	answer, err := m.RRs(An)
@@ -66,4 +66,26 @@ func ExampleMsg_String() {
 	// miek.nl. 	  900 IN MX	10 aspmx2.googlemail.com.
 	// miek.nl. 	  900 IN MX	10 aspmx3.googlemail.com.
 	// miek.nl. 	  900 IN MX	5 alt1.aspmx.l.google.com.
+}
+
+func ExampleMsg_String() {
+	m := &Msg{Buf: reply}
+
+	fmt.Printf("%s\n", m)
+	/*
+	   Ouput: ;; MESSAGE HEADER: opcode: QUERY, status: NOERROR, id: 59761
+	   ;; flags: qr rd ra ad; QUESTION 1, ANSWER: 5, AUTHORITY: 0, ADDITIONAL: 1
+	   ;; QUESTION SECTION:
+	   miek.nl. IN MX
+
+	   ;; ANSWER SECTION:
+	   miek.nl. 	  900 IN	MX	5 alt2.aspmx.l.google.com.
+	   miek.nl. 	  900 IN	MX	1 aspmx.l.google.com.
+	   miek.nl. 	  900 IN	MX	10 aspmx2.googlemail.com.
+	   miek.nl. 	  900 IN	MX	10 aspmx3.googlemail.com.
+	   miek.nl. 	  900 IN	MX	5 alt1.aspmx.l.google.com.
+
+	   ;; ADDITIONAL SECTION:
+	   ;; EDNS: version: 0, flags:; udp: 512
+	*/
 }

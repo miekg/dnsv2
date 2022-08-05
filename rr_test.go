@@ -9,11 +9,10 @@ func TestNameFromString(t *testing.T) {
 	tcs := []struct {
 		in  string
 		out string
-		err bool
 	}{
-		{".", "00", false},
-		{"miek.nl.", "04miek02nl00", false},
-		{"verylongexampleexampleexampleexample.example.org.", "36verylongexampleexampleexampleexample07example03org00", false},
+		{".", "00"},
+		{"miek.nl.", "04miek02nl00"},
+		{"verylongexampleexampleexampleexample.example.org.", "36verylongexampleexampleexampleexample07example03org00"},
 	}
 
 	for _, tc := range tcs {

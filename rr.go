@@ -33,10 +33,12 @@ type (
 		// returned. The buffer returned is in wire format, i.e. if some data requires a length, that length is
 		// prepended to the buffer.
 		Data(i int) []byte
+		// FromString transforms the string s in the the wire data suitable for the rdata at position i.
+		// FromString(i int, s string) []byte
 		// String returns the string representation of the rdata(!) only.
 		String() string
 		// Write writes the rdata encoded in msg starting at index offset and length n to the RR. Some rdata
-		// needs access to the message's data, msg is expected to contain the targets of those pointers.
+		// needs access to the message's data msg to resolve compression pointers.
 		Write(msg []byte, offset, n int) error
 	}
 )

@@ -17,7 +17,7 @@ func main() {
 	m := dns.NewMsg(make([]byte, 512))
 
 	m.SetID(42)
-	m.SetRR(dns.Qd, &dns.A{Header: dns.Header{Name: dns.NewName("example.net."), Class: dns.ClassIN}})
+	m.SetRR(dns.Qd, &dns.A{Header: dns.Header{Name: dns.NewName("example.net."), Class: dns.IN}})
 
 	c.SetWriteDeadline(time.Now().Add(2 * time.Second))
 	n, err := c.Write(m.Buf[:m.Len()])
