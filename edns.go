@@ -60,7 +60,7 @@ OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See
 */
 type OPT struct {
 	Header
-	Options []Option `dns:"len,-data,-string"`
+	Options []Option `dns:"len,-data,-string,-write"`
 }
 
 func (rr *OPT) Data(i int) []byte {

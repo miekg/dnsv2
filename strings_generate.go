@@ -67,8 +67,8 @@ Types:
 		fields := []string{}
 		for i := 1; i < rr.NumFields(); i++ {
 			switch {
-			case strings.Contains(rr.Tag(i), "len"):
-				fields = append(fields, "la")
+			// case strings.Contains(rr.Tag(i), "len"):
+			// // no tags defined yet
 			default:
 				f := rr.Field(i).Name()
 				switch x := rr.Field(i).Type().(type) {
