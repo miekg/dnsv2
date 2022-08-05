@@ -7,7 +7,7 @@ import (
 )
 
 func (rr *A) Write(msg []byte, offset, n int) (err error) {
-	if offset+n >= len(msg) {
+	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.A[0] = msg[offset+0]
@@ -24,7 +24,7 @@ func (rr *CNAME) Write(msg []byte, offset, n int) (err error) {
 	return nil
 }
 func (rr *MX) Write(msg []byte, offset, n int) (err error) {
-	if offset+n >= len(msg) {
+	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.Preference[0] = msg[offset+0]
@@ -61,7 +61,7 @@ func (rr *SOA) Write(msg []byte, offset, n int) (err error) {
 		return err
 	}
 	offset++
-	if offset+n >= len(msg) {
+	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.Serial[0] = msg[offset+0]
@@ -69,7 +69,7 @@ func (rr *SOA) Write(msg []byte, offset, n int) (err error) {
 	rr.Serial[2] = msg[offset+2]
 	rr.Serial[3] = msg[offset+3]
 	offset += 4
-	if offset+n >= len(msg) {
+	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.Refresh[0] = msg[offset+0]
@@ -77,7 +77,7 @@ func (rr *SOA) Write(msg []byte, offset, n int) (err error) {
 	rr.Refresh[2] = msg[offset+2]
 	rr.Refresh[3] = msg[offset+3]
 	offset += 4
-	if offset+n >= len(msg) {
+	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.Retry[0] = msg[offset+0]
@@ -85,7 +85,7 @@ func (rr *SOA) Write(msg []byte, offset, n int) (err error) {
 	rr.Retry[2] = msg[offset+2]
 	rr.Retry[3] = msg[offset+3]
 	offset += 4
-	if offset+n >= len(msg) {
+	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.Expire[0] = msg[offset+0]
@@ -93,7 +93,7 @@ func (rr *SOA) Write(msg []byte, offset, n int) (err error) {
 	rr.Expire[2] = msg[offset+2]
 	rr.Expire[3] = msg[offset+3]
 	offset += 4
-	if offset+n >= len(msg) {
+	if offset+n > len(msg) {
 		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 	}
 	rr.MinTTL[0] = msg[offset+0]

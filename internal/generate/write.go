@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-const overflow = `if offset+n >= len(msg) {
+const overflow = `if offset+n > len(msg) {
 	return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
 }
 `
