@@ -2,6 +2,7 @@ package dns
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -10,14 +11,25 @@ func TestNameFromString(t *testing.T) {
 	tcs := []struct {
 		in  string
 		out string
+		err bool
 	}{
-		{".", "00"},
-		{"miek.nl.", "04miek02nl00"},
-		{"verylongexampleexampleexampleexample.example.org.", "36verylongexampleexampleexampleexample07example03org00"},
+		{".", "00", false},
+		{"miek.nl.", "04miek02nl00", false},
+		{"verylongexampleexampleexampleexample.example.org.", "36verylongexampleexampleexampleexample07example03org00", false},
+		{"..", "", true}, // empty label is illegal
+		{strings.Repeat("abcdef", 10) + "123.nl.", "63abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef12302nl00", false},
+		{strings.Repeat("abcdef", 10) + "1234.nl.", "", true}, // 64 label length
 	}
 
 	for _, tc := range tcs {
 		name := NewName(tc.in)
+		if name == nil && !tc.err {
+			t.Errorf("expected [%s] to result in an error, got none", tc.in)
+			continue
+		}
+		if tc.err {
+			continue
+		}
 		if x := fmt.Sprintf("%#v", name); x != tc.out {
 			t.Errorf("expected [%s], got [%s]", tc.out, x)
 		}

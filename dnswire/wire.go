@@ -77,7 +77,6 @@ func String(v string, buf ...[]byte) []byte {
 		}
 
 		escaped = false
-
 	}
 	n = append(n, byte(0))
 	return n
@@ -87,7 +86,6 @@ func String(v string, buf ...[]byte) []byte {
 func IPv4(v net.IP, buf ...[]byte) [4]byte {
 	if buf == nil {
 		return *(*[4]byte)(v.To4())
-
 	}
 	ip := v.To4()
 	buf[0][0] = ip[0]
