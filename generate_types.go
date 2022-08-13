@@ -162,7 +162,7 @@ func main() {
 	typex := generate.Types(pkg, "Type")
 
 	b := &bytes.Buffer{}
-	b.WriteString(hdr)
+	generate.Hdr(b, "types", []string{"strconv", "encoding/binary"})
 
 	if err := typeToRR.Execute(b, typex); err != nil {
 		log.Fatal("failed to generate %s: %s", "typeToRR", err)

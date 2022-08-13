@@ -5,14 +5,14 @@ import (
 	"io"
 )
 
-const overflow = `if offset+n > len(msg) {
-	return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
+const overflow = `if offset+%d > len(msg) {
+       return &WireError{fmt.Errorf("buffer size too small, need %%d, got %%d", offset+%d, len(msg))}
 }
 `
 
 // Uint32 writes the Go code to set an [4]byte.
 func Uint32(w io.Writer, name string, last bool) {
-	fmt.Fprintf(w, "%s", overflow)
+	fmt.Fprintf(w, overflow, 4, 4)
 	for i := 0; i < 4; i++ {
 		fmt.Fprintf(w, "rr.%s[%d] = msg[offset+%d]\n", name, i, i)
 	}
@@ -21,7 +21,7 @@ func Uint32(w io.Writer, name string, last bool) {
 
 // Uint16 writes the Go code to set an [2]byte.
 func Uint16(w io.Writer, name string, last bool) {
-	fmt.Fprintf(w, "%s", overflow)
+	fmt.Fprintf(w, overflow, 2, 2)
 	for i := 0; i < 2; i++ {
 		fmt.Fprintf(w, "rr.%s[%d] = msg[offset+%d]\n", name, i, i)
 	}
