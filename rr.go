@@ -38,7 +38,8 @@ type (
 		// String returns the string representation of the rdata(!) only.
 		String() string
 		// Write writes the rdata encoded in msg starting at index offset and length n to the RR. Some rdata
-		// needs access to the message's data msg to resolve compression pointers.
+		// needs access to the message's data msg to resolve compression pointers. If msg buffer is too small to
+		// fit the data it is enlarged.
 		Write(msg []byte, offset, n int) error
 	}
 )

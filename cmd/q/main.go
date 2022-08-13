@@ -5,9 +5,15 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	dns "github.com/miekg/dnsv2"
+)
+
+var (
+	flgDump = flag.Bool("d", false, "write echo contents to standard error in a Go byte slice format")
 )
 
 func main() {
@@ -38,13 +44,13 @@ func main() {
 
 	c, err := net.Dial("udp", "8.8.4.4:53")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to dial: %s", err)
 	}
 
 	c.SetWriteDeadline(time.Now().Add(2 * time.Second))
 	n, err := c.Write(m.Buf[:m.Len()])
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to write: %s", err)
 	}
 	if n != m.Len() {
 		log.Fatal("short write")
@@ -52,17 +58,26 @@ func main() {
 
 	c.SetReadDeadline(time.Now().Add(2 * time.Second))
 	if n, err = c.Read(m.Buf); err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to read: %s", err)
 	}
 	m.Buf = m.Buf[:n]
 	m.Reset()
-	fmt.Printf("%s", m)
+	if *flgDump {
+		dump(m.Buf)
+	}
 
-	rrs, err := m.RRs(dns.An)
-	if err != nil {
-		log.Fatal(err)
+	fmt.Println(m.String())
+}
+
+func dump(buf []byte) {
+	b := &strings.Builder{}
+	b.WriteString("[]byte{")
+	for i := range buf {
+		if i%8 == 0 {
+			b.WriteString("\n\t")
+		}
+		b.WriteString(fmt.Sprintf("0x%0x, ", buf[i]))
 	}
-	for _, rr := range rrs {
-		fmt.Println(rr.String())
-	}
+	b.WriteString("\n}\n")
+	fmt.Fprint(os.Stderr, b.String())
 }

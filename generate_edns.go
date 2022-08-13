@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"log"
-	"text/template"
 
 	"github.com/miekg/dnsv2/internal/generate"
 )
@@ -20,15 +19,15 @@ package dns
 `
 var (
 	// Interface implementation check for all RRs.
-	iface = template.Must(template.New("iface").Funcs(generate.Funcs).Parse(`
+	iface = generate.New("iface", `
 var (
 {{range .}} _ Option = new({{. | ToUpper}})
 {{end}}
 )
-`))
+`)
 
 	// OptioncCode
-	optionCode = template.Must(template.New("optionCode").Funcs(generate.Funcs).Parse(`
+	optionCode = generate.New("optionCode", `
 // OptionCode returns the option code of the Option.
 func OptionCode(e Option) Code {
 	switch e.(type) {
@@ -37,14 +36,14 @@ func OptionCode(e Option) Code {
 {{end}} }
 	return CodeNone
 }
-`))
+`)
 
 	// codeToOption
-	codeToOption = template.Must(template.New("optionCode").Funcs(generate.Funcs).Parse(`
+	codeToOption = generate.New("optionCode", `
 var codeToOption = map[Code]func() Option{
 {{range .}} Code{{.}}: func() Option { return new({{. | ToUpper}}) },
 {{end}} }
-`))
+`)
 )
 
 func main() {

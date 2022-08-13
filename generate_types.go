@@ -12,7 +12,6 @@ import (
 	"go/types"
 	"log"
 	"strings"
-	"text/template"
 
 	"github.com/miekg/dnsv2/internal/generate"
 )
@@ -30,24 +29,24 @@ import (
 `
 
 var (
-	typeToRR = template.Must(template.New("typeToRR").Parse(`
+	typeToRR = generate.New("typeToRR", `
 // TypeToRR is a mapping from Type to a function that returns the type.
 var TypeToRR = map[Type]func() RR{
 {{range .}}  Type{{.}}:  func() RR { return new({{.}}) },
 {{end}}
 }
-`))
+`)
 
 	// Interface implementation check for all RRs.
-	iface = template.Must(template.New("iface").Parse(`
+	iface = generate.New("iface", `
 var (
 {{range .}} _ RR = new({{.}})
 {{end}}
 )
-`))
+`)
 
 	// RRtype
-	rrtype = template.Must(template.New("rrtype").Parse(`
+	rrtype = generate.New("rrtype", `
 // RRToType returns the type of the RR.
 func RRToType(rr RR) Type {
 	switch rr.(type) {
@@ -56,15 +55,15 @@ func RRToType(rr RR) Type {
 {{end}} }
 	return TypeNone
 }
-`))
+`)
 
-	headerFunc = template.Must(template.New("headerFunc").Parse(`
+	headerFunc = generate.New("headerFunc", `
 {{range .}}  func (rr *{{.}}) Hdr() *Header { return &rr.Header }
 {{end}}
-`))
+`)
 
 	// Type
-	typeStr = template.Must(template.New("str").Funcs(generate.Funcs).Parse(`
+	typeStr = generate.New("str", `
 // TypeToString maps Types to strings.
 var TypeToString = map[Type]string{
 {{range .}} Type{{.}}: "{{.|ToUpper}}",
@@ -82,10 +81,10 @@ func (t Type) String() string {
 	i := binary.BigEndian.Uint16(t[:])
 	return "TYPE" + strconv.FormatUint(uint64(i), 10)
 }
-`))
+`)
 
 	// Rcode
-	rcodeStr = template.Must(template.New("rcodeStr").Funcs(generate.Funcs).Parse(`
+	rcodeStr = generate.New("rcodeStr", `
 // RcodeToString maps Rcodes to strings.
 var RcodeToString = map[Rcode]string{
 {{range .}} Rcode{{.}}: "{{.|ToUpper}}",
@@ -102,10 +101,10 @@ func (r Rcode) String() string {
 	}
 	return "RCODE" + strconv.FormatUint(uint64(r), 10)
 }
-`))
+`)
 
 	// Opcode
-	opcodeStr = template.Must(template.New("opcodeStr").Funcs(generate.Funcs).Parse(`
+	opcodeStr = generate.New("opcodeStr", `
 // OpcodeToString maps Opcodes to strings.
 var OpcodeToString = map[Opcode]string{
 {{range .}} Opcode{{.}}: "{{.|ToUpper}}",
@@ -122,9 +121,9 @@ func (o Opcode) String() string {
 	}
 	return "OPCODE" + strconv.FormatUint(uint64(o), 10)
 }
-`))
+`)
 	// Flag String()
-	flagStr = template.Must(template.New("flagStr").Funcs(generate.Funcs).Parse(`
+	flagStr = generate.New("flagStr", `
 func (f Flag) String() string {
 	switch f {
 {{range .}}  case {{.}}:
@@ -132,9 +131,9 @@ func (f Flag) String() string {
 {{end}} }
 	return ""
 }
-`))
+`)
 	// Class
-	classStr = template.Must(template.New("classStr").Funcs(generate.Funcs).Parse(`
+	classStr = generate.New("classStr", `
 // ClassToString maps Classes to strings.
 var ClassToString = map[Class]string{
 {{range .}} {{.}}: "{{.|ToUpper}}",
@@ -152,7 +151,7 @@ func (c Class) String() string {
 	i := binary.BigEndian.Uint16(c[:])
 	return "CLASS" + strconv.FormatUint(uint64(i), 10)
 }
-`))
+`)
 )
 
 func main() {

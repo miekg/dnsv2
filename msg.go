@@ -373,7 +373,7 @@ func (m *Msg) RR(s Section) (RR, error) {
 	if m.r[Qd] == 0 { // must be 12 after a call to index
 		err := m.index()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to index message: %w", err)
 		}
 	}
 
@@ -388,20 +388,20 @@ func (m *Msg) RR(s Section) (RR, error) {
 
 	name, i, err := unpackName(m.Buf, i)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unpack name: %w", err)
 	}
 
 	var typ Type
 	i++
 	if typ, i, err = unpackType(m.Buf, i); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unpack type: %w", err)
 	}
 	rr := rrFromType(typ)
 	rr.Hdr().Name = name
 
 	j := 0
 	if rr.Hdr().Class, j, err = unpackClass(m.Buf, i); err != nil {
-		return rr, err
+		return rr, fmt.Errorf("failed to unpack class: %w", err)
 	}
 	if s == Qd {
 		m.count[s]++
@@ -411,14 +411,14 @@ func (m *Msg) RR(s Section) (RR, error) {
 	i = j
 
 	if rr.Hdr().TTL, i, err = unpackTTL(m.Buf, i); err != nil {
-		return rr, err
+		return rr, fmt.Errorf("failed unpack TTL: %w", err)
 	}
 
 	// Rdata length
 	rdl := int(binary.BigEndian.Uint16(m.Buf[i:]))
 	i += 2
 	if err := rr.Write(m.Buf, i, rdl); err != nil {
-		return rr, err
+		return rr, fmt.Errorf("failed to write rdata: %w", err)
 	}
 	m.r[s] = uint16(i + rdl)
 	m.count[s]++
