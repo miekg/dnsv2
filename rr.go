@@ -47,11 +47,12 @@ type (
 // Mostly here, to prevent users from accessing the dnswire pkg directly. Not sure if this is a good idea.
 // Do we need this for every Rdata type? NewIPv6, uint16s ? Etc etc??
 
-// NewTTL returns a TTL from t. If buf is not nil the value is also written into it.
+// NewTTL returns a TTL from t. If buf is not nil the TTL is written into it.
 func NewTTL(t uint32, buf ...[]byte) TTL { return TTL(dnswire.Uint32(t, buf...)) }
 
-// NewName returns a name from s. If buf is not nil the value is also written into it.
+// NewName returns a name from s. If s is not a valid name nil is returned.
+// If buf is not nil the name is written into it.
 func NewName(s string, buf ...[]byte) Name { return Name(dnswire.String(s, buf...)) }
 
-// NewIPv4 returns a 4 byte buffer from v. If buf is not nil the value is also written into it.
+// NewIPv4 returns a 4 byte buffer from v. If buf is not nil the 4 bytes are written into it.
 func NewIPv4(v net.IP, buf ...[]byte) [4]byte { return dnswire.IPv4(v, buf...) }
