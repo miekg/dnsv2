@@ -22,7 +22,7 @@ func main() {
 		log.Fatal("synopsis: q name [TYPE]")
 	}
 
-	m := dns.NewMsg(make([]byte, 512))
+	m := dns.NewMsg(make([]byte, 4096))
 
 	dn := dns.NewName(flag.Arg(0))
 	if dn == nil {
@@ -37,10 +37,20 @@ func main() {
 		rr = dns.TypeToRR[t]()
 	}
 
+	// Compose message to ask the question.
 	rr.Hdr().Name, rr.Hdr().Class = dn, dns.IN
 	m.SetRR(dns.Qd, rr)
 	m.SetID()
 	m.SetFlag(dns.RD)
+
+	opt := dns.NewOPT()
+	opt.SetDo()
+	opt.SetSize(4096)
+
+	m.SetRR(dns.Ar, opt)
+
+	println(m.String())
+	return
 
 	c, err := net.Dial("udp", "8.8.4.4:53")
 	if err != nil {
@@ -62,6 +72,7 @@ func main() {
 	}
 	m.Buf = m.Buf[:n]
 	m.Reset()
+
 	if *flgDump {
 		dump(m.Buf)
 	}

@@ -2,6 +2,7 @@ package dns
 
 import (
 	"encoding/binary"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -80,4 +81,29 @@ func (n Name) String() string {
 
 func (h *Header) String() string {
 	return h.Name.String() + " \t" + h.TTL.String() + " " + h.Class.String()
+}
+
+// StringOPT returns the header as needed for rendering an OPT header.
+func (h *Header) OPTString(opt *OPT) string {
+	b := &strings.Builder{}
+	b.WriteString(";; EDNS: version: ")
+	b.WriteString(fmt.Sprintf("%d", opt.Version()))
+	b.WriteString(", flags: ")
+	b.WriteString(fmt.Sprintf("udp: %d", opt.Size()))
+	if d := opt.Do(); d {
+		b.WriteString("; do\n")
+	}
+	return b.String()
+}
+
+// QdString returns the header as needed for rendering an question section.
+func (h *Header) QdString(rr RR) string {
+	b := &strings.Builder{}
+	b.WriteString(rr.Hdr().Name.String())
+	b.WriteString(" ")
+	b.WriteString(rr.Hdr().Class.String())
+	b.WriteString(" ")
+	b.WriteString(RRToType(rr).String())
+	b.WriteString("\n")
+	return b.String()
 }

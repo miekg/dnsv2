@@ -452,11 +452,14 @@ func (m *Msg) index() error {
 	m.count[Qd], m.count[An], m.count[Ns], m.count[Ar] = 0, 0, 0, 0
 	offset := headerSize
 	// read counts reset too
-	m.r[Qd] = headerSize
-	if offset = m.skipName(offset); offset == 0 {
-		return &WireError{fmt.Errorf("buffer size to small, no owner name found in %s section", Qd.String())}
+	// check m.Count(Qd) TODO
+	m.r[Qd] = uint16(offset)
+	if m.Count(Qd) > 0 {
+		if offset = m.skipName(offset); offset == 0 {
+			return &WireError{fmt.Errorf("buffer size to small, no owner name found in %s section", Qd.String())}
+		}
+		offset += 5 // 4 to skip TYPE, CLASS, +1 to land on next RR
 	}
-	offset += 5 // 4 to skip TYPE, CLASS, +1 to land on next RR
 	// Answer
 	c := m.Count(An)
 	if c > 0 {
@@ -652,19 +655,10 @@ func (m *Msg) String() string {
 		}
 		for _, rr := range rrs {
 			if opt, ok := rr.(*OPT); ok {
-				b.WriteString(";; EDNS: version: ")
-				b.WriteString(fmt.Sprintf("%d", opt.Version()))
-				b.WriteString(", flags:; udp: ")
-				b.WriteString(fmt.Sprintf("%d\n", opt.Size()))
-				continue
+				b.WriteString(rr.Hdr().OPTString(opt))
 			}
 			if s == Qd {
-				b.WriteString(rr.Hdr().Name.String())
-				b.WriteString(" ")
-				b.WriteString(rr.Hdr().Class.String())
-				b.WriteString(" ")
-				b.WriteString(RRToType(rr).String())
-				b.WriteString("\n")
+				b.WriteString(rr.Hdr().QdString(rr))
 				continue
 			}
 			b.WriteString(rr.Hdr().String())

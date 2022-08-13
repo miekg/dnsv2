@@ -6,6 +6,7 @@ package dns
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -13,8 +14,8 @@ import (
 type (
 	// An Option represents an OPT RR rdata value. Basic usage for adding an option to an OPT RR:
 	//
-	//	opt := &OPT{Header: Header{Name: NewName(".")}}
-	//	nsid := &NSID{ID: []byte("AA")}
+	//	opt := dns.NewOPT()
+	//	nsid := &dns.NSID{ID: []byte("AA")}
 	//	opt.Options = []Option{nsid}
 	//
 	Option interface {
@@ -63,6 +64,12 @@ type OPT struct {
 	Options []Option `dns:"len,-data,-string,-write"`
 }
 
+// NewOPT returns a pointer to a new OPT that has the correct properties to be used for EDNS0 options.
+func NewOPT() *OPT {
+	opt := &OPT{Header: Header{Name: NewName(".")}}
+	return opt
+}
+
 func (rr *OPT) Data(i int) []byte {
 	if i < 0 || i >= rr.Len() {
 		return nil
@@ -80,9 +87,11 @@ func (rr *OPT) String() string {
 }
 
 func (rr *OPT) Write(msg []byte, offset, n int) error {
+	if offset+n > len(msg) {
+		return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+n, len(msg))}
+	}
 	i := 0
-	// check n
-	for i < len(msg[offset:]) {
+	for i < len(msg[offset:])-4 {
 		code := Code{msg[offset+i], msg[offset+i+1]}
 		optfunc, ok := codeToOption[code]
 		if !ok {
@@ -91,7 +100,11 @@ func (rr *OPT) Write(msg []byte, offset, n int) error {
 		i += 2
 		rdl := int(binary.BigEndian.Uint16(msg[offset+i:]))
 		i += 2
-		// length checks
+
+		if offset+i+rdl > len(msg) {
+			return &WireError{fmt.Errorf("buffer size too small, need %d, got %d", offset+i+rdl, len(msg))}
+		}
+
 		opt := optfunc()
 		err := opt.Write(msg[offset+i : offset+i+rdl])
 		if err != nil {
@@ -108,9 +121,29 @@ func (rr *OPT) ExtendedRcode() uint8 { return rr.Hdr().TTL[0] }
 
 func (rr *OPT) Version() uint8 { return rr.Hdr().TTL[1] }
 
-func (rr *OPT) Do() bool { return false }
+const _DO = 1 << 7 // DNSSEC OK, 3rd octet in TTL, left most bit.
 
+func (rr *OPT) Do() bool { return rr.Header.TTL[3]&_DO == _DO }
+
+// SetDo sets the DO (DNSSEC OK) bit to the (optional) value 'do'.
+func (rr *OPT) SetDo(do ...bool) {
+	v := true
+	if len(do) == 1 {
+		v = do[0]
+	}
+	if v {
+		rr.Header.TTL[3] |= _DO
+	} else {
+		rr.Header.TTL[3] &^= _DO
+	}
+}
+
+// Size returns the UDP size set in the OPT RR.
 func (rr *OPT) Size() uint16 { return binary.BigEndian.Uint16(rr.Hdr().Class[:]) }
+
+func (rr *OPT) SetSize(s uint16) {
+	binary.BigEndian.PutUint16(rr.Hdr().Class[:], s)
+}
 
 // optionHeader return the code and length as bytes of the EDNS0 Option code.
 func optionHeader(e Option) [4]byte {
