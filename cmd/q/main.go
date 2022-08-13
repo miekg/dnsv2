@@ -22,7 +22,7 @@ func main() {
 	if dn == nil {
 		log.Fatalf("%s is not a valid domain name", flag.Arg(0))
 	}
-	var rr dns.RR
+	rr := dns.TypeToRR[dns.TypeA]()
 	if flag.NArg() == 2 {
 		t, ok := dns.StringToType[flag.Arg(1)]
 		if !ok {
@@ -57,4 +57,12 @@ func main() {
 	m.Buf = m.Buf[:n]
 	m.Reset()
 	fmt.Printf("%s", m)
+
+	rrs, err := m.RRs(dns.An)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, rr := range rrs {
+		fmt.Println(rr.String())
+	}
 }
