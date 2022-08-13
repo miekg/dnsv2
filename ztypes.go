@@ -57,22 +57,24 @@ func RRToType(rr RR) Type {
 	return TypeNone
 }
 
+// TypeToString maps Types to strings.
+var TypeToString = map[Type]string{
+	TypeA:     "A",
+	TypeCNAME: "CNAME",
+	TypeMX:    "MX",
+	TypeNS:    "NS",
+	TypeOPT:   "OPT",
+	TypePTR:   "PTR",
+	TypeSOA:   "SOA",
+}
+
+// StringToType maps strings to Types.
+var StringToType = reverseType(TypeToString)
+
+// String returns the string representation for Type t, unknown Types return TYPE<num>.
 func (t Type) String() string {
-	switch t {
-	case TypeA:
-		return "A"
-	case TypeCNAME:
-		return "CNAME"
-	case TypeMX:
-		return "MX"
-	case TypeNS:
-		return "NS"
-	case TypeOPT:
-		return "OPT"
-	case TypePTR:
-		return "PTR"
-	case TypeSOA:
-		return "SOA"
+	if s, ok := TypeToString[t]; ok {
+		return s
 	}
 	i := binary.BigEndian.Uint16(t[:])
 	return "TYPE" + strconv.FormatUint(uint64(i), 10)
@@ -155,38 +157,45 @@ func (rr *SOA) Data(i int) []byte {
 	return nil
 }
 
-func (r Rcode) String() string {
-	switch r {
-	case RcodeFormErr:
-		return "FORMERR"
-	case RcodeNXDomain:
-		return "NXDOMAIN"
-	case RcodeNoError:
-		return "NOERROR"
-	case RcodeNotImp:
-		return "NOTIMP"
-	case RcodeRefused:
-		return "REFUSED"
-	case RcodeServFail:
-		return "SERVFAIL"
-	}
-	return ""
+// RcodeToString maps Rcodes to strings.
+var RcodeToString = map[Rcode]string{
+	RcodeFormErr:  "FORMERR",
+	RcodeNXDomain: "NXDOMAIN",
+	RcodeNoError:  "NOERROR",
+	RcodeNotImp:   "NOTIMP",
+	RcodeRefused:  "REFUSED",
+	RcodeServFail: "SERVFAIL",
 }
 
-func (o Opcode) String() string {
-	switch o {
-	case OpcodeIQuery:
-		return "IQUERY"
-	case OpcodeNotify:
-		return "NOTIFY"
-	case OpcodeQuery:
-		return "QUERY"
-	case OpcodeStatus:
-		return "STATUS"
-	case OpcodeUpdate:
-		return "UPDATE"
+// StringToRcode maps strings to Rcodes.
+var StringToRcode = reverseRcode(RcodeToString)
+
+// String returns the string representation for Rcode r, unknown Rcodes return RCODE<num>.
+func (r Rcode) String() string {
+	if s, ok := RcodeToString[r]; ok {
+		return s
 	}
-	return ""
+	return "RCODE" + strconv.FormatUint(uint64(r), 10)
+}
+
+// OpcodeToString maps Opcodes to strings.
+var OpcodeToString = map[Opcode]string{
+	OpcodeIQuery: "IQUERY",
+	OpcodeNotify: "NOTIFY",
+	OpcodeQuery:  "QUERY",
+	OpcodeStatus: "STATUS",
+	OpcodeUpdate: "UPDATE",
+}
+
+// StringToOpcode maps strings to Opcodes.
+var StringToOpcode = reverseOpcode(OpcodeToString)
+
+// String returns the string representation for Opcode o, unknown opcodes return OPCODE<num>.
+func (o Opcode) String() string {
+	if s, ok := OpcodeToString[o]; ok {
+		return s
+	}
+	return "OPCODE" + strconv.FormatUint(uint64(o), 10)
 }
 
 func (f Flag) String() string {
@@ -211,14 +220,20 @@ func (f Flag) String() string {
 	return ""
 }
 
+// ClassToString maps Classes to strings.
+var ClassToString = map[Class]string{
+	ANY:  "ANY",
+	IN:   "IN",
+	NONE: "NONE",
+}
+
+// StringToClass maps strings to Classes.
+var StringToClass = reverseClass(ClassToString)
+
+// String returns the string representation for Class c, unknown opcodes return CLASS<num>.
 func (c Class) String() string {
-	switch c {
-	case ANY:
-		return "ANY"
-	case IN:
-		return "IN"
-	case NONE:
-		return "NONE"
+	if s, ok := ClassToString[c]; ok {
+		return s
 	}
 	i := binary.BigEndian.Uint16(c[:])
 	return "CLASS" + strconv.FormatUint(uint64(i), 10)

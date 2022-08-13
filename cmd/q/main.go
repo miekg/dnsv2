@@ -20,11 +20,19 @@ func main() {
 
 	dn := dns.NewName(flag.Arg(0))
 	if dn == nil {
-		log.Fatalf("%s is not a valid domain name", dn)
+		log.Fatalf("%s is not a valid domain name", flag.Arg(0))
 	}
-	h := dns.Header{Name: dn, Class: dns.IN}
+	var rr dns.RR
+	if flag.NArg() == 2 {
+		t, ok := dns.StringToType[flag.Arg(1)]
+		if !ok {
+			log.Fatalf("%s is not a known type", flag.Arg(1))
+		}
+		rr = dns.TypeToRR[t]()
+	}
 
-	m.SetRR(dns.Qd, &dns.A{Header: h})
+	rr.Hdr().Name, rr.Hdr().Class = dn, dns.IN
+	m.SetRR(dns.Qd, rr)
 	m.SetID()
 	m.SetFlag(dns.RD)
 

@@ -63,37 +63,64 @@ func RRToType(rr RR) Type {
 {{end}}
 `))
 
-	// Type String()
-	typeStr = template.Must(template.New("str").Parse(`
+	// Type
+	typeStr = template.Must(template.New("str").Funcs(generate.Funcs).Parse(`
+// TypeToString maps Types to strings.
+var TypeToString = map[Type]string{
+{{range .}} Type{{.}}: "{{.|ToUpper}}",
+{{end}}
+}
+
+// StringToType maps strings to Types.
+var StringToType = reverseType(TypeToString)
+
+// String returns the string representation for Type t, unknown Types return TYPE<num>.
 func (t Type) String() string {
-	switch t {
-{{range .}}  case Type{{.}}:
-	return "{{.}}"
-{{end}} }
+	if s, ok := TypeToString[t]; ok {
+		return s
+	}
 	i := binary.BigEndian.Uint16(t[:])
 	return "TYPE" + strconv.FormatUint(uint64(i), 10)
 }
 `))
 
-	// Rcode String()
+	// Rcode
 	rcodeStr = template.Must(template.New("rcodeStr").Funcs(generate.Funcs).Parse(`
+// RcodeToString maps Rcodes to strings.
+var RcodeToString = map[Rcode]string{
+{{range .}} Rcode{{.}}: "{{.|ToUpper}}",
+{{end}}
+}
+
+// StringToRcode maps strings to Rcodes.
+var StringToRcode = reverseRcode(RcodeToString)
+
+// String returns the string representation for Rcode r, unknown Rcodes return RCODE<num>.
 func (r Rcode) String() string {
-	switch r {
-{{range .}}  case Rcode{{.}}:
-	return "{{.|ToUpper}}"
-{{end}} }
-	return ""
+	if s, ok := RcodeToString[r]; ok {
+		return s
+	}
+	return "RCODE" + strconv.FormatUint(uint64(r), 10)
 }
 `))
 
-	// Opcode String()
+	// Opcode
 	opcodeStr = template.Must(template.New("opcodeStr").Funcs(generate.Funcs).Parse(`
+// OpcodeToString maps Opcodes to strings.
+var OpcodeToString = map[Opcode]string{
+{{range .}} Opcode{{.}}: "{{.|ToUpper}}",
+{{end}}
+}
+
+// StringToOpcode maps strings to Opcodes.
+var StringToOpcode = reverseOpcode(OpcodeToString)
+
+// String returns the string representation for Opcode o, unknown opcodes return OPCODE<num>.
 func (o Opcode) String() string {
-	switch o {
-{{range .}}  case Opcode{{.}}:
-	return "{{.|ToUpper}}"
-{{end}} }
-	return ""
+	if s, ok := OpcodeToString[o]; ok {
+		return s
+	}
+	return "OPCODE" + strconv.FormatUint(uint64(o), 10)
 }
 `))
 	// Flag String()
@@ -106,13 +133,22 @@ func (f Flag) String() string {
 	return ""
 }
 `))
-	// Class String()
+	// Class
 	classStr = template.Must(template.New("classStr").Funcs(generate.Funcs).Parse(`
+// ClassToString maps Classes to strings.
+var ClassToString = map[Class]string{
+{{range .}} {{.}}: "{{.|ToUpper}}",
+{{end}}
+}
+
+// StringToClass maps strings to Classes.
+var StringToClass = reverseClass(ClassToString)
+
+// String returns the string representation for Class c, unknown opcodes return CLASS<num>.
 func (c Class) String() string {
-	switch c {
-{{range .}}  case {{.}}:
-	return "{{.}}"
-{{end}} }
+	if s, ok := ClassToString[c]; ok {
+		return s
+	}
 	i := binary.BigEndian.Uint16(c[:])
 	return "CLASS" + strconv.FormatUint(uint64(i), 10)
 }
