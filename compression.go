@@ -15,6 +15,9 @@ func (c compression) insert(n Name, offset uint16) {
 		if len(n[i:]) == 1 {
 			return
 		}
+		if len(n[i:]) == 2 { // single character label, not worth compressing
+			continue
+		}
 
 		k := string(n[i:])
 		_, ok := c[k]

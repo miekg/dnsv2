@@ -370,6 +370,7 @@ func (m *Msg) SetRR(s Section, rr RR) error {
 // RR returns the next RR from the specified section. If none are found, nil is returned. If there is an error, a
 // partial RR may be returned. When first called a message will be walked to find the indices of the sections.
 func (m *Msg) RR(s Section) (RR, error) {
+	// TODO: WireError
 	if m.r[Qd] == 0 { // must be 12 after a call to index
 		err := m.index()
 		if err != nil {
@@ -378,8 +379,8 @@ func (m *Msg) RR(s Section) (RR, error) {
 	}
 
 	i := int(m.r[s])
-	if i == 0 { // an empty message after being index can still have no RRs in this section
-		return nil, nil
+	if i == 0 { // an empty message after being indexed can still have no RRs in this section
+		return nil, fmt.Errorf("no RRs left in %s section", s)
 	}
 
 	if m.count[s] >= m.Count(s) { // section drained
@@ -581,6 +582,8 @@ func unpackName(msg []byte, offset int, buf ...[]byte) (Name, int, error) {
 			if ptroffset == 0 { // the first pointer we follow, ends the wire encoding of this RR.
 				ptroffset = offset + 1 // advance octet
 			}
+		default:
+			return nil, offset, &WireError{fmt.Errorf("illegal label value %d at offset %d", j&0xC0, offset)}
 		}
 	}
 	if namei == 0 {
@@ -697,7 +700,7 @@ bytes converts an RR to the format we can use on the wire. The format is describ
 The wire bytes are directly written into the message. If the buffer is too small it will be resized to fit the RR.
 */
 func (m *Msg) bytes(s Section, rr RR) {
-	offset := m.w
+	offset := m.w + 1
 
 	i, pointer := m.c.find(rr.Hdr().Name)
 	if pointer == 0 {
@@ -708,7 +711,7 @@ func (m *Msg) bytes(s Section, rr RR) {
 		n := copy(m.Buf[offset:], rr.Hdr().Name)
 		offset += uint16(n)
 	} else {
-		if int(i)+2+int(offset) >= len(m.Buf) { // +2 compression pointer
+		if int(i)+2+10+int(offset) >= len(m.Buf) { // +2 compression pointer
 			m.Buf = append(m.Buf, make([]byte, i+2+10)...) // + 10 for everything up to rdata
 		}
 

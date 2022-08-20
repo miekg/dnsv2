@@ -1,7 +1,6 @@
 package dns
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
@@ -67,42 +66,11 @@ func TestSetOPTAndQd(t *testing.T) {
 
 	rr := &A{Header: Header{Name: NewName("example.net."), Class: IN}, A: [4]byte{127, 0, 0, 1}}
 	m.SetRR(Qd, rr)
-	fmt.Printf("%v\n", m.Buf[:m.Len()])
 
 	opt := NewOPT()
 	opt.SetSize(4096)
 	opt.SetDo()
-
-	fmt.Printf("Before %v\n", m.Buf[:m.Len()])
-
-	println(m.w)
 	m.SetRR(Ar, opt)
-
-	fmt.Printf("After  %v\n", m.Buf[:m.Len()])
-	println(m.w)
-
-	/*
-		off by one, the class gets overridden
-			[0 0 0 0 0 1 0 0 0 0 0 0 7 101 120 97 109 112 108 101 3 110 101 116 0 0 1 0 1]
-			[0 0 0 0 0 1 0 0 0 0 0 1 7 101 120 97 109 112 108 101 3 110 101 116 0 0 1 0 0 0 41 16 0 0 0 0 128 0 0]
-	*/
-
-	m = NewMsg(make([]byte, 60))
-
-	a := &A{Header: Header{Name: NewName("example.net."), Class: IN}, A: [4]byte{127, 0, 0, 1}}
-	m.SetRR(Qd, a)
-	fmt.Printf("%v\n", m.Buf[:m.Len()])
-
-	fmt.Printf("Before %v\n", m.Buf[:m.Len()])
-
-	println(m.w)
-	a.Hdr().Name = NewName(".")
-	m.SetRR(Ar, a)
-
-	fmt.Printf("After  %v\n", m.Buf[:m.Len()])
-	println(m.w)
-
-	return
 
 	opt1, err := m.RR(Ar)
 	if err != nil {
@@ -110,7 +78,7 @@ func TestSetOPTAndQd(t *testing.T) {
 	}
 	opt2, ok := opt1.(*OPT)
 	if !ok {
-		t.Errorf("expected OPT RR, got %s", RRToType(opt2))
+		t.Errorf("expected OPT RR, got %s, %s", RRToType(opt2), opt2)
 	}
 	if opt2.Size() != 4096 {
 		t.Errorf("expected OPT Size() to be %d, got %d", 4096, opt2.Size())

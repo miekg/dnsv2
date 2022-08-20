@@ -140,3 +140,6 @@ if err != nil {
 * unpackXXXX need to take uint16, instead of int.
 
 * strconv.Name, and strconv.IPv4 etc? Should we add these? strconv.Type(t string) Type ??
+
+* [2]byte everywhere is annoying, might change to uin16, uint32, but 48 bits are (TSIG) are crap
+    again...
