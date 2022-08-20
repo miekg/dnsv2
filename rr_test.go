@@ -72,3 +72,19 @@ func TestNameNext(t *testing.T) {
 		j++
 	}
 }
+
+func TestNameRoot(t *testing.T) {
+	t.Parallel()
+	m := NewMsg(make([]byte, 20))
+
+	n := NewName(".")
+	rr := &MX{Header: Header{Name: n, Class: IN}}
+	m.SetRR(Qd, rr)
+
+	if m.Buf[12] != 0 {
+		t.Errorf("expected byte 12 to be 0, got %d", m.Buf[12])
+	}
+	if m.Len() != 17 {
+		t.Errorf("expected message length to be %d, got %d", 17, m.Len())
+	}
+}
