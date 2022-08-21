@@ -40,8 +40,8 @@ func TestSetOPT(t *testing.T) {
 	m := NewMsg(make([]byte, 60))
 
 	opt := NewOPT()
-	opt.SetSize(4096)
 	opt.SetDo()
+	opt.SetSize(127)
 	m.SetRR(Ar, opt)
 
 	opt1, err := m.RR(Ar)
@@ -52,8 +52,8 @@ func TestSetOPT(t *testing.T) {
 	if !ok {
 		t.Errorf("expected OPT RR, got %s", RRToType(opt2))
 	}
-	if opt2.Size() != 4096 {
-		t.Errorf("expected OPT Size() to be %d, got %d", 4096, opt2.Size())
+	if opt2.Size() != 127 {
+		t.Errorf("expected OPT Size() to be %d, got %d", 127, opt2.Size())
 	}
 	if !opt2.Do() {
 		t.Errorf("expected OPT Do() to be true, got false")

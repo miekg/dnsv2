@@ -129,7 +129,7 @@ func NewMsg(buf ...[]byte) *Msg {
 	if len(buf) > 0 {
 		m.Buf = buf[0]
 	}
-	m.w = headerSize // after header, needs buf size of at least this.
+	m.w = headerSize - 1 // after header, needs buf size of at least this.
 	m.c = compression{}
 	return m
 }
@@ -659,6 +659,7 @@ func (m *Msg) String() string {
 		for _, rr := range rrs {
 			if opt, ok := rr.(*OPT); ok {
 				b.WriteString(rr.Hdr().OPTString(opt))
+				continue
 			}
 			if s == Qd {
 				b.WriteString(rr.Hdr().QdString(rr))
@@ -669,6 +670,23 @@ func (m *Msg) String() string {
 			b.WriteString(rr.String())
 			b.WriteString("\n")
 		}
+	}
+	return b.String()
+}
+
+func (m *Msg) GoString() string {
+	b := &strings.Builder{}
+	for i := 0; i < m.Len(); {
+		if i == 0 {
+			fmt.Fprintf(b, "%5d\t  ID  ID                          Qd  An  Ns   Ar\n", m.Len())
+		}
+		fmt.Fprintf(b, "%5d\t", i)
+		j := 0
+		for j = i; j < m.Len() && j < i+12; j++ {
+			fmt.Fprintf(b, " %3d", m.Buf[j])
+		}
+		i += j
+		b.WriteString("\n")
 	}
 	return b.String()
 }

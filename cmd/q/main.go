@@ -37,7 +37,6 @@ func main() {
 		rr = dns.TypeToRR[t]()
 	}
 
-	// Compose message to ask the question.
 	rr.Hdr().Name, rr.Hdr().Class = dn, dns.IN
 	m.SetRR(dns.Qd, rr)
 	m.SetID()
@@ -48,9 +47,6 @@ func main() {
 	opt.SetSize(4096)
 
 	m.SetRR(dns.Ar, opt)
-
-	println(m.String())
-	return
 
 	c, err := net.Dial("udp", "8.8.4.4:53")
 	if err != nil {
