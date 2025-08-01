@@ -2,6 +2,8 @@ package dns
 
 import (
 	"encoding/binary"
+
+	"github.com/miekg/dnsv2/dnswire"
 )
 
 func (m *Msg) Octets(x ...[]byte) []byte {
@@ -12,6 +14,19 @@ func (m *Msg) Octets(x ...[]byte) []byte {
 	return nil
 }
 
+// jumprrs jumps rrs RRs through octets. The returned offset is just after the last RR.
+func jumprrs(octects []byte, off, rrs int) int {
+	for range rrs {
+		j := dnswire.Jump(octects, off)
+		if j == 0 {
+			return 0
+		}
+		off += j
+	}
+	return off
+}
+
+// Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
 func (m *Msg) Question() (Section, error) {
 	// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
 	// class. The RFC says it should only be 1 of those, but multiple may be present, we don't care.
@@ -19,8 +34,7 @@ func (m *Msg) Question() (Section, error) {
 	if len(m.octets) < 12 {
 		return Section{}, ErrBuf
 	}
-	// find the end using the question count.
-	end := jumpsection(m.octets, start, int(m.Qdcount()))
+	end := jumprrs(m.octets, start, int(m.Qdcount()))
 	return Section{msg: m, octets: m.octets[start:end]}, nil
 }
 
@@ -96,44 +110,4 @@ func (m *Msg) Pscount(x ...uint16) uint16 {
 	}
 	m.ps = x[0]
 	return 0
-}
-
-// jumpsection jumps rrs RRs through octects. The returned offset is the start of the next section.
-func jumpsection(octects []byte, off, rrs int) int {
-	for range rrs {
-		j := jump(octects, off)
-		if j == 0 {
-			return 0
-		}
-		off += j
-	}
-	return off
-}
-
-// jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
-func jump(octets []byte, off int) int {
-	for {
-		c := int(octets[off])
-		off++
-		switch c & 0xC0 {
-		case 0x00:
-			if c == 0x00 { // end of the name
-				if off+10 > len(octets) {
-					return 0
-				}
-				rdlength := binary.BigEndian.Uint16(octets[off+8:])
-				return off + int(rdlength) + 1
-			}
-			off += c
-		case 0xC0:
-			// pointer
-			off++
-		default:
-			// 0x80 and 0x40 are reserved
-			return 0
-		}
-		if off > len(octets) {
-			return 0
-		}
-	}
 }

@@ -2,9 +2,52 @@
 // Marshal and Unmarshall.
 package dnswire
 
+import "encoding/binary"
+
 type (
 	Type  uint16 // Type is an RR type.
 	TTL   int32  // TTL is the time to live of an RR(set).
 	Class uint16 // Class is a DNS class.
 	Name  []byte // Name is a domain name.
 )
+
+// Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
+func Jump(octets []byte, off int) int {
+	for {
+		c := int(octets[off])
+		off++
+		switch c & 0xC0 {
+		case 0x00:
+			if c == 0x00 { // end of the name
+				if off+10 > len(octets) {
+					return 0
+				}
+				rdlength := binary.BigEndian.Uint16(octets[off+8:])
+				return off + int(rdlength) + 1
+			}
+			off += c
+		case 0xC0:
+			// pointer
+			off++
+		default:
+			// 0x80 and 0x40 are reserved
+			return 0
+		}
+		if off > len(octets) {
+			return 0
+		}
+	}
+}
+
+func Type(x ...dnswire.Type) (dnswire.Type, error) {
+	// Need to set these too
+	name, err := h.Name()
+	if err != nil {
+		return TypeNone, err
+	}
+	if len(name)+2 > len(h.octets) {
+		return TypeNone, &Error{err: "overflow reading RR type"}
+	}
+	i := binary.BigEndian.Uint16(h.octets[len(name):])
+	return dnswire.Type(i), nil
+}
