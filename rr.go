@@ -41,101 +41,92 @@ var (
 	_ RR = &RFC3597{}
 )
 
-// Hdr implements Header, this is used in each RR.
-type Hdr struct {
-	octets []byte
-	msg    *Msg
-}
-
-var _ Header = &Hdr{}
-
-func (h *Hdr) Type(x ...dnswire.Type) (dnswire.Type, error) {
-	off := dnswire.JumpName(h.octets, 0)
+func Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
+	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+2 < len(h.octets) {
+	if off+2 < len(rr.Octets()) {
 		return TypeNone, &Error{err: "overflow reading RR type"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint16(h.octets[off:])
+		i := binary.BigEndian.Uint16(rr.Octets()[off:])
 		return dnswire.Type(i), nil
 	}
-	binary.BigEndian.PutUint16(h.octets[off:], uint16(x[0]))
+	binary.BigEndian.PutUint16(rr.Octets()[off:], uint16(x[0]))
 	return TypeNone, nil
 }
 
-func (h *Hdr) Class(x ...dnswire.Class) (dnswire.Class, error) {
-	// allocate if nothing hrere
-	off := dnswire.JumpName(h.octets, 0)
+func Class(rr RR, x ...dnswire.Class) (dnswire.Class, error) {
+	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
 	println("OFF", off)
-	if off+4 > len(h.octets) {
+	if off+4 > len(rr.Octets()) {
 		return ClassNone, &Error{err: "overflow reading RR class"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint16(h.octets[off+2:])
+		i := binary.BigEndian.Uint16(rr.Octets()[off+2:])
 		return dnswire.Class(i), nil
 	}
-	binary.BigEndian.PutUint16(h.octets[off+2:], uint16(x[0]))
+	binary.BigEndian.PutUint16(rr.Octets()[off+2:], uint16(x[0]))
 	return ClassNone, nil
 }
 
-func (h *Hdr) TTL(x ...dnswire.TTL) (dnswire.TTL, error) {
-	off := dnswire.JumpName(h.octets, 0)
+func TTL(rr RR, x ...dnswire.TTL) (dnswire.TTL, error) {
+	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+8 > len(h.octets) {
+	if off+8 > len(rr.Octets()) {
 		return dnswire.TTL(0), &Error{err: "overflow reading RR ttl"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint32(h.octets[off+4:])
+		i := binary.BigEndian.Uint32(rr.Octets()[off+4:])
 		return dnswire.TTL(i), nil
 	}
-	binary.BigEndian.PutUint32(h.octets[off+4:], uint32(x[0]))
+	binary.BigEndian.PutUint32(rr.Octets()[off+4:], uint32(x[0]))
 	return dnswire.TTL(0), nil
 }
 
-func (h *Hdr) Len(x ...uint16) (uint16, error) {
-	off := dnswire.JumpName(h.octets, 0)
+func Len(rr RR, x ...uint16) (uint16, error) {
+	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+10 > len(h.octets) {
+	if off+10 > len(rr.Octets()) {
 		return 0, &Error{err: "overflow reading RR rdlength"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint16(h.octets[off+8:])
-		if off+int(i) > len(h.octets) {
+		i := binary.BigEndian.Uint16(rr.Octets()[off+8:])
+		if off+int(i) > len(rr.Octets()) {
 			return 0, &Error{err: "bad rdlength"}
 		}
 		return i, nil
 	}
-	binary.BigEndian.PutUint16(h.octets[off+8:], x[0])
+	binary.BigEndian.PutUint16(rr.Octets()[off+8:], x[0])
 	return 0, nil
 }
 
-func (h *Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
+func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 	if len(x) != 0 {
 		// allocate room for the name and type, class, ttl and length
 		needed := len(x[0]) + 2 + 2 + 2 + 4
-		if len(h.octets) < needed {
-			println("ADDING", needed-len(h.octets))
-			extra := make([]byte, needed-len(h.octets))
-			h.octets = append(h.octets, extra...)
+		if l := len(rr.Octets()); l < needed {
+			println("ADDING", needed-l)
+			extra := make([]byte, needed-l)
+			buf := append(rr.Octets(), extra...)
+			rr.Octets(buf)
 		}
-		println(h.octets)
 		return nil, nil
 	}
 	name := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
 	off := 0
 	ptr := 0
 	for {
-		c := int(h.octets[off])
-		name.WriteByte(h.octets[off])
+		c := int(rr.Octets()[off])
+		name.WriteByte(rr.Octets()[off])
 		off++
 		switch c & 0xC0 {
 		case 0x00:
@@ -144,7 +135,7 @@ func (h *Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
 			}
 			off += c
 		case 0xC0:
-			if h.msg == nil {
+			if rr.Msg() == nil {
 				// Pointer to somewhere else in msg. We can't deal with that here because we don't have the message.
 				return nil, ErrPtr
 			}
@@ -157,7 +148,7 @@ func (h *Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
 			// 0x80 and 0x40 are reserved
 			return nil, ErrLabelType
 		}
-		if off > len(h.octets) {
+		if off > len(rr.Octets()) {
 			return nil, ErrBuf
 		}
 	}
