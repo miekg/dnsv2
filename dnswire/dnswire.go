@@ -1,10 +1,11 @@
 // Package dnswire deals with the encoding from and to wire encoding. In Go these functions are usually called
-// Marshal and Unmarshall.
+// Marshal and Unmarshal.
 package dnswire
 
 import (
 	"bytes"
 	"encoding/binary"
+	"strings"
 )
 
 type (
@@ -15,18 +16,71 @@ type (
 )
 
 func (n Name) String() string {
-	return "this-should-be-a-string"
-}
-
-func (n Name) Marshal(s string) {
-	name := bytes.NewBuffer(make([]byte, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
-
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-
+	if len(n) == 1 && n[0] == 0 {
+		return "."
 	}
 
+	s := strings.Builder{}
+	off := 0
+
+	for {
+		println(off)
+		c := int(n[off])
+		off++
+		switch c & 0xC0 {
+		case 0x00:
+			if c == 0x00 { // end of the name
+				s.WriteString(".")
+				return s.String()
+			}
+			if off > 2 {
+				s.WriteString(".")
+			}
+			s.Write(n[off : off+c])
+			off += c
+			continue
+		case 0xC0:
+			// pointer, shouldn't happen here
+			off++
+			s.WriteString(".")
+			continue
+		}
+		if off > len(n) {
+			break
+		}
+	}
+	// haven't seen 00 ending...?
+	s.WriteString(".")
+	return s.String()
+}
+
+// Marshal encodes s into a DNS encoded domain. It can deal with fully and non-fully qualified names.
+// Although in the later case it allocates a new string by adding the final dot for you.
+// This also takes care of all the esoteric encoding allowed like \DDD and \. to escape a dot.
+func (n Name) Marshal(s string) Name {
+	if s == "." {
+		n = []byte{0}
+		return n
+	}
+
+	if s[len(s)-1] != '.' {
+		s += "."
+	}
+
+	name := bytes.NewBuffer(make([]byte, 0, 32))
+	start := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '.' {
+			l := i - start
+			name.WriteByte(byte(l & 0x3F))
+			name.WriteString(s[start:i])
+
+			start = i + 1
+		}
+	}
+	name.WriteByte(0)
 	n = name.Bytes()
+	return n
 }
 
 type Opcode uint8

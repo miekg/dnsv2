@@ -128,7 +128,7 @@ func (h Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
 
 		return nil, nil
 	}
-	name := bytes.NewBuffer(make([]byte, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
+	name := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
 	off := 0
 	ptr := 0
 	for {
