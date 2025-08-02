@@ -3,6 +3,7 @@ package dns
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/miekg/dnsv2/dnswire"
 )
@@ -62,7 +63,6 @@ func Class(rr RR, x ...dnswire.Class) (dnswire.Class, error) {
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	println("OFF", off)
 	if off+4 > len(rr.Octets()) {
 		return ClassNone, &Error{err: "overflow reading RR class"}
 	}
@@ -156,4 +156,9 @@ func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 			return nil, ErrLabelType
 		}
 	}
+}
+
+func String(rr RR) string {
+	// TODO: fix
+	return fmt.Sprintf("%v", rr.Octets())
 }

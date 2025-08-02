@@ -53,6 +53,8 @@ type Header interface {
 	Name(x ...dnswire.Name) (dnswire.Name, error)
 	// If Len does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
 	Len(x ...uint16) (uint16, error)
+	// String returns the string representation of the RR's header.
+	String() string
 }
 
 // An RR represents a resource record. When defining a RR struct tags are used to generate the Rdata accessor functions and example

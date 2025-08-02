@@ -8,6 +8,7 @@ func (rr *NSID) Name(x ...dnswire.Name) (dnswire.Name, error)    { return Name(r
 func (rr *NSID) Type(x ...dnswire.Type) (dnswire.Type, error)    { return Type(rr, x...) }
 func (rr *NSID) Class(x ...dnswire.Class) (dnswire.Class, error) { return Class(rr, x...) }
 func (rr *NSID) TTL(x ...dnswire.TTL) (dnswire.TTL, error)       { return TTL(rr, x...) }
+func (rr *NSID) String() string                                  { return String(rr) }
 func (rr *NSID) Octets(x ...[]byte) []byte {
 	if len(x) == 0 {
 		return rr.octets
@@ -22,6 +23,7 @@ func (rr *PADDING) Name(x ...dnswire.Name) (dnswire.Name, error)    { return Nam
 func (rr *PADDING) Type(x ...dnswire.Type) (dnswire.Type, error)    { return Type(rr, x...) }
 func (rr *PADDING) Class(x ...dnswire.Class) (dnswire.Class, error) { return Class(rr, x...) }
 func (rr *PADDING) TTL(x ...dnswire.TTL) (dnswire.TTL, error)       { return TTL(rr, x...) }
+func (rr *PADDING) String() string                                  { return String(rr) }
 func (rr *PADDING) Octets(x ...[]byte) []byte {
 	if len(x) == 0 {
 		return rr.octets

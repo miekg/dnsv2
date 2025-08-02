@@ -70,16 +70,16 @@ func (m *Msg) ID(x ...uint16) (uint16, error) {
 
 // Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
 // If a parameter is given, the section will be set in the message as the question section, the qdcount will be updated appropriately.
-func (m *Msg) Question(x ...Section) (Section, error) {
+func (m *Msg) Question(x ...*Section) (*Section, error) {
 	if len(x) == 0 {
 		// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
 		// class. The RFC says it should only be 1 of those, but multiple may be present, we don't care.
 		start := 12
 		if len(m.octets) < 12 {
-			return Section{}, ErrBuf
+			return nil, ErrBuf
 		}
 		end := jumprrs(m.octets, start, int(m.Qdcount()))
-		return Section{which: Question, msg: m, octets: m.octets[start:end]}, nil
+		return &Section{which: Question, msg: m, octets: m.octets[start:end]}, nil
 	}
 	// TODO: what if we already have something here? Cut it out and replace.
 	if m.octets == nil {
@@ -87,23 +87,23 @@ func (m *Msg) Question(x ...Section) (Section, error) {
 		m.octets = append(m.octets, x[0].octets...)
 		// qdcount, need to count RR in section
 	}
-	return Section{}, nil
+	return nil, nil
 }
 
-func (m *Msg) Answer() Section {
-	return Section{which: Answer}
+func (m *Msg) Answer() *Section {
+	return &Section{which: Answer}
 }
 
-func (m *Msg) Ns() Section {
-	return Section{which: Ns}
+func (m *Msg) Ns() *Section {
+	return &Section{which: Ns}
 }
 
-func (m *Msg) Extra() Section {
-	return Section{which: Extra}
+func (m *Msg) Extra() *Section {
+	return &Section{which: Extra}
 }
 
-func (m *Msg) Pseudo() Section {
-	return Section{which: Pseudo}
+func (m *Msg) Pseudo() *Section {
+	return &Section{which: Pseudo}
 }
 
 // Qdcount returns the number of RRs in the question section. This should normally be just 1.

@@ -8,11 +8,11 @@ import (
 )
 
 // NewSection returns a new section with the appriate message section set.
-func NewSection(which uint8) Section { return Section{which: which} }
+func NewSection(which uint8) *Section { return &Section{which: which} }
 
 // RRs returns an interator the allows ranging over the RRs in s. Returned RRs are still tied to the DNS
 // message they come from. This is to resolve compression pointers if they are present when calling rr.Name.
-func (s Section) RRs() iter.Seq[RR] {
+func (s *Section) RRs() iter.Seq[RR] {
 	off := 0
 	return func(yield func(RR) bool) {
 		for {
@@ -37,15 +37,19 @@ func (s Section) RRs() iter.Seq[RR] {
 	}
 }
 
+// Len returns the number of RRs that are stored in this section.
+func (s *Section) Len() int {
+	return 1
+}
+
 // Append adds the RR (or RRs) to the section. If the Section's section is not defined, this is a noop.
-func (s Section) Append(rr ...RR) {
+func (s *Section) Append(rr ...RR) {
 	switch s.which {
 	case Question:
 		for _, r := range rr {
 			octets := r.Octets()
-			// jump name and and add type + class (2 + 2)
-			end := dnswire.JumpName(octets, 0)
 			// set the type based on the RR type
+			end := dnswire.JumpName(octets, 0)
 			i, _ := RRToType[r]
 			end += 2
 			binary.BigEndian.PutUint16(octets[end:], uint16(i))

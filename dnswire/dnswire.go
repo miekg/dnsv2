@@ -115,7 +115,6 @@ func Jump(octets []byte, off int) int {
 // JumpName jumps the name that should start un octets[off:] and return the offset right after it.
 func JumpName(octets []byte, off int) int {
 	for {
-		println(len(octets), off)
 		c := int(octets[off])
 		off++
 		switch c & 0xC0 {
