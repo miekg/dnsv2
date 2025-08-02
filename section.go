@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"encoding/binary"
 	"iter"
 
 	"github.com/miekg/dnsv2/dnswire"
@@ -29,6 +30,27 @@ func (s Section) RRs() iter.Seq[RR] {
 			if !yield(rr) {
 				return
 			}
+		}
+	}
+}
+
+// Append adds the RR (or RRs) to the section. If the Section's section is not defined, this is a noop.
+func (s Section) Append(rr ...RR) {
+	switch s.which {
+	case sectionNone:
+		return
+	case sectionQuestion:
+		for _, r := range rr {
+			octets := r.Octets()
+			// jump name and and add type + class (2 + 2)
+			end := dnswire.JumpName(octets, 0)
+			// set the type based on the RR type
+			i, _ := RRToType[r]
+			end += 2
+			binary.BigEndian.PutUint16(octets[end:], uint16(i))
+
+			end += 2 // TODO: overflow check.
+			s.octets = append(s.octets, octets[0:end]...)
 		}
 	}
 }

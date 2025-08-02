@@ -51,23 +51,23 @@ func (m *Msg) Question() (Section, error) {
 		return Section{}, ErrBuf
 	}
 	end := jumprrs(m.octets, start, int(m.Qdcount()))
-	return Section{msg: m, octets: m.octets[start:end]}, nil
+	return Section{which: sectionQuestion, msg: m, octets: m.octets[start:end]}, nil
 }
 
 func (m *Msg) Answer() Section {
-	return Section{}
+	return Section{which: sectionAnswer}
 }
 
 func (m *Msg) Ns() Section {
-	return Section{}
+	return Section{which: sectionNs}
 }
 
 func (m *Msg) Extra() Section {
-	return Section{}
+	return Section{which: sectionExtra}
 }
 
 func (m *Msg) Pseudo() Section {
-	return Section{}
+	return Section{which: sectionPseudo}
 }
 
 // Qdcount returns the number of RRs in the question section. This should normally be just 1.

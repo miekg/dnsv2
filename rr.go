@@ -57,8 +57,12 @@ func (h Hdr) Type(x ...dnswire.Type) (dnswire.Type, error) {
 	if off+2 < len(h.octets) {
 		return TypeNone, &Error{err: "overflow reading RR type"}
 	}
-	i := binary.BigEndian.Uint16(h.octets[off:])
-	return dnswire.Type(i), nil
+	if len(x) == 0 {
+		i := binary.BigEndian.Uint16(h.octets[off:])
+		return dnswire.Type(i), nil
+	}
+	binary.BigEndian.PutUint16(h.octets[off:], uint16(x[0]))
+	return TypeNone, nil
 }
 
 func (h Hdr) Class(x ...dnswire.Class) (dnswire.Class, error) {
@@ -69,8 +73,12 @@ func (h Hdr) Class(x ...dnswire.Class) (dnswire.Class, error) {
 	if off+4 > len(h.octets) {
 		return ClassNone, &Error{err: "overflow reading RR class"}
 	}
-	i := binary.BigEndian.Uint16(h.octets[off+2:])
-	return dnswire.Class(i), nil
+	if len(x) == 0 {
+		i := binary.BigEndian.Uint16(h.octets[off+2:])
+		return dnswire.Class(i), nil
+	}
+	binary.BigEndian.PutUint16(h.octets[off+2:], uint16(x[0]))
+	return ClassNone, nil
 }
 
 func (h Hdr) TTL(x ...dnswire.TTL) (dnswire.TTL, error) {
@@ -81,8 +89,12 @@ func (h Hdr) TTL(x ...dnswire.TTL) (dnswire.TTL, error) {
 	if off+8 > len(h.octets) {
 		return dnswire.TTL(0), &Error{err: "overflow reading RR ttl"}
 	}
-	i := binary.BigEndian.Uint32(h.octets[off+4:])
-	return dnswire.TTL(i), nil
+	if len(x) == 0 {
+		i := binary.BigEndian.Uint32(h.octets[off+4:])
+		return dnswire.TTL(i), nil
+	}
+	binary.BigEndian.PutUint32(h.octets[off+4:], uint32(x[0]))
+	return dnswire.TTL(0), nil
 }
 
 func (h Hdr) Len(x ...uint16) (uint16, error) {
@@ -93,14 +105,28 @@ func (h Hdr) Len(x ...uint16) (uint16, error) {
 	if off+10 > len(h.octets) {
 		return 0, &Error{err: "overflow reading RR rdlength"}
 	}
-	i := binary.BigEndian.Uint16(h.octets[off+8:])
-	if off+int(i) > len(h.octets) {
-		return 0, &Error{err: "bad rdlength"}
+	if len(x) == 0 {
+		i := binary.BigEndian.Uint16(h.octets[off+8:])
+		if off+int(i) > len(h.octets) {
+			return 0, &Error{err: "bad rdlength"}
+		}
+		return i, nil
 	}
-	return i, nil
+	binary.BigEndian.PutUint16(h.octets[off+8:], x[0])
+	return 0, nil
 }
 
 func (h Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
+	if len(x) == 0 {
+		// allocate room for the name and type, class, ttl and length
+		needed := len(x[0]) + 2 + 2 + 2 + 4
+		if len(h.octets) < needed {
+			extra := make([]byte, needed-len(h.octets))
+			h.octets = append(h.octets, extra...)
+		}
+
+		return nil, nil
+	}
 	name := bytes.NewBuffer(make([]byte, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
 	off := 0
 	ptr := 0

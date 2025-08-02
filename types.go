@@ -39,7 +39,8 @@ type Header interface {
 	// If Class does not have a parameter it returns the RR's class. If a parameter is given it sets the RR's class.
 	Class(x ...dnswire.Class) (dnswire.Class, error)
 	// If Name does not have a parameter it returns the RR's owner name. If a parameter is given it sets the
-	// RR's owner name. Not that the name can be compressed.
+	// RR's owner name. Not that the name can be compressed. Note this is the only method that allocates a
+	// buffer in the header with enough space for the name, the type, class, ttl and rdlength.
 	Name(x ...dnswire.Name) (dnswire.Name, error)
 	// If Len does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
 	Len(x ...uint16) (uint16, error)
@@ -88,5 +89,15 @@ type Msg struct {
 // Section is a section in a DNS message.
 type Section struct {
 	msg    *Msg   // msg is a pointer back the message this section belong in. This is needed to resolve compression pointers, when returning the RRs.
-	octets []byte // Contents of the section with possible compression pointers in the dns names. This data is owned by Msg.
+	octets []byte // Contents of the section with possible compression pointers in the DNS names. This data is owned by the referenced Msg.
+	which  uint8  // which section are we're dealing with, only sectionQuestion and sectionPseudo have special treatment.
 }
+
+const (
+	sectionNone uint8 = iota
+	sectionQuestion
+	sectionAnswer
+	sectionNs
+	sectionExtra
+	sectionPseudo
+)
