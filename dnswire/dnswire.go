@@ -24,7 +24,7 @@ func (n Name) String() string {
 	off := 0
 
 	for {
-		if off > len(n) {
+		if off > len(n)-1 {
 			break
 		}
 

@@ -3,7 +3,6 @@ package dns
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -171,8 +170,8 @@ func String(rr RR) string {
 	class, _ := rr.Class()
 	s.WriteString(ClassToString[class])
 	s.WriteByte('\t')
-	typ, _ := rr.Type()
+	typ, _ := rr.Type() // If known type, use that!
 	s.WriteString(TypeToString[typ])
-
-	return fmt.Sprintf("%v", rr.Octets())
+	return s.String()
+	// return fmt.Sprintf("%v", rr.Octets())
 }
