@@ -39,15 +39,38 @@ func Jump(octets []byte, off int) int {
 	}
 }
 
-func Type(x ...dnswire.Type) (dnswire.Type, error) {
-	// Need to set these too
-	name, err := h.Name()
-	if err != nil {
-		return TypeNone, err
+// JumpName jumps the name that should start un octets[off:] and return the offset right after it.
+func JumpName(octets []byte, off int) int {
+	for {
+		c := int(octets[off])
+		off++
+		switch c & 0xC0 {
+		case 0x00:
+			if c == 0x00 { // end of the name
+				return off + 1 // also skip this nil byte
+			}
+			off += c
+		case 0xC0:
+			// pointer
+			off++
+		default:
+			// 0x80 and 0x40 are reserved
+			return 0
+		}
+		if off > len(octets) {
+			return 0
+		}
 	}
-	if len(name)+2 > len(h.octets) {
-		return TypeNone, &Error{err: "overflow reading RR type"}
+}
+
+// RRType returns the RR's type. On error TypeNone is returned.
+func RRType(octets []byte) Type {
+	off := JumpName(octets, 0)
+	if off == 0 {
+		return 0
 	}
-	i := binary.BigEndian.Uint16(h.octets[len(name):])
-	return dnswire.Type(i), nil
+	if off+2 > len(octets) {
+		return 0
+	}
+	return Type(binary.BigEndian.Uint16(octets[off:]))
 }

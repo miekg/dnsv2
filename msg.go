@@ -14,18 +14,6 @@ func (m *Msg) Octets(x ...[]byte) []byte {
 	return nil
 }
 
-// jumprrs jumps rrs RRs through octets. The returned offset is just after the last RR.
-func jumprrs(octects []byte, off, rrs int) int {
-	for range rrs {
-		j := dnswire.Jump(octects, off)
-		if j == 0 {
-			return 0
-		}
-		off += j
-	}
-	return off
-}
-
 // Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
 func (m *Msg) Question() (Section, error) {
 	// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
@@ -110,4 +98,16 @@ func (m *Msg) Pscount(x ...uint16) uint16 {
 	}
 	m.ps = x[0]
 	return 0
+}
+
+// jumprrs jumps rrs RRs through octets. The returned offset is just after the last RR.
+func jumprrs(octects []byte, off, rrs int) int {
+	for range rrs {
+		j := dnswire.Jump(octects, off)
+		if j == 0 {
+			return 0
+		}
+		off += j
+	}
+	return off
 }

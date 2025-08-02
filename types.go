@@ -24,6 +24,9 @@ const (
 
 // Header is the header of an RR. All DNS resource records share this.
 type Header interface {
+	// If Type does not have a parameter it returns the RR's type. If a parameter is given it sets the RR's type.
+	// Note that Type is usualy superfluous as the RR's type is implicitly enccoded in the Go type of the struct.
+	Type(x ...dnswire.Type) (dnswire.Type, error)
 	// If TTL does not have a parameter it returns the RR's TTL. If a parameter is given it sets the RR's TTL.
 	TTL(x ...dnswire.TTL) (dnswire.TTL, error)
 	// If Class does not have a parameter it returns the RR's class. If a parameter is given it sets the RR's class.
