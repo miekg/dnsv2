@@ -7,34 +7,18 @@ import (
 	"github.com/miekg/dnsv2/dnswire"
 )
 
+// RFC3597 represents an unknown/generic RR. See RFC 3597.
+type RFC3597 struct {
+	Header
+	msg    *Msg
+	octets []byte `dns:"Data:Hex"`
+}
+
 // A RR. See RFC 1035.
 type A struct {
 	Header
 	msg    *Msg
 	octets []byte `dns:"A:IPv4"`
-}
-
-func (rr *A) Msg(x ...*Msg) *Msg {
-	if len(x) == 0 {
-		return rr.msg
-	}
-	rr.msg = x[0]
-	return nil
-}
-
-func (rr *A) Name(x ...dnswire.Name) (dnswire.Name, error) { return Hdr{rr.octets, rr.msg}.Name(x...) }
-func (rr *A) Type(x ...dnswire.Type) (dnswire.Type, error) { return Hdr{rr.octets, rr.msg}.Type(x...) }
-func (rr *A) Class(x ...dnswire.Class) (dnswire.Class, error) {
-	return Hdr{rr.octets, rr.msg}.Class(x...)
-}
-func (rr *A) TTL(x ...dnswire.TTL) (dnswire.TTL, error) { return Hdr{rr.octets, rr.msg}.TTL(x...) }
-
-func (rr *A) Octets(x ...[]byte) []byte {
-	if len(x) == 0 {
-		return rr.octets
-	}
-	rr.octets = x[0]
-	return nil
 }
 
 // MX RR, See RFC 1035.
@@ -44,33 +28,18 @@ type MX struct {
 	octets []byte `dns:"Preference:Uint16,Mx:Name"`
 }
 
+// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
+type OPT struct {
+	Header
+	msg    *Msg
+	octets []byte `dns:"Option:[]byte"`
+}
+
 var (
 	_ RR = &MX{}
 	_ RR = &A{}
+	_ RR = &RFC3597{}
 )
-
-func (rr *MX) Msg(x ...*Msg) *Msg {
-	if len(x) == 0 {
-		return rr.msg
-	}
-	rr.msg = x[0]
-	return nil
-}
-
-func (rr *MX) Name(x ...dnswire.Name) (dnswire.Name, error) { return Hdr{rr.octets, rr.msg}.Name(x...) }
-func (rr *MX) Type(x ...dnswire.Type) (dnswire.Type, error) { return Hdr{rr.octets, rr.msg}.Type(x...) }
-func (rr *MX) Class(x ...dnswire.Class) (dnswire.Class, error) {
-	return Hdr{rr.octets, rr.msg}.Class(x...)
-}
-func (rr *MX) TTL(x ...dnswire.TTL) (dnswire.TTL, error) { return Hdr{rr.octets, rr.msg}.TTL(x...) }
-
-func (rr *MX) Octets(x ...[]byte) []byte {
-	if len(x) == 0 {
-		return rr.octets
-	}
-	rr.octets = x[0]
-	return nil
-}
 
 // Hdr implements Header, this is used in each RR.
 type Hdr struct {
@@ -125,11 +94,14 @@ func (h Hdr) Len(x ...uint16) (uint16, error) {
 		return 0, &Error{err: "overflow reading RR rdlength"}
 	}
 	i := binary.BigEndian.Uint16(h.octets[off+8:])
+	if off+int(i) > len(h.octets) {
+		return 0, &Error{err: "bad rdlength"}
+	}
 	return i, nil
 }
 
 func (h Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
-	name := bytes.Buffer{}
+	name := bytes.NewBuffer(make([]byte, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
 	off := 0
 	ptr := 0
 	for {

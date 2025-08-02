@@ -18,8 +18,15 @@ const (
 const (
 	TypeNone = dnswire.Type(0) // TypeNone signals a type not found condition.
 	// Valid DNS RR types.
-	TypeA  = dnswire.Type(1)
-	TypeMX = dnswire.Type(15)
+	TypeA   = dnswire.Type(1)
+	TypeMX  = dnswire.Type(15)
+	TypeOPT = dnswire.Type(41)
+)
+
+const (
+	// Valid EDNS "RR" option type codes.
+	CodeNSID    = dnswire.Type(0x3) // nsid (See RFC 5001)
+	CodePADDING = dnswire.Type(0xc) // EDNS0 padding (See RFC 7830)
 )
 
 // Header is the header of an RR. All DNS resource records share this.
@@ -38,7 +45,21 @@ type Header interface {
 	Len(x ...uint16) (uint16, error)
 }
 
-// An RR represents a resource record.
+// An RR represents a resource record. When defining a RR struct tags are used to generate the Rdata accessor functions and example
+// from the MX record being:
+//
+//	octets []byte `dns:"Preference:Uint16,Mx:Name"`
+//
+// This defines the rdata as being a []byte (as is custom) and the defines 2 rdata fields:
+//   - Preference, a dnswire.Uint16, and
+//   - Mx, a dnswire.Name
+//
+// This generates two methods on *[MX]:
+//   - Preference(x ...dnswire.Uint16) dnswire.Uint16, and
+//   - Mx(x ...dnswire.Name) dnswire.Name
+//
+// That allows for setting and getting the fields' values. Note that the return types should all exist in the
+// [dnswire] package, alternatively you can use native Go types.
 type RR interface {
 	Header
 	// If Octets does not have a parameter it returns the wire encoding octets for this RR. If a parameter is
@@ -49,6 +70,12 @@ type RR interface {
 	// a file or a string. In that case this method return nil. Note that in the latter case no compression
 	// pointers need to be resolved.
 	Msg(x ...*Msg) *Msg
+}
+
+// EDNS0 determines if the "RR" is posing as an EDNS0 option. EDNS0 options are considered just RRs and must
+// be added to the [Pseudo] section of a DNS message.
+type EDNS0 interface {
+	Pseudo() bool
 }
 
 // Msg contains the layout of a DNS message. A DNS message has 4 sections, the question, answer, authority and additional section.

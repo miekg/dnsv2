@@ -12,21 +12,20 @@ func (s Section) RRs() iter.Seq[RR] {
 	off := 0
 	return func(yield func(RR) bool) {
 		for {
-
 			end := dnswire.Jump(s.octets, off)
 			if end == 0 {
 				break
 			}
-			// which RR type to make, need to the type from the octets
-			// get rrtype from BYTES
-			rrtype := dnswire.Type(15) // mx
+			rrtype := dnswire.RRType(s.octets, off)
 			var rr RR
 			if newRR, ok := TypeToRR[rrtype]; ok {
 				rr = newRR()
-				rr.Msg(s.msg)
 			} else {
-				// unknown
+				rr = new(RFC3597)
 			}
+			rr.Msg(s.msg)
+			rr.Octets(s.octets[off:end])
+			off = end
 			if !yield(rr) {
 				return
 			}

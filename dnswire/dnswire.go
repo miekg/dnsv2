@@ -64,8 +64,8 @@ func JumpName(octets []byte, off int) int {
 }
 
 // RRType returns the RR's type. On error TypeNone is returned.
-func RRType(octets []byte) Type {
-	off := JumpName(octets, 0)
+func RRType(octets []byte, off int) Type {
+	off = JumpName(octets, off)
 	if off == 0 {
 		return 0
 	}

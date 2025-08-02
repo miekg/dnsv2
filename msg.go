@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 
 	"github.com/miekg/dnsv2/dnswire"
@@ -12,6 +13,33 @@ func (m *Msg) Octets(x ...[]byte) []byte {
 	}
 	m.octets = x[0]
 	return nil
+}
+
+// ID by default returns a 16-bit random number to be used as a message id. The number is drawn from a cryptographically secure random number generator.
+// This being a variable the function can be reassigned to a custom function. For instance, to make it return a static value for testing:
+//
+//	dns.ID = func() uint16 { return 3 }
+var ID = id
+
+// id returns a 16 bits random number to be used as a message id. The random provided should be good enough.
+func id() uint16 {
+	var id uint16
+	if err := binary.Read(rand.Reader, binary.BigEndian, &id); err != nil {
+		panic("dns: reading random id failed: " + err.Error())
+	}
+	return id
+}
+
+// ID sets (with parameter) or reads the ID from the DNS message.
+func (m *Msg) ID(x ...uint16) (uint16, error) {
+	if len(m.octets) < 12 {
+		return 0, ErrBuf
+	}
+	if len(x) == 0 {
+		return binary.BigEndian.Uint16(m.octets[0:]), nil
+	}
+	binary.BigEndian.PutUint16(m.octets[0:], x[0])
+	return 0, nil
 }
 
 // Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
