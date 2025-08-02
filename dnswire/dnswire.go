@@ -85,8 +85,12 @@ func (n Name) Marshal(s string) Name {
 type Opcode uint8
 
 // Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
+// The rdlength in the RR must reflect the reality.
 func Jump(octets []byte, off int) int {
 	for {
+		if off > len(octets)-1 {
+			return 0
+		}
 		c := int(octets[off])
 		off++
 		switch c & 0xC0 {
@@ -95,18 +99,24 @@ func Jump(octets []byte, off int) int {
 				if off+10 > len(octets) {
 					return 0
 				}
-				rdlength := binary.BigEndian.Uint16(octets[off+8:])
-				return off + int(rdlength) + 1
+				off += 8
+				rdlength := binary.BigEndian.Uint16(octets[off:])
+				return off + int(rdlength) + 2 // 2 for starting after rdlength
 			}
 			off += c
+
 		case 0xC0:
-			// pointer
+			// pointer, end of the name here, we don't need to follow it
 			off++
+			if off+10 > len(octets) {
+				return 0
+			}
+			off += 8
+			rdlength := binary.BigEndian.Uint16(octets[off:])
+			return off + int(rdlength) + 2
+
 		default:
 			// 0x80 and 0x40 are reserved
-			return 0
-		}
-		if off > len(octets) {
 			return 0
 		}
 	}
@@ -115,6 +125,9 @@ func Jump(octets []byte, off int) int {
 // JumpName jumps the name that should start un octets[off:] and return the offset right after it.
 func JumpName(octets []byte, off int) int {
 	for {
+		if off > len(octets)-1 {
+			return 0
+		}
 		c := int(octets[off])
 		off++
 		switch c & 0xC0 {
@@ -124,13 +137,10 @@ func JumpName(octets []byte, off int) int {
 			}
 			off += c
 		case 0xC0:
-			// pointer
-			off++
+			// pointer, end of the name, we don't need to follow it
+			return off + 1
 		default:
 			// 0x80 and 0x40 are reserved
-			return 0
-		}
-		if off > len(octets) {
 			return 0
 		}
 	}

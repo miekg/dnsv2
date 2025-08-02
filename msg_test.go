@@ -15,7 +15,7 @@ func TestMsgQuestionMX(t *testing.T) {
 
 	msg := new(Msg)
 	msg.Opcode(OpcodeQuery)
-	q := NewSection(Question) // section handling is ugly...
+	q := new(Question)
 	q.Append(mx)
 	t.Logf("%d %v\n", len(q.octets), q.octets)
 	msg.Question(q)
@@ -31,7 +31,9 @@ func TestMsgBinary(t *testing.T) {
 	msg := new(Msg)
 	msg.Octets(buf)
 
-	t.Logf("%d %v\n", len(msg.Octets()), msg.Octets())
-	q := msg.Question()
-	t.Logf("%d %v\n", len(q.octets), q.octets)
+	a := msg.Answer()
+	if a.Len() != 5 {
+		t.Fatalf("expected %d RRs in the answer section, got %d", 5, a.Len())
+	}
+	t.Logf("%d %v\n", len(a.octets), a.octets)
 }

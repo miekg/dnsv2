@@ -70,16 +70,15 @@ func (m *Msg) ID(x ...uint16) (uint16, error) {
 
 // Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
 // If a parameter is given, the section will be set in the message as the question section, the qdcount will be updated appropriately.
-func (m *Msg) Question(x ...*Section) *Section {
+func (m *Msg) Question(x ...*Question) *Question {
 	if len(x) == 0 {
 		// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
 		// class. The RFC says it should only be 1 of those, but multiple may be present, we don't care.
-		start := 12
 		if len(m.octets) < 12 {
 			return nil
 		}
-		end := jumprrs(m.octets, start, int(m.Qdcount()))
-		return &Section{which: Question, msg: m, octets: m.octets[start:end]}
+		end := jumpquestions(m.octets, 12, int(m.Qdcount()))
+		return &Question{section{msg: m, octets: m.octets[12:end]}}
 	}
 	// TODO: what if we already have something here? Cut it out and replace...?
 	if m.octets == nil {
@@ -91,21 +90,29 @@ func (m *Msg) Question(x ...*Section) *Section {
 	return nil
 }
 
-func (m *Msg) Answer() *Section {
-	return &Section{which: Answer}
+// Answer reads or sets the answer section.
+func (m *Msg) Answer(x ...*Answer) *Answer {
+	if len(x) == 0 {
+		if len(m.octets) < 12 {
+			return nil
+		}
+		start := jumpquestions(m.octets, 12, int(m.Qdcount()))
+		end := jumprrs(m.octets, start, int(m.Ancount()))
+		return &Answer{section{msg: m, octets: m.octets[start:end]}}
+	}
+	// TODO: setting
+
+	return &Answer{}
 }
 
-func (m *Msg) Ns() *Section {
-	return &Section{which: Ns}
-}
+// Ns reads or sets the authority section.
+func (m *Msg) Ns(x ...*Ns) *Ns { return &Ns{} }
 
-func (m *Msg) Extra() *Section {
-	return &Section{which: Extra}
-}
+// Extra reads or sets the additional section.
+func (m *Msg) Extra(x ...*Extra) *Extra { return &Extra{} }
 
-func (m *Msg) Pseudo() *Section {
-	return &Section{which: Pseudo}
-}
+// Extra reads or sets the pseudo section.
+func (m *Msg) Pseudo(x ...*Pseudo) *Pseudo { return &Pseudo{} }
 
 // Qdcount returns the number of RRs in the question section. This should normally be just 1.
 func (m *Msg) Qdcount(x ...uint16) uint16 {
@@ -173,13 +180,30 @@ func (m *Msg) Compress() {
 }
 
 // jumprrs jumps rrs RRs through octets. The returned offset is just after the last RR.
-func jumprrs(octects []byte, off, rrs int) int {
+func jumprrs(octets []byte, off, rrs int) int {
 	for range rrs {
-		j := dnswire.Jump(octects, off)
+		j := dnswire.Jump(octets, off)
 		if j == 0 {
 			return 0
 		}
-		off += j
+		off = j
+	}
+	return off
+}
+
+// jumpquestions jumps "rr"s in the question section.
+func jumpquestions(octets []byte, off, questions int) int {
+	for range questions {
+		// set the type based on the RR type, and for the question we don't need to the TTL, so cut that off, as also the rdlength.
+		j := dnswire.JumpName(octets, off)
+		if j == 0 {
+			return 0
+		}
+		j += 4
+		if j > len(octets) {
+			return 0
+		}
+		off = j
 	}
 	return off
 }

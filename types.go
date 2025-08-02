@@ -75,7 +75,7 @@ type Header interface {
 type RR interface {
 	Header
 	// If Octets does not have a parameter it returns the wire encoding octets for this RR. If a parameter is
-	// given the octect are written to the RR.
+	// given the octets are written to the RR.
 	Octets(x ...[]byte) []byte
 	// Msg returns a pointer to the dns message this RR was read from. If a parameter is given the RR is "attached" to
 	// that message. A RR does not need to be attached to a dns messsage, for instance when being parsed from
@@ -97,19 +97,21 @@ type Msg struct {
 	ps     uint16 // pseudo section counter
 }
 
-// Section is a section in a DNS message.
-type Section struct {
+// section is a section in a DNS message.
+type section struct {
 	msg    *Msg   // msg is a pointer back the message this section belong in. This is needed to resolve compression pointers, when returning the RRs.
 	octets []byte // Contents of the section with possible compression pointers in the DNS names. This data is owned by the referenced Msg.
 	which  uint8  // which section are we're dealing with, only sectionQuestion and sectionPseudo have special treatment.
 }
 
-const (
-	Question uint8 = iota + 1
-	Answer
-	Ns
-	Extra
-	Pseudo
+// Valid DNS sections. Note the Pseudo section is non-existent on the wire. It is purely for convience for
+// accessing EDNS0 meta records, those masquerade as RRs in this package.
+type (
+	Question struct{ section }
+	Answer   struct{ section }
+	Ns       struct{ section }
+	Extra    struct{ section }
+	Pseudo   struct{ section }
 )
 
 // ClassToString is a maps Classes to strings for each CLASS wire type.
