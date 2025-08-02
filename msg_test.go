@@ -1,13 +1,20 @@
 package dns
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/miekg/dnsv2/dnswire"
 )
 
+// Testdata was prepared with tcpdump and wireshark and doing live queries.
+// sudo tcpdump -w /tmp/mx.pcap -i wlp1s0f0 port 53
+// and "dig mx miek.nl"
+// Using wireshark to convert the DNS message into bytes that are saved to a file.
+
 func TestMsgQuestionMX(t *testing.T) {
+	// test making a Msg
 	mx := new(MX)
 	mx.Name(dnswire.Name{}.Marshal("miek.nl"))
 	mx.Class(ClassINET)
@@ -24,6 +31,7 @@ func TestMsgQuestionMX(t *testing.T) {
 }
 
 func TestMsgBinary(t *testing.T) {
+	// test creating stuff from a Msg
 	buf, err := os.ReadFile("testdata/dig-mx-miek.nl")
 	if err != nil {
 		t.Fatal(err)
@@ -36,4 +44,8 @@ func TestMsgBinary(t *testing.T) {
 		t.Fatalf("expected %d RRs in the answer section, got %d", 5, a.Len())
 	}
 	t.Logf("%d %v\n", len(a.octets), a.octets)
+	for rr := range a.RRs() {
+		fmt.Printf("%v\n", rr.Octets())
+		println(rr.String())
+	}
 }
