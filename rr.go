@@ -117,9 +117,10 @@ func (h Hdr) Len(x ...uint16) (uint16, error) {
 }
 
 func (h Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
-	if len(x) == 0 {
+	if len(x) != 0 {
 		// allocate room for the name and type, class, ttl and length
 		needed := len(x[0]) + 2 + 2 + 2 + 4
+		println("ALLOCATING")
 		if len(h.octets) < needed {
 			extra := make([]byte, needed-len(h.octets))
 			h.octets = append(h.octets, extra...)

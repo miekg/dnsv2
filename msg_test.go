@@ -8,7 +8,7 @@ import (
 
 func TestMsgQuestionMX(t *testing.T) {
 	mx := new(MX)
-	mx.Name(dnswire.Name("miek.nl."))
+	mx.Name(dnswire.Name("miek.nl"))
 	mx.Class(ClassINET)
 
 	msg := new(Msg)

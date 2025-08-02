@@ -2,7 +2,10 @@
 // Marshal and Unmarshall.
 package dnswire
 
-import "encoding/binary"
+import (
+	"bytes"
+	"encoding/binary"
+)
 
 type (
 	Type  uint16 // Type is an RR type.
@@ -10,6 +13,21 @@ type (
 	Class uint16 // Class is a DNS class.
 	Name  []byte // Name is a domain name.
 )
+
+func (n Name) String() string {
+	return "this-should-be-a-string"
+}
+
+func (n Name) Marshal(s string) {
+	name := bytes.NewBuffer(make([]byte, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
+
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+
+	}
+
+	n = name.Bytes()
+}
 
 type Opcode uint8
 
