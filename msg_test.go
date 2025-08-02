@@ -7,8 +7,15 @@ import (
 )
 
 func TestMsgQuestionMX(t *testing.T) {
-	msg := new(Msg)
 	mx := new(MX)
 	mx.Name(dnswire.Name("miek.nl."))
 	mx.Class(ClassINET)
+
+	msg := new(Msg)
+	msg.Opcode(OpcodeQuery)
+
+	q := NewSection(SectionQuestion)
+	q.Append(mx)
+
+	t.Logf("%v\n", msg.Octets())
 }

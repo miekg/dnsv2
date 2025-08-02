@@ -7,6 +7,9 @@ import (
 	"github.com/miekg/dnsv2/dnswire"
 )
 
+// NewSection returns a new section with the appriate message section set.
+func NewSection(which uint8) Section { return Section{which: which} }
+
 // RRs returns an interator the allows ranging over the RRs in s. Returned RRs are still tied to the DNS
 // message they come from. This is to resolve compression pointers if they are present when calling rr.Name.
 func (s Section) RRs() iter.Seq[RR] {
@@ -37,9 +40,9 @@ func (s Section) RRs() iter.Seq[RR] {
 // Append adds the RR (or RRs) to the section. If the Section's section is not defined, this is a noop.
 func (s Section) Append(rr ...RR) {
 	switch s.which {
-	case sectionNone:
+	case SectionNone:
 		return
-	case sectionQuestion:
+	case SectionQuestion:
 		for _, r := range rr {
 			octets := r.Octets()
 			// jump name and and add type + class (2 + 2)

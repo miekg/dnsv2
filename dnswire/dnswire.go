@@ -11,6 +11,8 @@ type (
 	Name  []byte // Name is a domain name.
 )
 
+type Opcode uint8
+
 // Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
 func Jump(octets []byte, off int) int {
 	for {

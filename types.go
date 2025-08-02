@@ -29,6 +29,15 @@ const (
 	CodePADDING = dnswire.Type(0xc) // EDNS0 padding (See RFC 7830)
 )
 
+const (
+	// Message Opcodes. There is no 3.
+	OpcodeQuery  = dnswire.Opcode(0)
+	OpcodeIQuery = dnswire.Opcode(1)
+	OpcodeStatus = dnswire.Opcode(2)
+	OpcodeNotify = dnswire.Opcode(4)
+	OpcodeUpdate = dnswire.Opcode(5)
+)
+
 // Header is the header of an RR. All DNS resource records share this.
 type Header interface {
 	// If Type does not have a parameter it returns the RR's type. If a parameter is given it sets the RR's type.
@@ -94,10 +103,10 @@ type Section struct {
 }
 
 const (
-	sectionNone uint8 = iota
-	sectionQuestion
-	sectionAnswer
-	sectionNs
-	sectionExtra
-	sectionPseudo
+	SectionNone uint8 = iota
+	SectionQuestion
+	SectionAnswer
+	SectionNs
+	SectionExtra
+	SectionPseudo
 )

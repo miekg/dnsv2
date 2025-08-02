@@ -30,6 +30,32 @@ func id() uint16 {
 	return id
 }
 
+// QR sets or returns the QR header bit from the message, this returns true if the Msg is a response.
+func (m *Msg) QR(x ...bool) (bool, error) {
+	const _QR = 1 << 7 // query/response (response=1)
+	if len(m.octets) < 12 {
+		return false, ErrBuf
+	}
+	if len(x) == 0 {
+		qr := m.octets[0] & _QR
+		return qr == 1, nil
+	}
+
+	// clear or set
+	if x[0] { // response
+		m.octets[0] |= _QR
+	} else {
+		m.octets[0] &= _QR // wrong this resets everything, need xor or something.
+	}
+
+	return false, nil
+}
+
+// Opcode sets or returns the opcode from the DNS message.
+func (m *Msg) Opcode(x ...dnswire.Opcode) (dnswire.Opcode, error) {
+	return OpcodeQuery, nil
+}
+
 // ID sets (with parameter) or reads the ID from the DNS message.
 func (m *Msg) ID(x ...uint16) (uint16, error) {
 	if len(m.octets) < 12 {
@@ -43,31 +69,41 @@ func (m *Msg) ID(x ...uint16) (uint16, error) {
 }
 
 // Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
-func (m *Msg) Question() (Section, error) {
-	// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
-	// class. The RFC says it should only be 1 of those, but multiple may be present, we don't care.
-	start := 12
-	if len(m.octets) < 12 {
-		return Section{}, ErrBuf
+// If a parameter is given, the section will be set in the message as the question section, the qdcount will be updated appropriately.
+func (m *Msg) Question(x ...Section) (Section, error) {
+	if len(x) == 0 {
+		// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
+		// class. The RFC says it should only be 1 of those, but multiple may be present, we don't care.
+		start := 12
+		if len(m.octets) < 12 {
+			return Section{}, ErrBuf
+		}
+		end := jumprrs(m.octets, start, int(m.Qdcount()))
+		return Section{which: SectionQuestion, msg: m, octets: m.octets[start:end]}, nil
 	}
-	end := jumprrs(m.octets, start, int(m.Qdcount()))
-	return Section{which: sectionQuestion, msg: m, octets: m.octets[start:end]}, nil
+	// TODO: what if we already have something here? Cut it out and replace.
+	if m.octets == nil {
+		m.octets = make([]byte, 12)
+		m.octets = append(m.octets, x[0].octets...)
+		// qdcount, need to count RR in section
+	}
+	return Section{}, nil
 }
 
 func (m *Msg) Answer() Section {
-	return Section{which: sectionAnswer}
+	return Section{which: SectionAnswer}
 }
 
 func (m *Msg) Ns() Section {
-	return Section{which: sectionNs}
+	return Section{which: SectionNs}
 }
 
 func (m *Msg) Extra() Section {
-	return Section{which: sectionExtra}
+	return Section{which: SectionExtra}
 }
 
 func (m *Msg) Pseudo() Section {
-	return Section{which: sectionPseudo}
+	return Section{which: SectionPseudo}
 }
 
 // Qdcount returns the number of RRs in the question section. This should normally be just 1.
@@ -126,6 +162,13 @@ func (m *Msg) Pscount(x ...uint16) uint16 {
 	}
 	m.ps = x[0]
 	return 0
+}
+
+// Compress performs DNS name compression on the entire DNS message. After this you should not add more RRs to
+// the message because this messes up the compression pointers (unless you add at the end, either the
+// Additional or Pseudo section.
+func (m *Msg) Compress() {
+	// todo
 }
 
 // jumprrs jumps rrs RRs through octets. The returned offset is just after the last RR.
