@@ -70,27 +70,25 @@ func (m *Msg) ID(x ...uint16) (uint16, error) {
 
 // Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
 // If a parameter is given, the section will be set in the message as the question section, the qdcount will be updated appropriately.
-func (m *Msg) Question(x ...*Section) (*Section, error) {
+func (m *Msg) Question(x ...*Section) *Section {
 	if len(x) == 0 {
 		// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
 		// class. The RFC says it should only be 1 of those, but multiple may be present, we don't care.
 		start := 12
 		if len(m.octets) < 12 {
-			return nil, ErrBuf
+			return nil
 		}
 		end := jumprrs(m.octets, start, int(m.Qdcount()))
-		return &Section{which: Question, msg: m, octets: m.octets[start:end]}, nil
+		return &Section{which: Question, msg: m, octets: m.octets[start:end]}
 	}
-	// TODO: what if we already have something here? Cut it out and replace.
+	// TODO: what if we already have something here? Cut it out and replace...?
 	if m.octets == nil {
 		m.octets = make([]byte, 12)
 		m.octets = append(m.octets, x[0].octets...)
-		count := x[0].Len()
-		m.Qdcount(uint16(count))
-		println("LEN", count)
-		// qdcount, need to count RR in section
+		l := x[0].Len()
+		m.Qdcount(uint16(l))
 	}
-	return nil, nil
+	return nil
 }
 
 func (m *Msg) Answer() *Section {

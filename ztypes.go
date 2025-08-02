@@ -1,5 +1,7 @@
 package dns
 
+// autogen
+
 import "github.com/miekg/dnsv2/dnswire"
 
 // TypeToRR is a map of constructors for each RR type.
@@ -19,4 +21,11 @@ func RRToType(rr RR) dnswire.Type {
 		return TypeOPT
 	}
 	return TypeNone
+}
+
+// TypeToString is a map of strings for each RR type.
+var TypeToString = map[dnswire.Type]string{
+	TypeA:   "A",
+	TypeMX:  "AAAA",
+	TypeOPT: "OPT",
 }

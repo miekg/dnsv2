@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/miekg/dnsv2/dnswire"
 )
@@ -159,6 +161,18 @@ func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 }
 
 func String(rr RR) string {
-	// TODO: fix
+	s := strings.Builder{}
+	name, _ := rr.Name()
+	s.WriteString(name.String())
+	s.WriteByte('\t')
+	ttl, _ := rr.TTL()
+	s.WriteString(strconv.FormatInt(int64(ttl), 10))
+	s.WriteByte('\t')
+	class, _ := rr.Class()
+	s.WriteString(ClassToString[class])
+	s.WriteByte('\t')
+	typ, _ := rr.Type()
+	s.WriteString(TypeToString[typ])
+
 	return fmt.Sprintf("%v", rr.Octets())
 }

@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"os"
 	"testing"
 
 	"github.com/miekg/dnsv2/dnswire"
@@ -14,10 +15,23 @@ func TestMsgQuestionMX(t *testing.T) {
 
 	msg := new(Msg)
 	msg.Opcode(OpcodeQuery)
-	q := NewSection(Question)
+	q := NewSection(Question) // section handling is ugly...
 	q.Append(mx)
 	t.Logf("%d %v\n", len(q.octets), q.octets)
 	msg.Question(q)
 
 	t.Logf("%d %v\n", len(msg.Octets()), msg.Octets())
+}
+
+func TestMsgBinary(t *testing.T) {
+	buf, err := os.ReadFile("testdata/dig-mx-miek.nl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := new(Msg)
+	msg.Octets(buf)
+
+	t.Logf("%d %v\n", len(msg.Octets()), msg.Octets())
+	q := msg.Question()
+	t.Logf("%d %v\n", len(q.octets), q.octets)
 }

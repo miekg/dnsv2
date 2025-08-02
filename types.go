@@ -111,3 +111,22 @@ const (
 	Extra
 	Pseudo
 )
+
+// ClassToString is a maps Classes to strings for each CLASS wire type.
+var ClassToString = map[dnswire.Class]string{
+	ClassINET:   "IN",
+	ClassCSNET:  "CS",
+	ClassCHAOS:  "CH",
+	ClassHESIOD: "HS",
+	ClassNONE:   "NONE",
+	ClassANY:    "ANY",
+}
+
+// OpcodeToString maps Opcodes to strings.
+var OpcodeToString = map[dnswire.Opcode]string{
+	OpcodeQuery:  "QUERY",
+	OpcodeIQuery: "IQUERY",
+	OpcodeStatus: "STATUS",
+	OpcodeNotify: "NOTIFY",
+	OpcodeUpdate: "UPDATE",
+}
