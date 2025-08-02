@@ -85,6 +85,9 @@ func (m *Msg) Question(x ...*Section) (*Section, error) {
 	if m.octets == nil {
 		m.octets = make([]byte, 12)
 		m.octets = append(m.octets, x[0].octets...)
+		count := x[0].Len()
+		m.Qdcount(uint16(count))
+		println("LEN", count)
 		// qdcount, need to count RR in section
 	}
 	return nil, nil

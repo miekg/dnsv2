@@ -9,8 +9,14 @@ var TypeToRR = map[dnswire.Type]func() RR{
 	TypeOPT: func() RR { return new(OPT) },
 }
 
-var RRToType = map[RR]dnswire.Type{
-	&A{}:   TypeA,
-	&MX{}:  TypeMX,
-	&OPT{}: TypeOPT,
+func RRToType(rr RR) dnswire.Type {
+	switch rr.(type) {
+	case *A:
+		return TypeA
+	case *MX:
+		return TypeMX
+	case *OPT:
+		return TypeOPT
+	}
+	return TypeNone
 }
