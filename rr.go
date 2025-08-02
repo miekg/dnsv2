@@ -114,9 +114,9 @@ func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 		// allocate room for the name and type, class, ttl and length
 		needed := len(x[0]) + 2 + 2 + 2 + 4
 		if l := len(rr.Octets()); l < needed {
-			println("ADDING", needed-l)
 			extra := make([]byte, needed-l)
 			buf := append(rr.Octets(), extra...)
+			copy(buf[0:], x[0])
 			rr.Octets(buf)
 		}
 		return nil, nil
@@ -125,15 +125,22 @@ func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 	off := 0
 	ptr := 0
 	for {
+		if off > len(rr.Octets()) {
+			return nil, ErrBuf
+		}
+
 		c := int(rr.Octets()[off])
 		name.WriteByte(rr.Octets()[off])
 		off++
 		switch c & 0xC0 {
 		case 0x00:
 			if c == 0x00 { // end of the name
+				name.WriteByte(0)
 				return dnswire.Name(name.Bytes()), nil
 			}
+			name.Write(rr.Octets()[off : off+c])
 			off += c
+
 		case 0xC0:
 			if rr.Msg() == nil {
 				// Pointer to somewhere else in msg. We can't deal with that here because we don't have the message.
@@ -147,9 +154,6 @@ func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 		default:
 			// 0x80 and 0x40 are reserved
 			return nil, ErrLabelType
-		}
-		if off > len(rr.Octets()) {
-			return nil, ErrBuf
 		}
 	}
 }

@@ -18,8 +18,8 @@ func TestMsgQuestionMX(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	/*
+
 
 		msg := new(Msg)
 		msg.Opcode(OpcodeQuery)

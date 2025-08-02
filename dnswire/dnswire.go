@@ -24,6 +24,10 @@ func (n Name) String() string {
 	off := 0
 
 	for {
+		if off > len(n) {
+			break
+		}
+
 		c := int(n[off])
 		off++
 		switch c & 0xC0 {
@@ -37,15 +41,11 @@ func (n Name) String() string {
 			}
 			s.Write(n[off : off+c])
 			off += c
-			continue
+
 		case 0xC0:
 			// pointer, shouldn't happen here
 			off++
 			s.WriteString(".")
-			continue
-		}
-		if off > len(n) {
-			break
 		}
 	}
 	// haven't seen 00 ending...?
