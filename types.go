@@ -103,10 +103,9 @@ type Section struct {
 }
 
 const (
-	SectionNone uint8 = iota
-	SectionQuestion
-	SectionAnswer
-	SectionNs
-	SectionExtra
-	SectionPseudo
+	Question uint8 = iota + 1
+	Answer
+	Ns
+	Extra
+	Pseudo
 )

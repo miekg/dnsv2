@@ -47,9 +47,9 @@ type Hdr struct {
 	msg    *Msg
 }
 
-var _ Header = Hdr{}
+var _ Header = &Hdr{}
 
-func (h Hdr) Type(x ...dnswire.Type) (dnswire.Type, error) {
+func (h *Hdr) Type(x ...dnswire.Type) (dnswire.Type, error) {
 	off := dnswire.JumpName(h.octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -65,11 +65,13 @@ func (h Hdr) Type(x ...dnswire.Type) (dnswire.Type, error) {
 	return TypeNone, nil
 }
 
-func (h Hdr) Class(x ...dnswire.Class) (dnswire.Class, error) {
+func (h *Hdr) Class(x ...dnswire.Class) (dnswire.Class, error) {
+	// allocate if nothing hrere
 	off := dnswire.JumpName(h.octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
+	println("OFF", off)
 	if off+4 > len(h.octets) {
 		return ClassNone, &Error{err: "overflow reading RR class"}
 	}
@@ -81,7 +83,7 @@ func (h Hdr) Class(x ...dnswire.Class) (dnswire.Class, error) {
 	return ClassNone, nil
 }
 
-func (h Hdr) TTL(x ...dnswire.TTL) (dnswire.TTL, error) {
+func (h *Hdr) TTL(x ...dnswire.TTL) (dnswire.TTL, error) {
 	off := dnswire.JumpName(h.octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -97,7 +99,7 @@ func (h Hdr) TTL(x ...dnswire.TTL) (dnswire.TTL, error) {
 	return dnswire.TTL(0), nil
 }
 
-func (h Hdr) Len(x ...uint16) (uint16, error) {
+func (h *Hdr) Len(x ...uint16) (uint16, error) {
 	off := dnswire.JumpName(h.octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -116,16 +118,16 @@ func (h Hdr) Len(x ...uint16) (uint16, error) {
 	return 0, nil
 }
 
-func (h Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
+func (h *Hdr) Name(x ...dnswire.Name) (dnswire.Name, error) {
 	if len(x) != 0 {
 		// allocate room for the name and type, class, ttl and length
 		needed := len(x[0]) + 2 + 2 + 2 + 4
-		println("ALLOCATING")
 		if len(h.octets) < needed {
+			println("ADDING", needed-len(h.octets))
 			extra := make([]byte, needed-len(h.octets))
 			h.octets = append(h.octets, extra...)
 		}
-
+		println(h.octets)
 		return nil, nil
 	}
 	name := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.

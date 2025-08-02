@@ -79,7 +79,7 @@ func (m *Msg) Question(x ...Section) (Section, error) {
 			return Section{}, ErrBuf
 		}
 		end := jumprrs(m.octets, start, int(m.Qdcount()))
-		return Section{which: SectionQuestion, msg: m, octets: m.octets[start:end]}, nil
+		return Section{which: Question, msg: m, octets: m.octets[start:end]}, nil
 	}
 	// TODO: what if we already have something here? Cut it out and replace.
 	if m.octets == nil {
@@ -91,19 +91,19 @@ func (m *Msg) Question(x ...Section) (Section, error) {
 }
 
 func (m *Msg) Answer() Section {
-	return Section{which: SectionAnswer}
+	return Section{which: Answer}
 }
 
 func (m *Msg) Ns() Section {
-	return Section{which: SectionNs}
+	return Section{which: Ns}
 }
 
 func (m *Msg) Extra() Section {
-	return Section{which: SectionExtra}
+	return Section{which: Extra}
 }
 
 func (m *Msg) Pseudo() Section {
-	return Section{which: SectionPseudo}
+	return Section{which: Pseudo}
 }
 
 // Qdcount returns the number of RRs in the question section. This should normally be just 1.

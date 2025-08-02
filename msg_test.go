@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"log"
 	"testing"
 
 	"github.com/miekg/dnsv2/dnswire"
@@ -8,14 +9,24 @@ import (
 
 func TestMsgQuestionMX(t *testing.T) {
 	mx := new(MX)
-	mx.Name(dnswire.Name{}.Marshal("miek.nl"))
-	mx.Class(ClassINET)
+	_, err := mx.Name(dnswire.Name{}.Marshal("miek.nl"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	println("CLASS")
+	_, err = mx.Class(ClassINET)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	msg := new(Msg)
-	msg.Opcode(OpcodeQuery)
+	/*
 
-	q := NewSection(SectionQuestion)
-	q.Append(mx)
+		msg := new(Msg)
+		msg.Opcode(OpcodeQuery)
 
-	t.Logf("%v\n", msg.Octets())
+			q := NewSection(Question)
+			q.Append(mx)
+
+			t.Logf("%v\n", msg.Octets())
+	*/
 }

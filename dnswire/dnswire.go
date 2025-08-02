@@ -24,7 +24,6 @@ func (n Name) String() string {
 	off := 0
 
 	for {
-		println(off)
 		c := int(n[off])
 		off++
 		switch c & 0xC0 {
@@ -116,12 +115,13 @@ func Jump(octets []byte, off int) int {
 // JumpName jumps the name that should start un octets[off:] and return the offset right after it.
 func JumpName(octets []byte, off int) int {
 	for {
+		println(len(octets), off)
 		c := int(octets[off])
 		off++
 		switch c & 0xC0 {
 		case 0x00:
 			if c == 0x00 { // end of the name
-				return off + 1 // also skip this nil byte
+				return off
 			}
 			off += c
 		case 0xC0:

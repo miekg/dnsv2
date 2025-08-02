@@ -40,9 +40,7 @@ func (s Section) RRs() iter.Seq[RR] {
 // Append adds the RR (or RRs) to the section. If the Section's section is not defined, this is a noop.
 func (s Section) Append(rr ...RR) {
 	switch s.which {
-	case SectionNone:
-		return
-	case SectionQuestion:
+	case Question:
 		for _, r := range rr {
 			octets := r.Octets()
 			// jump name and and add type + class (2 + 2)
