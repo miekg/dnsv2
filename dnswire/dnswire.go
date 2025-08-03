@@ -36,7 +36,7 @@ func (n Name) String() string {
 				s.WriteString(".")
 				return s.String()
 			}
-			if off > 2 {
+			if off > 2 { // don't start with a dot
 				s.WriteString(".")
 			}
 			s.Write(n[off : off+c])
@@ -87,39 +87,17 @@ type Opcode uint8
 // Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
 // The rdlength in the RR must reflect the reality.
 func Jump(octets []byte, off int) int {
-	for {
-		if off > len(octets)-1 {
-			return 0
-		}
-		c := int(octets[off])
-		off++
-		switch c & 0xC0 {
-		case 0x00:
-			if c == 0x00 { // end of the name
-				if off+10 > len(octets) {
-					return 0
-				}
-				off += 8
-				rdlength := binary.BigEndian.Uint16(octets[off:])
-				return off + int(rdlength) + 2 // 2 for starting after rdlength
-			}
-			off += c
-
-		case 0xC0:
-			// pointer, end of the name here, we don't need to follow it
-			off++
-			if off+10 > len(octets) {
-				return 0
-			}
-			off += 8
-			rdlength := binary.BigEndian.Uint16(octets[off:])
-			return off + int(rdlength) + 2
-
-		default:
-			// 0x80 and 0x40 are reserved
-			return 0
-		}
+	off = JumpName(octets, off)
+	if off == 0 {
+		return 0
 	}
+
+	if off+10 > len(octets) {
+		return 0
+	}
+	off += 8
+	rdlength := binary.BigEndian.Uint16(octets[off:])
+	return off + int(rdlength) + 2 // 2 for starting after rdlength
 }
 
 // JumpName jumps the name that should start un octets[off:] and return the offset right after it.

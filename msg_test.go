@@ -38,6 +38,7 @@ func TestMsgBinary(t *testing.T) {
 	}
 	msg := new(Msg)
 	msg.Octets(buf)
+	t.Logf("%d %v\n", len(msg.Octets()), msg.Octets())
 
 	a := msg.Answer()
 	if a.Len() != 5 {
@@ -52,6 +53,7 @@ func TestMsgBinary(t *testing.T) {
 		t.Fatalf("expected %d RRs when range-ing the answer section, got %d", 5, i)
 	}
 	for rr := range a.RRs() {
+		fmt.Printf("%v\n", rr.Octets())
 		fmt.Println(rr.String())
 	}
 }
