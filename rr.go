@@ -42,16 +42,17 @@ var (
 // Note, they start with _ (so unpexported), because type is not an allowed identifier.
 
 func _Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
-	// if we know the type we can just return that
 	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+2 < len(rr.Octets()) {
+	if off+2 > len(rr.Octets()) {
 		return TypeNone, &Error{err: "overflow reading RR type"}
 	}
 	if len(x) == 0 {
 		i := binary.BigEndian.Uint16(rr.Octets()[off:])
+		if i == 0 { // infer from type (should we then also set it??)
+		}
 		return dnswire.Type(i), nil
 	}
 	binary.BigEndian.PutUint16(rr.Octets()[off:], uint16(x[0]))
@@ -116,12 +117,16 @@ func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 		if l := len(rr.Octets()); l < needed {
 			extra := make([]byte, needed-l)
 			buf := append(rr.Octets(), extra...)
-			copy(buf[0:], x[0])
+			copy(buf[0:], x[0]) // no copy here I think
 			rr.Octets(buf)
 		}
 		return nil, nil
 	}
-	return nil, nil
+	off := dnswire.JumpName(rr.Octets(), 0)
+	if off == 0 {
+		return nil, ErrBufName
+	}
+	return dnswire.Name(rr.Octets()[0:off]), nil
 }
 
 func _String(rr RR) string {
@@ -135,7 +140,7 @@ func _String(rr RR) string {
 	class, _ := rr.Class()
 	s.WriteString(ClassToString[class])
 	s.WriteByte('\t')
-	typ, _ := rr.Type() // If known type, use that!
+	typ, _ := rr.Type()
 	s.WriteString(TypeToString[typ])
 	return s.String()
 	// return fmt.Sprintf("%v", rr.Octets())

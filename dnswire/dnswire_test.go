@@ -1,6 +1,8 @@
 package dnswire
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestNameMarshal(t *testing.T) {
 	name := Name{}.Marshal("miek.nl.")

@@ -106,6 +106,12 @@ func (m *Msg) Answer(x ...*Answer) *Answer {
 	return &Answer{}
 }
 
+func (q *Question) Octets() []byte { return q.Msg.octets[q.start:q.end] }
+func (a *Answer) Octets() []byte   { return a.Msg.octets[a.start:a.end] }
+func (n *Ns) Octets() []byte       { return n.Msg.octets[n.start:n.end] }
+func (e *Extra) Octets() []byte    { return e.Msg.octets[e.start:e.end] }
+func (p *Pseudo) Octets() []byte   { return p.Msg.octets[p.start:p.end] }
+
 // Ns reads or sets the authority section.
 func (m *Msg) Ns(x ...*Ns) *Ns { return &Ns{} }
 

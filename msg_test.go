@@ -13,8 +13,7 @@ import (
 // and "dig mx miek.nl"
 // Using wireshark to convert the DNS message into bytes that are saved to a file.
 
-func TestMsgQuestionMX(t *testing.T) {
-	// test making a Msg
+func TestMakeMsgQuestionMX(t *testing.T) {
 	mx := new(MX)
 	mx.Name(dnswire.Name{}.Marshal("miek.nl"))
 	mx.Class(ClassINET)
@@ -30,21 +29,17 @@ func TestMsgQuestionMX(t *testing.T) {
 	t.Logf("%d %v\n", len(msg.Octets()), msg.Octets())
 }
 
-func TestMsgBinary(t *testing.T) {
-	// test creating stuff from a Msg
-	buf, err := os.ReadFile("testdata/dig-mx-miek.nl")
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestReadMsgBinary(t *testing.T) {
+	buf, _ := os.ReadFile("testdata/dig-mx-miek.nl")
 	msg := new(Msg)
 	msg.Octets(buf)
-	t.Logf("%d %v\n", len(msg.Octets()), msg.Octets())
+	t.Logf("   Msg %d %v\n", len(msg.Octets()), msg.Octets())
 
 	a := msg.Answer()
+	t.Logf("Answer %d %v %d %d\n", len(a.Octets()), a.Octets(), a.start, a.end)
 	if a.Len() != 5 {
 		t.Fatalf("expected %d RRs in the answer section, got %d", 5, a.Len())
 	}
-	t.Logf("%d %v\n", len(a.octets), a.octets)
 	i := 0
 	for range a.RRs() {
 		i++

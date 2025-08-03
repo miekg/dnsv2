@@ -33,7 +33,6 @@ func (rr *MX) Type(x ...dnswire.Type) (dnswire.Type, error)    { return _Type(rr
 func (rr *MX) Class(x ...dnswire.Class) (dnswire.Class, error) { return _Class(rr, x...) }
 func (rr *MX) TTL(x ...dnswire.TTL) (dnswire.TTL, error)       { return _TTL(rr, x...) }
 func (rr *MX) String() string                                  { return _String(rr) }
-
 func (rr *MX) Octets(x ...[]byte) []byte {
 	if len(x) == 0 {
 		return rr.octets

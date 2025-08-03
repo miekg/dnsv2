@@ -84,7 +84,7 @@ func (n Name) Marshal(s string) Name {
 	return n
 }
 
-// JumpName jumps the name that should start un octets[off:] and return the offset right after it.
+// JumpName jumps the name that should start on octets[off:] and return the offset right after it.
 func JumpName(octets []byte, off int) int {
 	for {
 		if off > len(octets)-1 {
@@ -101,6 +101,8 @@ func JumpName(octets []byte, off int) int {
 		case 0xC0:
 			// pointer, end of the name, we don't need to follow it
 			return off + 1
+		default:
+			return 0
 		}
 	}
 }
@@ -113,7 +115,7 @@ func Jump(octets []byte, off int) int {
 		return 0
 	}
 
-	if off+10 > len(octets) {
+	if off+10 > len(octets)-1 { // can get to rdlength
 		return 0
 	}
 	off += 8
@@ -124,12 +126,12 @@ func Jump(octets []byte, off int) int {
 // RR decodes (resolving compression pointers) the RR's from octets, starting at offset off, at this point the
 // RR's should start. Octets should coming from the message that holds the RR. This functions returns a new
 // opaque slice of bytes and the Type of RR.
-// ALlow for buffer to be given..??? Does that help?
 func RR(octets []byte, off int) ([]byte, Type, int) {
 	begin := off
 
-	rr := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
+	rr := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most RRs aren't that long, cut this in half.
 	ptr := 0
+
 Loop:
 	for {
 		if off > len(octets)-1 {
@@ -143,7 +145,7 @@ Loop:
 				rr.WriteByte(0)
 				break Loop
 			}
-			rr.Write(octets[off : off+c])
+			rr.Write(octets[off-1 : off+c])
 			off += c
 		case 0xC0:
 			if ptr++; ptr > 10 { // Every label can be a pointer, so the max is maxlabels.?
@@ -151,16 +153,28 @@ Loop:
 			}
 			c1 := int(octets[off]) // the next octet
 			off = ((c^0xC0)<<8 | c1)
+		default:
+			return nil, 0, 0
 		}
 	}
+	endname := JumpName(octets, begin) // jump after name to grab type
+	t := Type(binary.BigEndian.Uint16(octets[endname:]))
+
+	// For known RRs, once we have the type the rdata should be decoded as well, this must be done here as well.
+	// need to extract the above into a help function
+	// This means knowing the rdata format of NS, MX, CNAME, SOA, PTR (and yes others)
+
 	end := Jump(octets, begin)
-	if end > len(octets)-1 || end == 0 {
+	if end == 0 {
 		return nil, 0, 0
 	}
-	begin = JumpName(octets, begin)
-	if begin > end {
+	if end > len(octets)-1 {
 		return nil, 0, 0
 	}
-	t := Type(binary.BigEndian.Uint16(octets[begin:]))
+
+	if endname > end {
+		return nil, 0, 0
+	}
+	rr.Write(octets[endname:end])
 	return rr.Bytes(), t, end
 }

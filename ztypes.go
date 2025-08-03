@@ -27,6 +27,6 @@ func RRToType(rr RR) dnswire.Type {
 // TypeToString is a map of strings for each RR type.
 var TypeToString = map[dnswire.Type]string{
 	TypeA:   "A",
-	TypeMX:  "AAAA",
+	TypeMX:  "MX",
 	TypeOPT: "OPT",
 }

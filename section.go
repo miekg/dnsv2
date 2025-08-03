@@ -16,7 +16,7 @@ func (s Section) rrs() iter.Seq[RR] {
 	return func(yield func(RR) bool) {
 		for {
 			octets, rrtype, end := dnswire.RR(s.Msg.octets, off)
-			if end == 0 {
+			if end == 0 || end > s.end {
 				break
 			}
 
@@ -26,7 +26,6 @@ func (s Section) rrs() iter.Seq[RR] {
 			} else {
 				rr = new(RFC3597)
 			}
-			// this needs to be the thing that copies the data to the rr, resolving pointers, etc.
 			rr.Octets(octets)
 			off = end
 			if !yield(rr) {
@@ -45,7 +44,7 @@ func (s Section) len() int {
 	off := s.start
 	for {
 		end := dnswire.Jump(s.Msg.octets, off)
-		if end == 0 {
+		if end == 0 || end > s.end {
 			break
 		}
 		l++
