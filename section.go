@@ -7,17 +7,19 @@ import (
 	"github.com/miekg/dnsv2/dnswire"
 )
 
-// RRs() count the RR in sections that holds them: answer, ns, and extra, pseudo and question are different.
-func (s section) RRs() iter.Seq[RR] {
-	off := 0
+// rrs() count the RR in sections that holds them: answer, ns, and extra, pseudo and question are different.
+func (s Section) rrs() iter.Seq[RR] {
+	if s.Msg == nil || len(s.Msg.octets) == 0 {
+		return func(yield func(RR) bool) { return }
+	}
+	off := s.start
 	return func(yield func(RR) bool) {
 		for {
-			octets, typ, end := dnswire.RR(s.octets, off)
+			octets, rrtype, end := dnswire.RR(s.Msg.octets, off)
 			if end == 0 {
 				break
 			}
 
-			rrtype := dnswire.RRType(s.octets, off)
 			var rr RR
 			if newRR, ok := TypeToRR[rrtype]; ok {
 				rr = newRR()
@@ -25,7 +27,7 @@ func (s section) RRs() iter.Seq[RR] {
 				rr = new(RFC3597)
 			}
 			// this needs to be the thing that copies the data to the rr, resolving pointers, etc.
-			rr.Octets(s.octets[off:end])
+			rr.Octets(octets)
 			off = end
 			if !yield(rr) {
 				return
@@ -34,15 +36,15 @@ func (s section) RRs() iter.Seq[RR] {
 	}
 }
 
-// Len returns the number of RRs that are stored in this section. Again pseudo and question are different.
-func (s section) Len() int {
-	if len(s.octets) == 0 {
+// len returns the number of RRs that are stored in this section. Again pseudo and question are different.
+func (s Section) len() int {
+	if s.Msg == nil || len(s.Msg.octets) == 0 {
 		return 0
 	}
 	l := 0
-	off := 0
+	off := s.start
 	for {
-		end := dnswire.Jump(s.octets, off)
+		end := dnswire.Jump(s.Msg.octets, off)
 		if end == 0 {
 			break
 		}
@@ -54,24 +56,26 @@ func (s section) Len() int {
 
 // RRs returns an interator the allows ranging over the RRs in s. Returned RRs are still tied to the DNS
 // message they come from. This is to resolve compression pointers if they are present when calling rr.Name.
-func (a *Answer) RRs() iter.Seq[RR] { return a.section.RRs() }
+func (a *Answer) RRs() iter.Seq[RR] { return a.Section.rrs() }
 
 // Len returns the number of RRs that are stored in this section.
-func (a *Answer) Len() int { return a.section.Len() }
+func (a *Answer) Len() int { return a.Section.len() }
 
 // RRs returns an interator the allows ranging over the RRs in s. Returned RRs are still tied to the DNS
 // message they come from. This is to resolve compression pointers if they are present when calling rr.Name.
-func (n *Ns) RRs() iter.Seq[RR] { return n.section.RRs() }
+func (n *Ns) RRs() iter.Seq[RR] { return n.Section.rrs() }
 
 // Len returns the number of RRs that are stored in this section.
-func (n *Ns) Len() int { return n.section.Len() }
+func (n *Ns) Len() int { return n.Section.len() }
 
 // RRs returns an interator the allows ranging over the RRs in s. Returned RRs are still tied to the DNS
 // message they come from. This is to resolve compression pointers if they are present when calling rr.Name.
-func (e *Extra) RRs() iter.Seq[RR] { return e.section.RRs() }
+func (e *Extra) RRs() iter.Seq[RR] { return e.Section.rrs() }
 
 // Len returns the number of RRs that are stored in this section.
-func (e *Extra) Len() int { return e.section.Len() }
+func (e *Extra) Len() int { return e.Section.len() }
+
+func (q *Question) Len() int { return 5 }
 
 // Append adds the RR (or RRs) to the section.
 func (q *Question) Append(rr ...RR) {

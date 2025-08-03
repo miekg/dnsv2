@@ -85,35 +85,36 @@ type EDNS0 interface {
 	Pseudo() bool
 }
 
-// Msg contains the layout of a DNS message. A DNS message has 4 sections, the question, answer, authority and additional section.
-// In this library _another_ section is added the pseudo section; this section contains EDNS0 "records" and a possible TSIG record.
+// Msg contains the layout of a DNS message. A DNS message has 4 sections, the [Question], [Answer], [Ns]
+// (authority) and [Extra]( additional) section.
+// In this library _another_ section is added the [Pseudo ]section; this section contains EDNS0 "records" and a possible TSIG record.
 type Msg struct {
 	octets []byte
-	ps     uint16 // pseudo section counter
+	ps     uint16 // pseudo section counter, returns EDNS0 RR in OPT + TSIG
 }
 
-// section is a section in a DNS message.
-type section struct {
-	msg *Msg // msg is a pointer back the message this section belong in. This is needed to resolve compression pointers, when returning the RRs.
-	// offset, start, end here?
-	octets []byte // Contents of the section with possible compression pointers in the DNS names. This data is owned by the referenced [Msg].
+// Section is a section in a DNS message.
+type Section struct {
+	*Msg // Msg is a pointer back the message this section belong in.
+	// Offsets into Msg where this section begins and ends, buf[start:end] are the octets this section occupies.
+	start int
+	end   int
 }
 
-// Valid DNS sections. Note the Pseudo section is non-existent on the wire. It is purely for convenience for
+// Valid DNS sections. A section always belong to a Msg. Note the Pseudo section is non-existent on the wire. It is purely for convenience for
 // accessing EDNS0 meta records, those masquerade as RRs.
 type (
 	// Question holds the question section. RRs can be added just like any other sections.
-	Question struct{ section }
+	Question struct{ Section }
 	// Answer holds the answer section.
-	Answer struct{ section }
+	Answer struct{ Section }
 	// Ns holds the authority section.
-	Ns struct{ section }
-	// Extra holds the additional section. [OPT] (EDNS0) and [TISG] RRs are places in the [Pseudo] section, not here.
-	// This only has actual RRs.
-	Extra struct{ section }
+	Ns struct{ Section }
+	// Extra holds the additional section. [OPT] (EDNS0) and [TISG] RRs are placed in the [Pseudo] section, not here.
+	Extra struct{ Section }
 	// Pseudo is a non-on-the-wire section that holds [OPT] and [TSIG] rrs. [OPT] is treated in such a way
 	// that this section also seems to hold RRs of the [EDNS0] variety.
-	Pseudo struct{ section }
+	Pseudo struct{ Section }
 )
 
 // ClassToString is a maps Classes to strings for each class wire type.

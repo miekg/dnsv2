@@ -78,7 +78,7 @@ func (m *Msg) Question(x ...*Question) *Question {
 			return nil
 		}
 		end := jumpquestions(m.octets, 12, int(m.Qdcount()))
-		return &Question{section{msg: m, octets: m.octets[12:end]}}
+		return &Question{Section{Msg: m, start: 12, end: end}}
 	}
 	// TODO: what if we already have something here? Cut it out and replace...?
 	if m.octets == nil {
@@ -99,7 +99,7 @@ func (m *Msg) Answer(x ...*Answer) *Answer {
 		}
 		start := jumpquestions(m.octets, 12, int(m.Qdcount()))
 		end := jumprrs(m.octets, start, int(m.Ancount()))
-		return &Answer{section{msg: m, octets: m.octets[start:end]}}
+		return &Answer{Section{Msg: m, start: start, end: end}}
 	}
 	// TODO: setting
 
