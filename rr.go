@@ -1,7 +1,6 @@
 package dns
 
 import (
-	"bytes"
 	"encoding/binary"
 	"strconv"
 	"strings"
@@ -39,7 +38,11 @@ var (
 	_ RR = &RFC3597{}
 )
 
+// unexported helper functions that implement the Header interface for each RR (see zrr.go).
+// Note, they start with _ (so unpexported), because type is not an allowed identifier.
+
 func _Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
+	// if we know the type we can just return that
 	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -118,37 +121,7 @@ func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 		}
 		return nil, nil
 	}
-	name := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
-	off := 0
-	ptr := 0
-	for {
-		c := int(rr.Octets()[off])
-		name.WriteByte(rr.Octets()[off])
-
-		switch c & 0xC0 {
-		case 0x00:
-			println(off, "C", c, "masked", c&0xc0)
-			if c == 0x00 { // end of the name
-				name.WriteByte(0)
-				return dnswire.Name(name.Bytes()), nil
-			}
-
-			name.Write(rr.Octets()[off : off+c])
-			off += c
-
-		case 0xC0:
-			if ptr++; ptr > 10 { // Every label can be a pointer, so the max is maxlabels.
-				return nil, &Error{err: "too many compression pointers"}
-			}
-			c1 := int(rr.Octets()[off+1]) // the next octet
-			off = ((c^0xC0)<<8 | c1)
-			println("pointer", off)
-
-		default:
-			// 0x80 and 0x40 are reserved
-			return nil, ErrLabelType
-		}
-	}
+	return nil, nil
 }
 
 func _String(rr RR) string {

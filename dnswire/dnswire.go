@@ -15,6 +15,8 @@ type (
 	Name  []byte // Name is a domain name.
 )
 
+type Opcode uint8
+
 func (n Name) String() string {
 	if len(n) == 1 && n[0] == 0 {
 		return "."
@@ -82,24 +84,6 @@ func (n Name) Marshal(s string) Name {
 	return n
 }
 
-type Opcode uint8
-
-// Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
-// The rdlength in the RR must reflect the reality.
-func Jump(octets []byte, off int) int {
-	off = JumpName(octets, off)
-	if off == 0 {
-		return 0
-	}
-
-	if off+10 > len(octets) {
-		return 0
-	}
-	off += 8
-	rdlength := binary.BigEndian.Uint16(octets[off:])
-	return off + int(rdlength) + 2 // 2 for starting after rdlength
-}
-
 // JumpName jumps the name that should start un octets[off:] and return the offset right after it.
 func JumpName(octets []byte, off int) int {
 	for {
@@ -117,21 +101,65 @@ func JumpName(octets []byte, off int) int {
 		case 0xC0:
 			// pointer, end of the name, we don't need to follow it
 			return off + 1
-		default:
-			// 0x80 and 0x40 are reserved
-			return 0
 		}
 	}
 }
 
-// RRType returns the RR's type. On error TypeNone is returned.
-func RRType(octets []byte, off int) Type {
+// Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
+// The rdlength in the RR must reflect the reality.
+func Jump(octets []byte, off int) int {
 	off = JumpName(octets, off)
 	if off == 0 {
 		return 0
 	}
-	if off+2 > len(octets) {
+
+	if off+10 > len(octets) {
 		return 0
 	}
-	return Type(binary.BigEndian.Uint16(octets[off:]))
+	off += 8
+	rdlength := binary.BigEndian.Uint16(octets[off:])
+	return off + int(rdlength) + 2 // 2 for starting after rdlength
+}
+
+// RR decodes (resolving compression pointers) the RR's from octets, starting at offset off, at this point the
+// RR's should start. Octets should coming from the message that holds the RR. This functions returns an
+// opaque slice of bytes and the Type of RR.
+func RR(octets []byte, off int) ([]byte, Type, int) {
+	begin := off
+
+	rr := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most names aren't that long, cut this in half.
+	ptr := 0
+Loop:
+	for {
+		if off > len(octets)-1 {
+			return nil, 0, 0
+		}
+		c := int(octets[off])
+		off++
+		switch c & 0xC0 {
+		case 0x00:
+			if c == 0x00 { // end of the name
+				rr.WriteByte(0)
+				break Loop
+			}
+			rr.Write(octets[off : off+c])
+			off += c
+		case 0xC0:
+			if ptr++; ptr > 10 { // Every label can be a pointer, so the max is maxlabels.?
+				return nil, 0, 0
+			}
+			c1 := int(octets[off]) // the next octet
+			off = ((c^0xC0)<<8 | c1)
+		}
+	}
+	end := Jump(octets, begin)
+	if end > len(octets)-1 || end == 0 {
+		return nil, 0, 0
+	}
+	begin = JumpName(octets, begin)
+	if begin > end {
+		return nil, 0, 0
+	}
+	t := Type(binary.BigEndian.Uint16(octets[begin:]))
+	return rr.Bytes(), t, end
 }

@@ -12,10 +12,11 @@ func (s section) RRs() iter.Seq[RR] {
 	off := 0
 	return func(yield func(RR) bool) {
 		for {
-			end := dnswire.Jump(s.octets, off)
+			octets, typ, end := dnswire.RR(s.octets, off)
 			if end == 0 {
 				break
 			}
+
 			rrtype := dnswire.RRType(s.octets, off)
 			var rr RR
 			if newRR, ok := TypeToRR[rrtype]; ok {
@@ -23,7 +24,6 @@ func (s section) RRs() iter.Seq[RR] {
 			} else {
 				rr = new(RFC3597)
 			}
-			rr.Msg(s.msg)
 			// this needs to be the thing that copies the data to the rr, resolving pointers, etc.
 			rr.Octets(s.octets[off:end])
 			off = end
