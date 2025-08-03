@@ -21,8 +21,8 @@ func TestMsgQuestionMX(t *testing.T) {
 	t.Logf("%d %v\n", 10, mx.String())
 
 	msg := new(Msg)
-	msg.Opcode(OpcodeQuery)
 	q := new(Question)
+	q.Msg = msg
 	q.Append(mx)
 	t.Logf("%d %v\n", len(q.octets), q.octets)
 	msg.Question(q)
