@@ -143,5 +143,4 @@ func _String(rr RR) string {
 	typ, _ := rr.Type()
 	s.WriteString(TypeToString[typ])
 	return s.String()
-	// return fmt.Sprintf("%v", rr.Octets())
 }
