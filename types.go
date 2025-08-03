@@ -26,7 +26,7 @@ const (
 const (
 	// Valid EDNS "RR" option type codes.
 	CodeNSID    = dnswire.Type(0x3) // nsid (See RFC 5001)
-	CodePADDING = dnswire.Type(0xc) // EDNS0 padding (See RFC 7830)
+	CodePADDING = dnswire.Type(0xc) // padding (See RFC 7830)
 )
 
 const (
@@ -77,11 +77,6 @@ type RR interface {
 	// If Octets does not have a parameter it returns the wire encoding octets for this RR. If a parameter is
 	// given the octets are written to the RR.
 	Octets(x ...[]byte) []byte
-	// Msg returns a pointer to the dns message this RR was read from. If a parameter is given the RR is "attached" to
-	// that message. A RR does not need to be attached to a dns messsage, for instance when being parsed from
-	// a file or a string. In that case this method return nil. Note that in the latter case no compression
-	// pointers need to be resolved.
-	Msg(x ...*Msg) *Msg
 }
 
 // EDNS0 determines if the "RR" is posing as an EDNS0 option. EDNS0 options are considered just RRs and must
@@ -101,21 +96,27 @@ type Msg struct {
 type section struct {
 	msg *Msg // msg is a pointer back the message this section belong in. This is needed to resolve compression pointers, when returning the RRs.
 	// offset, start, end here?
-	octets []byte // Contents of the section with possible compression pointers in the DNS names. This data is owned by the referenced Msg.
-	which  uint8  // which section are we're dealing with, only sectionQuestion and sectionPseudo have special treatment.
+	octets []byte // Contents of the section with possible compression pointers in the DNS names. This data is owned by the referenced [Msg].
 }
 
-// Valid DNS sections. Note the Pseudo section is non-existent on the wire. It is purely for convience for
-// accessing EDNS0 meta records, those masquerade as RRs in this package.
+// Valid DNS sections. Note the Pseudo section is non-existent on the wire. It is purely for convenience for
+// accessing EDNS0 meta records, those masquerade as RRs.
 type (
+	// Question holds the question section. RRs can be added just like any other sections.
 	Question struct{ section }
-	Answer   struct{ section }
-	Ns       struct{ section }
-	Extra    struct{ section }
-	Pseudo   struct{ section }
+	// Answer holds the answer section.
+	Answer struct{ section }
+	// Ns holds the authority section.
+	Ns struct{ section }
+	// Extra holds the additional section. [OPT] (EDNS0) and [TISG] RRs are places in the [Pseudo] section, not here.
+	// This only has actual RRs.
+	Extra struct{ section }
+	// Pseudo is a non-on-the-wire section that holds [OPT] and [TSIG] rrs. [OPT] is treated in such a way
+	// that this section also seems to hold RRs of the [EDNS0] variety.
+	Pseudo struct{ section }
 )
 
-// ClassToString is a maps Classes to strings for each CLASS wire type.
+// ClassToString is a maps Classes to strings for each class wire type.
 var ClassToString = map[dnswire.Class]string{
 	ClassINET:   "IN",
 	ClassCSNET:  "CS",

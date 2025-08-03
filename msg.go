@@ -90,7 +90,8 @@ func (m *Msg) Question(x ...*Question) *Question {
 	return nil
 }
 
-// Answer reads or sets the answer section.
+// Answer reads or sets the answer section. The section references the octets in the message, as long as the
+// message stays the same the section is valid.
 func (m *Msg) Answer(x ...*Answer) *Answer {
 	if len(x) == 0 {
 		if len(m.octets) < 12 {

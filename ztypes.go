@@ -11,6 +11,7 @@ var TypeToRR = map[dnswire.Type]func() RR{
 	TypeOPT: func() RR { return new(OPT) },
 }
 
+// RRToType is the reverse of TypeToRR, implemented as a function.
 func RRToType(rr RR) dnswire.Type {
 	switch rr.(type) {
 	case *A:

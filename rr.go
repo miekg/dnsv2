@@ -12,28 +12,24 @@ import (
 // RFC3597 represents an unknown/generic RR. See RFC 3597.
 type RFC3597 struct {
 	Header
-	msg    *Msg
 	octets []byte `dns:"Data:Hex"`
 }
 
 // A RR. See RFC 1035.
 type A struct {
 	Header
-	msg    *Msg
 	octets []byte `dns:"A:IPv4"`
 }
 
 // MX RR, See RFC 1035.
 type MX struct {
 	Header
-	msg    *Msg
 	octets []byte `dns:"Preference:Uint16,Mx:Name"`
 }
 
 // OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
 type OPT struct {
 	Header
-	msg    *Msg
 	octets []byte `dns:"Option:[]byte"`
 }
 
@@ -43,7 +39,7 @@ var (
 	_ RR = &RFC3597{}
 )
 
-func Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
+func _Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
 	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -59,7 +55,7 @@ func Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
 	return TypeNone, nil
 }
 
-func Class(rr RR, x ...dnswire.Class) (dnswire.Class, error) {
+func _Class(rr RR, x ...dnswire.Class) (dnswire.Class, error) {
 	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -75,7 +71,7 @@ func Class(rr RR, x ...dnswire.Class) (dnswire.Class, error) {
 	return ClassNone, nil
 }
 
-func TTL(rr RR, x ...dnswire.TTL) (dnswire.TTL, error) {
+func _TTL(rr RR, x ...dnswire.TTL) (dnswire.TTL, error) {
 	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -91,7 +87,7 @@ func TTL(rr RR, x ...dnswire.TTL) (dnswire.TTL, error) {
 	return dnswire.TTL(0), nil
 }
 
-func Len(rr RR, x ...uint16) (uint16, error) {
+func _Len(rr RR, x ...uint16) (uint16, error) {
 	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -110,7 +106,7 @@ func Len(rr RR, x ...uint16) (uint16, error) {
 	return 0, nil
 }
 
-func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
+func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 	if len(x) != 0 {
 		// allocate room for the name and type, class, ttl and length
 		needed := len(x[0]) + 2 + 2 + 2 + 4
@@ -141,9 +137,6 @@ func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 			off += c
 
 		case 0xC0:
-			if rr.Msg() == nil { // Pointer to somewhere else in msg. We can't deal with that here because we don't have the message.
-				return nil, ErrPtr
-			}
 			if ptr++; ptr > 10 { // Every label can be a pointer, so the max is maxlabels.
 				return nil, &Error{err: "too many compression pointers"}
 			}
@@ -158,7 +151,7 @@ func Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 	}
 }
 
-func String(rr RR) string {
+func _String(rr RR) string {
 	s := strings.Builder{}
 	name, _ := rr.Name()
 	s.WriteString(name.String())
