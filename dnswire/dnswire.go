@@ -125,7 +125,8 @@ func Jump(octets []byte, off int) int {
 
 // RR decodes (resolving compression pointers) the RR's from octets, starting at offset off, at this point the
 // RR's should start. Octets should coming from the message that holds the RR. This functions returns a new
-// opaque slice of bytes and the Type of RR.
+// opaque slice of bytes and the Type of RR, and the next offset where a new RR should start (or the end of
+// the message).
 func RR(octets []byte, off int) ([]byte, Type, int) {
 	begin := off
 
