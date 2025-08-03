@@ -1,7 +1,6 @@
 package dns
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -48,7 +47,6 @@ func TestReadMsgBinary(t *testing.T) {
 		t.Fatalf("expected %d RRs when range-ing the answer section, got %d", 5, i)
 	}
 	for rr := range a.RRs() {
-		fmt.Printf("%v\n", rr.Octets())
-		fmt.Println(rr.String())
+		t.Logf("%s", rr.String())
 	}
 }
