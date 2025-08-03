@@ -99,7 +99,8 @@ type Msg struct {
 
 // section is a section in a DNS message.
 type section struct {
-	msg    *Msg   // msg is a pointer back the message this section belong in. This is needed to resolve compression pointers, when returning the RRs.
+	msg *Msg // msg is a pointer back the message this section belong in. This is needed to resolve compression pointers, when returning the RRs.
+	// offset, start, end here?
 	octets []byte // Contents of the section with possible compression pointers in the DNS names. This data is owned by the referenced Msg.
 	which  uint8  // which section are we're dealing with, only sectionQuestion and sectionPseudo have special treatment.
 }

@@ -24,6 +24,7 @@ func (s section) RRs() iter.Seq[RR] {
 				rr = new(RFC3597)
 			}
 			rr.Msg(s.msg)
+			// this needs to be the thing that copies the data to the rr, resolving pointers, etc.
 			rr.Octets(s.octets[off:end])
 			off = end
 			if !yield(rr) {
