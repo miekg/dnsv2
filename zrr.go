@@ -41,6 +41,14 @@ func (rr *MX) Octets(x ...[]byte) []byte {
 	return nil
 }
 
+func (rr *MX) Prio(x ...dnswire.Uint16) dnswire.Uint16 {
+	return 0
+}
+
+func (rr *MX) Mx(x ...dnswire.Name) dnswire.Name {
+	return nil
+}
+
 func (rr *OPT) Name(x ...dnswire.Name) (dnswire.Name, error)    { return _Name(rr, x...) }
 func (rr *OPT) Type(x ...dnswire.Type) (dnswire.Type, error)    { return _Type(rr, x...) }
 func (rr *OPT) Class(x ...dnswire.Class) (dnswire.Class, error) { return _Class(rr, x...) }

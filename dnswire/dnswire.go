@@ -17,6 +17,8 @@ type (
 
 type Opcode uint8
 
+type Uint16 uint16
+
 func (n Name) String() string {
 	if len(n) == 1 && n[0] == 0 {
 		return "."
@@ -141,6 +143,7 @@ func RR(octets []byte, off int) ([]byte, Type, int) {
 	// For known RRs, once we have the type the rdata should be decoded as well, this must be done here as well.
 	// need to extract the above into a help function
 	// This means knowing the rdata format of NS, MX, CNAME, SOA, PTR (and yes others)
+	// adjust rdlength
 
 	end := Jump(octets, begin)
 	if end == 0 {
