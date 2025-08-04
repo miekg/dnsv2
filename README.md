@@ -35,6 +35,9 @@ working with wire-data).
 If you get a message (with compressed) RR in the additional section and you replace the answer section all
 those compression pointers may now be broken.
 
+> To solve this in others like it: we decompress received messages by default. Making those can only be done
+> once a Msg is been finished and calling Compress().
+
 ## TODO
 
 - finish parsing MX, A and OPT
