@@ -20,31 +20,20 @@ then influence the RR that you have in a cache.
 
 This library decompresses (resolves all compression pointers) when receiving a message (Msg.Decompress function).
 
-More details:
-
-- Question section only holds 1 quesstion.
-
 ## When am I happy with the API?
 
 In CoreDNS there is a plugin that takes all the RRs in the answer section and shuffles them (_loadbalance_
 plugin). I want to be able to mimic this here, with a nice API and something that is efficient (less copying,
 working with wire-data).
 
-## Problems that hamper effiency
-
-If you get a message (with compressed) RR in the additional section and you replace the answer section all
-those compression pointers may now be broken.
-
-> To solve this in others like it: we decompress received messages by default. Making those can only be done
-> once a Msg is been finished and calling Compress().
-
 ## TODO
 
-- finish parsing MX, A and OPT
+- finish parsing (MX), A and OPT
 - edns0 OPT parsing and hacks
 - reading/writing dns.Msg
-- benchmarking with miekg/dns (mostly)
-- fuzzing
+- benchmarking with miekg/dns (mostly), creating and parsing messages? Or full blown server and client - needs
+  way more infra in this pkg...
+- fuzzing, added one in msg_test.go
 
 once the above is in place and tested (and fuzzed), some bench functions will be written to compare this to
 miekg/dns. Then a decision is made to continue or not.

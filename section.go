@@ -91,6 +91,7 @@ func (q *Question) RRs() iter.Seq[RR] {
 			if end == 0 || end+4 > q.end {
 				break
 			}
+			// end + 4 should match q.end actually.
 			rrtype := dnswire.Type(binary.BigEndian.Uint16(q.Msg.octets[end:]))
 
 			var rr RR
@@ -101,7 +102,7 @@ func (q *Question) RRs() iter.Seq[RR] {
 			}
 			// Also make room for the TTL and the rdlength (although not used).
 			buf := make([]byte, (end-off)+4+2)
-			copy(buf, q.Msg.octets[off:end])
+			copy(buf, q.Msg.octets[off:end+4])
 			rr.Octets(buf)
 			off = end
 			if !yield(rr) {

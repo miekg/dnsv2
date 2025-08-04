@@ -77,7 +77,7 @@ func (m *Msg) Question(x ...*Question) *Question {
 		}
 		// check question count?
 		end := jumpquestion(m.octets)
-		return &Question{Section{Msg: m, start: 12, end: end}}
+		return &Question{Section{Msg: m, start: MsgHeaderLen, end: end}}
 	}
 	// TODO: what if we already have something here? Cut it out and replace...?
 	if m.octets == nil {
