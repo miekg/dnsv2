@@ -7,14 +7,6 @@ import (
 	"github.com/miekg/dnsv2/dnswire"
 )
 
-func (m *Msg) Octets(x ...[]byte) []byte {
-	if len(x) == 0 {
-		return m.octets
-	}
-	m.octets = x[0]
-	return nil
-}
-
 // ID by default returns a 16-bit random number to be used as a message id. The number is drawn from a cryptographically secure random number generator.
 // This being a variable the function can be reassigned to a custom function. For instance, to make it return a static value for testing:
 //
@@ -28,6 +20,28 @@ func id() uint16 {
 		panic("dns: reading random id failed: " + err.Error())
 	}
 	return id
+}
+
+// ID sets (with parameter) or reads the ID from the DNS message.
+func (m *Msg) ID(x ...uint16) (uint16, error) {
+	if len(m.octets) < 12 {
+		return 0, ErrBuf
+	}
+	if len(x) == 0 {
+		return binary.BigEndian.Uint16(m.octets[0:]), nil
+	}
+	binary.BigEndian.PutUint16(m.octets[0:], x[0])
+	return 0, nil
+}
+
+// If Octets does not have a parameter it returns the wire encoding octets for this message. If a parameter is
+// given the octets are written to the message.
+func (m *Msg) Octets(x ...[]byte) []byte {
+	if len(x) == 0 {
+		return m.octets
+	}
+	m.octets = x[0]
+	return nil
 }
 
 // QR sets or returns the QR header bit from the message, this returns true if the Msg is a response.
@@ -53,19 +67,21 @@ func (m *Msg) QR(x ...bool) (bool, error) {
 
 // Opcode sets or returns the opcode from the DNS message.
 func (m *Msg) Opcode(x ...dnswire.Opcode) (dnswire.Opcode, error) {
+	// todo
 	return OpcodeQuery, nil
 }
 
-// ID sets (with parameter) or reads the ID from the DNS message.
-func (m *Msg) ID(x ...uint16) (uint16, error) {
-	if len(m.octets) < 12 {
-		return 0, ErrBuf
-	}
-	if len(x) == 0 {
-		return binary.BigEndian.Uint16(m.octets[0:]), nil
-	}
-	binary.BigEndian.PutUint16(m.octets[0:], x[0])
+// Payload sets (or reads) the EDNS0 UDP payload size. When setting either the existing OPT record's data will
+// be overriden or a new one is added. The read will fail when there is no OPT record present.
+func (m *Msg) Payload(x ...dnswire.Uint16) (dnswire.Uint16, error) {
+	// opt.Class(dnswire.Class(x))
 	return 0, nil
+}
+
+// DO sets or reads the EDNS0 DO (DNSSEC OK) flag. When setting either the existing OPT record's data will be
+// overridden or a new one is added. The read will fail when there is no OPT record present.
+func (m *Msg) DO(x ...bool) (bool, error) {
+	return false, nil
 }
 
 // Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
