@@ -18,10 +18,12 @@ const (
 const (
 	TypeNone = dnswire.Type(0) // TypeNone signals a type not found condition.
 	// Valid DNS RR types. Not that *most* of the time the RR type will be derived from the Go struct type.
-	TypeA   = dnswire.Type(1)
-	TypeMX  = dnswire.Type(15)
-	TypeSOA = dnswire.Type(16)
-	TypeOPT = dnswire.Type(41)
+	TypeA    = dnswire.Type(1)
+	TypeNS   = dnswire.Type(2)
+	TypeAAAA = dnswire.Type(28)
+	TypeMX   = dnswire.Type(15)
+	TypeSOA  = dnswire.Type(16)
+	TypeOPT  = dnswire.Type(41)
 )
 
 const (

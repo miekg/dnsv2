@@ -19,10 +19,22 @@ type A struct {
 	octets []byte `dns:"A:IPv4"`
 }
 
+// AAAA RR. See RFC 3596.
+type AAAA struct {
+	Header
+	octets []byte `dns:"A:IPv6"`
+}
+
 // MX RR, See RFC 1035.
 type MX struct {
 	Header
 	octets []byte `dns:"Preference:Uint16,Mx:Name"`
+}
+
+// NS RR. See RFC 1035.
+type NS struct {
+	Header
+	octets []byte `dns:"Ns:Name"`
 }
 
 // SOA RR. See RFC 1035.
@@ -40,6 +52,8 @@ type OPT struct {
 var (
 	_ RR = &MX{}
 	_ RR = &A{}
+	_ RR = &AAAA{}
+	_ RR = &NS{}
 	_ RR = &RFC3597{}
 )
 
