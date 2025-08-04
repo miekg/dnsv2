@@ -53,40 +53,44 @@ func (m *Msg) Decompress() error {
 		if err := decompress(m.octets, off, name); err != nil {
 			return err
 		}
-		if name.Len() == typeoffset-off {
+
+		expand := name.Len() - (typeoffset - off)
+		if expand == 0 && !compressibleType[rrtype] {
 			name.Reset()
 			continue
 		}
 
-		// create space in the message to receive the expanded name.
-		expand := name.Len() - (typeoffset - off)
-		m.octets = dnswire.Extend(m.octets, off, expand)
-
-		copy(m.octets[off:], name.Bytes())
-		name.Reset()
+		if expand > 0 {
+			// create space in the message to receive the expanded name.
+			m.octets = dnswire.Extend(m.octets, off, expand)
+			copy(m.octets[off:], name.Bytes())
+			name.Reset()
+		}
 
 		// compressed rdata for a few types defined in RFC 1035: NS, CNAME, SOA, PTR, MX, and some obsoleted
 		// ones: MR, MF etc.
 		//
-		// The original offset hasn't changed and we added expand octets, so the start of the rdata of the RR
+		// The original offset hasn't changed as we added expand octets, so the start of the rdata of the RR
 		// is now: typeoffset + expand + 2 (type) + 2 (class) + 4 (ttl) + 2 (rdlength)
-		off = typeoffset + expand + 2 + 2 + 4 + 2 // rdlenoffset is this -2 (to set the adjusted new size)
-		/*
+		// When changing the rdata we must also adjust the rdata length.
+		off = typeoffset + expand + 2 + 2 + 4 + 2
+		rdlenoffset = off - 2
 
-			switch rrtype {
-			case TypeMX:
-				mxoff := off + 2 // 2 for prio (uint16)
-				if err := decompress(m.octets, mxoff, name); err != nil {
-					return err
-				}
-				if name.Len()+2 > int(rdlen) {
-					println("COMPRESSED RDATA")
-				}
+		switch rrtype {
+		case TypeMX:
+			mxoff := off + 2 // 2 for prio (uint16)
+			if err := decompress(m.octets, mxoff, name); err != nil {
+				return err
 			}
-		*/
+			if name.Len() > int(rdlen)-2 {
+				expand := name.Len() - (int(rdlen) - 2)
+				m.octets = dnswire.Extend(m.octets, mxoff, expand)
+				copy(m.octets[mxoff:], name.Bytes())
+				binary.BigEndian.PutUint16(m.octets[rdlenoffset:], rdlen+uint16(expand))
+			}
+		}
 
-		rdlen = rdlen
-		rrtype = rrtype
+		name.Reset()
 	}
 	return nil
 }
@@ -123,4 +127,10 @@ Loop:
 		}
 	}
 	return nil
+}
+
+// compressibleType is a map of RR types that have compressible rdata.
+var compressibleType = map[dnswire.Type]bool{
+	TypeMX:  true,
+	TypeSOA: true,
 }

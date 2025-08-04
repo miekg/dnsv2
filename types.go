@@ -20,6 +20,7 @@ const (
 	// Valid DNS RR types. Not that *most* of the time the RR type will be derived from the Go struct type.
 	TypeA   = dnswire.Type(1)
 	TypeMX  = dnswire.Type(15)
+	TypeSOA = dnswire.Type(16)
 	TypeOPT = dnswire.Type(41)
 )
 

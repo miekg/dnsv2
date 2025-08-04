@@ -72,12 +72,11 @@ func (m *Msg) ID(x ...uint16) (uint16, error) {
 // If a parameter is given, the section will be set in the message as the question section, the qdcount will be updated appropriately.
 func (m *Msg) Question(x ...*Question) *Question {
 	if len(x) == 0 {
-		// The question sections starts a offset 12. There is not a complete RR here, but only name, qtype and
-		// class. The RFC says it should only be 1 of those, but multiple may be present, we don't care.
-		if len(m.octets) < 12 {
+		if len(m.octets) < MsgHeaderLen {
 			return nil
 		}
-		end := jumpquestions(m.octets, 12, int(m.Qdcount()))
+		// check question count?
+		end := jumpquestion(m.octets)
 		return &Question{Section{Msg: m, start: 12, end: end}}
 	}
 	// TODO: what if we already have something here? Cut it out and replace...?
@@ -94,10 +93,10 @@ func (m *Msg) Question(x ...*Question) *Question {
 // message stays the same the section is valid.
 func (m *Msg) Answer(x ...*Answer) *Answer {
 	if len(x) == 0 {
-		if len(m.octets) < 12 {
+		if len(m.octets) < MsgHeaderLen {
 			return nil
 		}
-		start := jumpquestions(m.octets, 12, int(m.Qdcount()))
+		start := jumpquestion(m.octets)
 		end := jumprrs(m.octets, start, int(m.Ancount()))
 		return &Answer{Section{Msg: m, start: start, end: end}}
 	}
@@ -191,19 +190,15 @@ func jumprrs(octets []byte, off, rrs int) int {
 	return off
 }
 
-// jumpquestions jumps "rr"s in the question section.
-func jumpquestions(octets []byte, off, questions int) int {
-	for range questions {
-		// set the type based on the RR type, and for the question we don't need to the TTL, so cut that off, as also the rdlength.
-		j := dnswire.JumpName(octets, off)
-		if j == 0 {
-			return 0
-		}
-		j += 4
-		if j > len(octets) {
-			return 0
-		}
-		off = j
+// jumpquestion jumps "rr" in the question section.
+func jumpquestion(octets []byte) int {
+	j := dnswire.JumpName(octets, MsgHeaderLen)
+	if j == 0 {
+		return 0
 	}
-	return off
+	j += 4
+	if j > len(octets) {
+		return 0
+	}
+	return j
 }
