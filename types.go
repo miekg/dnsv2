@@ -54,6 +54,7 @@ type Header interface {
 	// buffer in the header with enough space for the name, the type, class, ttl and rdlength.
 	Name(x ...dnswire.Name) (dnswire.Name, error)
 	// If Len does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
+	// The the lenght of the entire RR is needed use len(rr.Octets).
 	Len(x ...uint16) (uint16, error)
 	// String returns the string representation of the RR's header.
 	String() string
