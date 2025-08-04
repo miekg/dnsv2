@@ -25,6 +25,12 @@ type MX struct {
 	octets []byte `dns:"Preference:Uint16,Mx:Name"`
 }
 
+// SOA RR. See RFC 1035.
+type SOA struct {
+	Header
+	octets []byte `dns:"Ns:Name,Mbox:Name,Serial:Uint32,Refresh:Uint32,Retry:Uint32,Expire:Uint32,Minttl:Uint32"`
+}
+
 // OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
 type OPT struct {
 	Header

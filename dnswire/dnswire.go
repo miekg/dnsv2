@@ -18,7 +18,13 @@ type (
 
 type Opcode uint8 // Opcode is the Opcode of a DNS message.
 
-type Uint16 uint16 // Uint16 is a 2 octet value.
+// Rcode, take extended shit into account
+
+type (
+	Uint16 uint16 // Uint16 is a 2 octet value.
+	Uint32 uint32 // Uint32 is a 4 octet value.
+	Uint48 uint64 // Uint48 is a 6 octet value. Only used in the [TSIG] RR.
+)
 
 func (i Uint16) String() string { return strconv.FormatUint(uint64(i), 10) }
 

@@ -65,16 +65,30 @@ func (m *Msg) Decompress() error {
 		copy(m.octets[off:], name.Bytes())
 		name.Reset()
 
-		if _, ok := compressibleType[rrtype]; ok { // decompress rdata too
-			rdlen = rdlen
-		}
+		/*
+			// compressed rdata for a few types defined in RFC 1035: NS, CNAME, SOA, PTR, MX, and some obsoleted
+			// ones: MR, MF etc.
+			//
+			// The original offset hasn't changed and we added expand octets, so the start of the rdata of the RR
+			// is now: typeoffset + expand + 2 (type) + 2 (class) + 4 (ttl) + 2 (rdlength)
+			off = typeoffset + expand + 2 + 2 + 4 + 2 // rdlenoffset is this -2 (to set the adjusted new size)
+
+			switch rrtype {
+			case TypeMX:
+				mxoff := off + 2 // 2 for prio (uint16)
+				if err := decompress(m.octets, mxoff, name); err != nil {
+					return err
+				}
+				if name.Len()+2 > int(rdlen) {
+					println("COMPRESSED RDATA")
+				}
+			}
+		*/
+
+		rdlen = rdlen
+		rrtype = rrtype
 	}
 	return nil
-}
-
-// compressibleType is a map of RR types that have compressible rdata.
-var compressibleType = map[dnswire.Type]struct{}{
-	TypeMX: {},
 }
 
 // compress ...

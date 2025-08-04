@@ -32,7 +32,9 @@ func TestReadMsgBinary(t *testing.T) {
 	buf, _ := os.ReadFile("testdata/dig-mx-miek.nl")
 	msg := new(Msg)
 	msg.Octets(buf)
-	msg.Decompress()
+	if err := msg.Decompress(); err != nil {
+		t.Fatal(err)
+	}
 	t.Logf("   Msg %d %v\n", len(msg.Octets()), msg.Octets())
 
 	q := msg.Question()
