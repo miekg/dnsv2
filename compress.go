@@ -3,7 +3,6 @@ package dns
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 
 	"github.com/miekg/dnsv2/dnswire"
 )
@@ -38,7 +37,6 @@ func (m *Msg) Decompress() error {
 		offsets = append(offsets, j)
 		i++
 	}
-	fmt.Printf("%v\n", offsets)
 
 	name := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most RRs aren't that long, cut this in half.
 

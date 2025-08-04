@@ -35,6 +35,11 @@ func TestReadMsgBinary(t *testing.T) {
 	msg.Decompress()
 	t.Logf("   Msg %d %v\n", len(msg.Octets()), msg.Octets())
 
+	q := msg.Question()
+	for rr := range q.RRs() {
+		t.Logf("%v\n%s", rr.Octets(), rr.String())
+	}
+
 	a := msg.Answer()
 	t.Logf("Answer %d %v %d %d\n", len(a.Octets()), a.Octets(), a.start, a.end)
 	if a.Len() != 5 {
