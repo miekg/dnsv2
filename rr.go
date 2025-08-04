@@ -2,7 +2,6 @@ package dns
 
 import (
 	"encoding/binary"
-	"strconv"
 	"strings"
 
 	"github.com/miekg/dnsv2/dnswire"
@@ -131,16 +130,21 @@ func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 
 func _String(rr RR) string {
 	s := strings.Builder{}
+
 	name, _ := rr.Name()
 	s.WriteString(name.String())
 	s.WriteByte('\t')
+
 	ttl, _ := rr.TTL()
-	s.WriteString(strconv.FormatInt(int64(ttl), 10))
+	s.WriteString(ttl.String())
 	s.WriteByte('\t')
+
 	class, _ := rr.Class()
-	s.WriteString(ClassToString[class])
+	s.WriteString(class.String())
 	s.WriteByte('\t')
+
 	typ, _ := rr.Type()
-	s.WriteString(TypeToString[typ])
+	s.WriteString(typ.String())
+
 	return s.String()
 }

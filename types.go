@@ -60,6 +60,7 @@ type Header interface {
 
 const (
 	MsgHeaderLen = 12 // MsgHeaderLen is the length of the header in the DNS message.
+	maxPointers  = 10 // maxPointers is the maximum number of pointers we will follow when decompressing a DNS name.
 )
 
 // An RR represents a resource record. When defining a RR struct tags are used to generate the data accessor
@@ -91,7 +92,7 @@ type EDNS0 interface {
 }
 
 // Msg contains the layout of a DNS message. A DNS message has 4 sections, the [Question], [Answer], [Ns]
-// (authority) and [Extra]( additional) section.
+// (authority) and [Extra] (additional) section.
 // In this library _another_ section is added the [Pseudo ]section; this section contains EDNS0 "records" and a possible TSIG record.
 type Msg struct {
 	octets []byte

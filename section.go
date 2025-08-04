@@ -15,10 +15,12 @@ func (s Section) rrs() iter.Seq[RR] {
 	off := s.start
 	return func(yield func(RR) bool) {
 		for {
-			octets, rrtype, end := dnswire.RR(s.Msg.octets, off)
+			end := dnswire.Jump(s.Msg.octets, off)
 			if end == 0 || end > s.end {
 				break
 			}
+			typeoffset := dnswire.JumpName(s.Msg.octets, off)
+			rrtype := dnswire.Type(binary.BigEndian.Uint16(s.Msg.octets[typeoffset:]))
 
 			var rr RR
 			if newRR, ok := TypeToRR[rrtype]; ok {
@@ -26,7 +28,7 @@ func (s Section) rrs() iter.Seq[RR] {
 			} else {
 				rr = new(RFC3597)
 			}
-			rr.Octets(octets)
+			rr.Octets(s.Msg.octets[off:end])
 			off = end
 			if !yield(rr) {
 				return

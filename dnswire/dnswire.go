@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -74,6 +75,8 @@ func (c Class) String() string {
 	}
 	return fmt.Sprintf("CLASS%d", int(c))
 }
+
+func (t TTL) String() string { return strconv.FormatInt(int64(t), 10) }
 
 // classToString is a maps Classes to strings for each class wire type.
 var classToString = map[uint16]string{
@@ -150,41 +153,4 @@ func Jump(octets []byte, off int) int {
 	off += 8
 	rdlength := binary.BigEndian.Uint16(octets[off:])
 	return off + int(rdlength) + 2 // 2 for starting after rdlength
-}
-
-// Not needed, decompress will do this, just getting the octets with Jump is enough.
-
-// RR decodes (resolving compression pointers) the RR's from octets, starting at offset off, at this point the
-// RR's should start. Octets should coming from the message that holds the RR. This functions returns a new
-// opaque slice of bytes and the Type of RR, and the next offset where a new RR should start (or the end of
-// the message).
-func RR(octets []byte, off int) ([]byte, Type, int) {
-	begin := off
-
-	rr := bytes.NewBuffer(make([]byte, 0, 32)) // [bytes.Buffer] uses a 64 byte buffer, most RRs aren't that long, cut this in half.
-	if !decompress(octets, off, rr) {
-		return nil, 0, 0
-	}
-
-	endname := JumpName(octets, begin) // jump after name to grab type
-	t := Type(binary.BigEndian.Uint16(octets[endname:]))
-
-	// For known RRs, once we have the type the rdata should be decoded as well, this must be done here as well.
-	// need to extract the above into a help function
-	// This means knowing the rdata format of NS, MX, CNAME, SOA, PTR (and yes others)
-	// adjust rdlength
-
-	end := Jump(octets, begin)
-	if end == 0 {
-		return nil, 0, 0
-	}
-	if end > len(octets)-1 {
-		return nil, 0, 0
-	}
-
-	if endname > end {
-		return nil, 0, 0
-	}
-	rr.Write(octets[endname:end])
-	return rr.Bytes(), t, end
 }

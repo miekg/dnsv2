@@ -12,5 +12,7 @@ func TestDecompress(t *testing.T) {
 	t.Logf("   Msg %d %v\n", len(msg.Octets()), msg.Octets())
 
 	msg.Decompress()
+	// figure out a good test.
 
+	t.Logf("   Msg %d %v\n", len(msg.Octets()), msg.Octets())
 }
