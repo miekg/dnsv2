@@ -79,13 +79,16 @@ func (rr *MX) Mx(x ...dnswire.Name) dnswire.Name {
 		return nil
 	}
 
-	off := rr.Len() + 2 // Skip Prio (2 octets)
+	off := rr.Len()
+	off += 2 // Skip Prio (2 octets)
+
 	if len(x) == 0 {
 		return dnswire.Name(rr.Octets()[off:])
 	}
-	rdlen = rdlen
-	// todo
 
+	rr.octets = append(rr.octets, x[0]...)
+	rdlen += uint16(len(x[0]))
+	rr.DataLen(rdlen)
 	return nil
 }
 
@@ -110,7 +113,9 @@ func format(x ...string) string {
 	s.WriteString(x[0])
 	s.WriteByte('\t')
 	for i := range len(x) - 1 {
-		s.WriteByte(' ')
+		if i > 0 {
+			s.WriteByte(' ')
+		}
 		s.WriteString(x[i+1])
 	}
 	return s.String()

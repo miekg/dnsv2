@@ -82,11 +82,11 @@ func (m *Msg) Decompress() error {
 			if err := decompress(m.octets, mxoff, name); err != nil {
 				return err
 			}
-			if name.Len() > int(rdlen)-2 {
-				expand := name.Len() - (int(rdlen) - 2)
+			expand := name.Len() - (int(rdlen) - 2)
+			if expand > 0 {
 				m.octets = dnswire.Extend(m.octets, mxoff, expand)
 				copy(m.octets[mxoff:], name.Bytes())
-				binary.BigEndian.PutUint16(m.octets[rdlenoffset:], rdlen+uint16(expand))
+				putDataLen(m.octets[rdlenoffset:], rdlen+uint16(expand))
 			}
 		}
 
@@ -94,6 +94,9 @@ func (m *Msg) Decompress() error {
 	}
 	return nil
 }
+
+// putDataLen updates the rdlen which should be at position 0 of octets.
+func putDataLen(octets []byte, rdlen uint16) { binary.BigEndian.PutUint16(octets[0:], rdlen) }
 
 // compress ...
 func compress() {}

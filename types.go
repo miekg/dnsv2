@@ -31,7 +31,7 @@ const (
 )
 
 const (
-	// Message Opcodes. There is no 3.
+	// Message opcodes. There is no 3.
 	OpcodeQuery  = dnswire.Opcode(0)
 	OpcodeIQuery = dnswire.Opcode(1)
 	OpcodeStatus = dnswire.Opcode(2)

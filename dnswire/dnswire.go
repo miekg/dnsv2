@@ -16,9 +16,10 @@ type (
 	Name  []byte // Name is a (uncompressed) domain name.
 )
 
-type Opcode uint8 // Opcode is the Opcode of a DNS message.
-
-// Rcode, take extended shit into account
+type (
+	Opcode uint8  // Opcode is the Opcode of a DNS message.
+	Rcode  uint16 // Rcode is a 12 bit value if we take the extended rcode into account (See RFC 6891)
+)
 
 type (
 	Uint16 uint16 // Uint16 is a 2 octet value.
