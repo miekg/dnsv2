@@ -46,8 +46,8 @@ func (m *Msg) Decompress() error {
 		// rrtype is offset + Name + 0
 		typeoffset := dnswire.JumpName(m.octets, off)
 		rrtype := dnswire.Type(binary.BigEndian.Uint16(m.octets[typeoffset:]))
-		rdlengthoffset := typeoffset + 8
-		rdlength := binary.BigEndian.Uint16(m.octets[rdlengthoffset:])
+		rdlenoffset := typeoffset + 8
+		rdlen := binary.BigEndian.Uint16(m.octets[rdlenoffset:])
 
 		// if the new name is longer, we have something expanded, otherwise continue
 		if err := decompress(m.octets, off, name); err != nil {
@@ -60,13 +60,13 @@ func (m *Msg) Decompress() error {
 
 		// create space in the message to receive the expanded name.
 		expand := name.Len() - (typeoffset - off)
-		m.octets = dnswire.Extent(m.octets, off, expand)
+		m.octets = dnswire.Extend(m.octets, off, expand)
 
 		copy(m.octets[off:], name.Bytes())
 		name.Reset()
 
 		if _, ok := compressibleType[rrtype]; ok { // decompress rdata too
-			rdlength = rdlength
+			rdlen = rdlen
 		}
 	}
 	return nil

@@ -1,5 +1,4 @@
-// Package dnswire deals with the encoding from and to wire encoding. In Go these functions are usually called
-// Marshal and Unmarshal.
+// Package dnswire deals with the encoding from and to the wire.
 package dnswire
 
 import (
@@ -20,6 +19,8 @@ type (
 type Opcode uint8 // Opcode is the Opcode of a DNS message.
 
 type Uint16 uint16 // Uint16 is a 2 octet value.
+
+func (i Uint16) String() string { return strconv.FormatUint(uint64(i), 10) }
 
 func (n Name) String() string {
 	if len(n) == 1 && n[0] == 0 {
@@ -90,7 +91,7 @@ var classToString = map[uint16]string{
 // Marshal encodes s into a DNS encoded domain. It can deal with fully and non-fully qualified names.
 // Although in the later case it allocates a new string by adding the final dot for you.
 // This also takes care of all the esoteric encoding allowed like \DDD and \. to escape a dot.
-// TODO: ugly?
+// TODO: ugly API? dnswire.Name.Marshal("....") to get something.
 func (n Name) Marshal(s string) Name {
 	if s == "." {
 		n = []byte{0}
@@ -151,8 +152,8 @@ func Jump(octets []byte, off int) int {
 	return off + int(rdlength) + 2 // 2 for starting after rdlength
 }
 
-// Extent expands octets at offset with expand bytes.
-func Extent(octets []byte, off, expand int) []byte {
+// Extend expands octets at offset with expand bytes.
+func Extend(octets []byte, off, expand int) []byte {
 	octets = append(octets[:off], append(make([]byte, expand), octets[off:]...)...)
 	return octets
 }

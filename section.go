@@ -28,7 +28,9 @@ func (s Section) rrs() iter.Seq[RR] {
 			} else {
 				rr = new(RFC3597)
 			}
-			rr.Octets(s.Msg.octets[off:end])
+			buf := make([]byte, end-off)
+			copy(buf, s.Msg.octets[off:end])
+			rr.Octets(buf)
 			off = end
 			if !yield(rr) {
 				return
@@ -97,7 +99,10 @@ func (q *Question) RRs() iter.Seq[RR] {
 			} else {
 				rr = new(RFC3597)
 			}
-			rr.Octets(q.Msg.octets[off:end])
+			// Also make room for the TTL and the rdlength (although not used).
+			buf := make([]byte, (end-off)+4+2)
+			copy(buf, q.Msg.octets[off:end])
+			rr.Octets(buf)
 			off = end
 			if !yield(rr) {
 				return

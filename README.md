@@ -14,7 +14,7 @@ will get into the situation that an RR that is added to a message can be altered
 the message is altered (think randomizing the RRs in a section), or just setting the TTLs in a RR which can
 then influence the RR that you have in a cache.
 
-This library uncompresses (resolves all compression pointers) when receiving a message (Uncompress function).
+This library uncompresses (resolves all compression pointers) when receiving a message (Msg.Decompress function).
 
 More details:
 

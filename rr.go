@@ -91,7 +91,7 @@ func _TTL(rr RR, x ...dnswire.TTL) (dnswire.TTL, error) {
 	return dnswire.TTL(0), nil
 }
 
-func _Len(rr RR, x ...uint16) (uint16, error) {
+func _DataLen(rr RR, x ...uint16) (uint16, error) {
 	off := dnswire.JumpName(rr.Octets(), 0)
 	if off == 0 {
 		return 0, ErrBufName
@@ -112,14 +112,9 @@ func _Len(rr RR, x ...uint16) (uint16, error) {
 
 func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 	if len(x) != 0 {
-		// allocate room for the name and type, class, ttl and length
-		needed := len(x[0]) + 2 + 2 + 2 + 4
-		if l := len(rr.Octets()); l < needed {
-			extra := make([]byte, needed-l)
-			buf := append(rr.Octets(), extra...)
-			copy(buf[0:], x[0]) // no copy here I think
-			rr.Octets(buf)
-		}
+		buf := rr.Octets() // assume empty for now when setting
+		buf = append(x[0], make([]byte, 10)...)
+		rr.Octets(buf)
 		return nil, nil
 	}
 	off := dnswire.JumpName(rr.Octets(), 0)
@@ -127,6 +122,14 @@ func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 		return nil, ErrBufName
 	}
 	return dnswire.Name(rr.Octets()[0:off]), nil
+}
+
+func _Len(rr RR) int {
+	j := dnswire.JumpName(rr.Octets(), 0)
+	if j == 0 {
+		return 0
+	}
+	return j + 2 + 2 + 4 + 2 // name + type, class, ttl, rdlength
 }
 
 func _String(rr RR) string {

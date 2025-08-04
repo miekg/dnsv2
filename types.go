@@ -39,7 +39,14 @@ const (
 )
 
 // Header is the header of an RR. All DNS resource records share this. The length of the header in an RR can
-// be calculated by taking the length of the RR's Octets() and subtracting Len().
+// be calculated by taking the length of the RR's Octets() and subtracting Len(). The different length are
+// visialized like so:
+//
+//	 Name | Type | Class | TTL | rdlength | rdata
+//	|_____________________________________|__________...
+//	              Len()                     DataLen()
+//	|________________________________________________...
+//	                   len(rr.Octets())
 type Header interface {
 	// If Type does not have a parameter it returns the RR's type. If a parameter is given it sets the RR's type.
 	// Note that Type is usualy superfluous as the RR's type is implicitly enccoded in the Go type of the struct.
@@ -50,14 +57,18 @@ type Header interface {
 	// If Class does not have a parameter it returns the RR's class. If a parameter is given it sets the RR's class.
 	Class(x ...dnswire.Class) (dnswire.Class, error)
 	// If Name does not have a parameter it returns the RR's owner name. If a parameter is given it sets the
-	// RR's owner name. Not that the name can be compressed. Note this is the only method that allocates a
-	// buffer in the header with enough space for the name, the type, class, ttl and rdlength.
+	// RR's owner name. This is the only method that allocates a buffer in the RR with enough space the entire
+	// header. Subsequent methods only extend this.
 	Name(x ...dnswire.Name) (dnswire.Name, error)
-	// If Len does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
-	// The the lenght of the entire RR is needed use len(rr.Octets).
-	Len(x ...uint16) (uint16, error)
+	// If DataLen does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
+	// An error is returned when the octets that contain this length are not there, or the length exceeds the
+	// number of octets in the RR.
+	DataLen(x ...uint16) (uint16, error)
 	// String returns the string representation of the RR's header.
 	String() string
+	// Len returns the length of the header, that is the length of the name, plus type, class, ttl (4 octets)
+	// and the rdlength (2). Note that only the existence of the name is checked.
+	Len() int
 }
 
 const (
@@ -80,6 +91,9 @@ const (
 //
 // That allows for setting and getting the fields' values. Note that the return types should all exist in the
 // [dnswire] package, alternatively you can use native Go types.
+//
+// When building an RR the name of it should be set first as this allocates enough space for the rest of the
+// header. Other RR methods will error or silently fail if this is not properly allocated.
 type RR interface {
 	Header
 	// If Octets does not have a parameter it returns the wire encoding octets for this RR. If a parameter is
