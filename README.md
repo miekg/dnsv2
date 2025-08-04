@@ -1,20 +1,24 @@
 # Go DNS library
 
+Current feel of the API can be seen in [msg_test.go](https://github.com/miekg/dnsv2/blob/main/msg_test.go)
+
 Principles of design:
 
-- Everything is stored in uncompressed wire data (boils down to `[]byte`).
-- Connection handling is completely left out, i.e. no more `dns.Conn`, we'll just depend on the `net` pkg.
+- Everything is stored in decompressed wire data (boils down to `[]byte`).
+- Everything is an RR. Question section? Holds an RR. EDNS0 options? RRs. Simplifies the API, because no
+  special handling required by the user.
+- Connection handling is completely left out, i.e. no more `dns.Conn`, we'll just depend on the `net` package
+  to `Dial` for us.
 - Building a message is done by making a DNS message (\*Msg), adding a section and then adding the appropriate RRs.
 - Creating a message means copying data _to_ the message.
 - Getting data out of a message means copying data _from_ the message.
-- Everything is an RR, question section -> holds RRs, pseudo section (invention of this package) -> holds RRs.
 
 With the latter two points, we allow these elements to be self contained (albeit with copying), otherwise you
 will get into the situation that an RR that is added to a message can be altered (in sometimes bad ways) when
 the message is altered (think randomizing the RRs in a section), or just setting the TTLs in a RR which can
 then influence the RR that you have in a cache.
 
-This library uncompresses (resolves all compression pointers) when receiving a message (Msg.Decompress function).
+This library decompresses (resolves all compression pointers) when receiving a message (Msg.Decompress function).
 
 More details:
 
@@ -36,6 +40,8 @@ those compression pointers may now be broken.
 - finish parsing MX, A and OPT
 - edns0 OPT parsing and hacks
 - reading/writing dns.Msg
+- benchmarking with miekg/dns (mostly)
+- fuzzing
 
 once the above is in place and tested (and fuzzed), some bench functions will be written to compare this to
 miekg/dns. Then a decision is made to continue or not.
