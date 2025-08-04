@@ -37,3 +37,29 @@ working with wire-data).
 
 once the above is in place and tested (and fuzzed), some bench functions will be written to compare this to
 miekg/dns. Then a decision is made to continue or not.
+
+## Sketches/Ideas
+
+Pondering this (eveyrthing is an RR) as the Msg (dig-like) text output.
+
+```
+;; QUERY, status: NOERROR, id: 47532
+;; flags: qr rd ra ad
+;; PSEUDO: 2, QUERY: 1, ANSWER: 5, AUTHORITY: 2, ADDITIONAL: 0
+
+;; PSEUDO SECTION:
+;; version: 0, udp: 4096, flags: do
+.           0   CLASS0   NSID   "gpdns-ams"
+
+;; QUESTION SECTION:
+miek.nl     0   IN  MX  0 .
+
+;; ANSWER SECTION:
+miek.nl.    21600   IN      MX      10 aspmx3.googlemail.com.
+miek.nl.    21600   IN      MX      5 alt2.aspmx.l.google.com.
+miek.nl.    21600   IN      MX      1 aspmx.l.google.com.
+miek.nl.    21600   IN      MX      10 aspmx2.googlemail.com.
+miek.nl.    21600   IN      MX      5 alt1.aspmx.l.google.com.
+
+;; MSG SIZE: 290
+```
