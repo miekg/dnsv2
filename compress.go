@@ -65,13 +65,13 @@ func (m *Msg) Decompress() error {
 		copy(m.octets[off:], name.Bytes())
 		name.Reset()
 
+		// compressed rdata for a few types defined in RFC 1035: NS, CNAME, SOA, PTR, MX, and some obsoleted
+		// ones: MR, MF etc.
+		//
+		// The original offset hasn't changed and we added expand octets, so the start of the rdata of the RR
+		// is now: typeoffset + expand + 2 (type) + 2 (class) + 4 (ttl) + 2 (rdlength)
+		off = typeoffset + expand + 2 + 2 + 4 + 2 // rdlenoffset is this -2 (to set the adjusted new size)
 		/*
-			// compressed rdata for a few types defined in RFC 1035: NS, CNAME, SOA, PTR, MX, and some obsoleted
-			// ones: MR, MF etc.
-			//
-			// The original offset hasn't changed and we added expand octets, so the start of the rdata of the RR
-			// is now: typeoffset + expand + 2 (type) + 2 (class) + 4 (ttl) + 2 (rdlength)
-			off = typeoffset + expand + 2 + 2 + 4 + 2 // rdlenoffset is this -2 (to set the adjusted new size)
 
 			switch rrtype {
 			case TypeMX:
