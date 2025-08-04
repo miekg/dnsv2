@@ -2,10 +2,7 @@ package dnswire
 
 import "bytes"
 
-// compressibleType is a map of RR types that have compressible rdata.
-var compressibleType = map[int]struct{}{
-	15: {}, // MX
-}
+func compress() {}
 
 func decompress(octets []byte, off int, rr *bytes.Buffer) bool {
 	ptr := 0

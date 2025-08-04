@@ -5,19 +5,20 @@ package dnswire
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"strings"
 )
 
 type (
 	Type  uint16 // Type is an RR type.
-	TTL   int32  // TTL is the time to live of an RR(set).
+	TTL   int32  // TTL is the time to live in seconds of an RR(set).
 	Class uint16 // Class is a DNS class.
-	Name  []byte // Name is a domain name.
+	Name  []byte // Name is a (uncompressed) domain name.
 )
 
-type Opcode uint8
+type Opcode uint8 // Opcode is the Opcode of a DNS message.
 
-type Uint16 uint16
+type Uint16 uint16 // Uint16 is a 2 octet value.
 
 func (n Name) String() string {
 	if len(n) == 1 && n[0] == 0 {
@@ -47,6 +48,7 @@ func (n Name) String() string {
 			off += c
 
 		case 0xC0:
+			// panic?
 			// pointer, shouldn't happen here
 			off++
 			s.WriteString(".")
@@ -55,6 +57,32 @@ func (n Name) String() string {
 	// haven't seen 00 ending...?
 	s.WriteString(".")
 	return s.String()
+}
+
+func (t Type) String() string {
+	s, ok := typeToString[uint16(t)]
+	if ok {
+		return s
+	}
+	return fmt.Sprintf("TYPE%d", int(t))
+}
+
+func (c Class) String() string {
+	s, ok := classToString[uint16(c)]
+	if ok {
+		return s
+	}
+	return fmt.Sprintf("CLASS%d", int(c))
+}
+
+// classToString is a maps Classes to strings for each class wire type.
+var classToString = map[uint16]string{
+	1:   "IN",
+	2:   "CS",
+	3:   "CH",
+	4:   "HS",
+	254: "NONE",
+	255: "ANY",
 }
 
 // Marshal encodes s into a DNS encoded domain. It can deal with fully and non-fully qualified names.
@@ -72,7 +100,7 @@ func (n Name) Marshal(s string) Name {
 
 	name := bytes.NewBuffer(make([]byte, 0, 32))
 	start := 0
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if s[i] == '.' {
 			l := i - start
 			name.WriteByte(byte(l & 0x3F))
@@ -110,7 +138,6 @@ func JumpName(octets []byte, off int) int {
 }
 
 // Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
-// The rdlength in the RR must reflect the reality.
 func Jump(octets []byte, off int) int {
 	off = JumpName(octets, off)
 	if off == 0 {
@@ -124,6 +151,8 @@ func Jump(octets []byte, off int) int {
 	rdlength := binary.BigEndian.Uint16(octets[off:])
 	return off + int(rdlength) + 2 // 2 for starting after rdlength
 }
+
+// Not needed, decompress will do this, just getting the octets with Jump is enough.
 
 // RR decodes (resolving compression pointers) the RR's from octets, starting at offset off, at this point the
 // RR's should start. Octets should coming from the message that holds the RR. This functions returns a new

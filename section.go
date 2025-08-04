@@ -53,6 +53,9 @@ func (s Section) len() int {
 	return l
 }
 
+// Implement the following:
+// Len, RRs() (=All), see godoc slices: Delete(i, j int), Index, Insert, Replace(i, j int), AppendSeq, Append
+
 // RRs returns an interator the allows ranging over the RRs in s. Returned RRs are still tied to the DNS
 // message they come from. This is to resolve compression pointers if they are present when calling rr.Name.
 func (a *Answer) RRs() iter.Seq[RR] { return a.Section.rrs() }
@@ -76,7 +79,7 @@ func (e *Extra) Len() int { return e.Section.len() }
 
 func (q *Question) Len() int { return 5 }
 
-// Append adds the RR (or RRs) to the section.
+// Append adds the RR to the section.
 func (q *Question) Append(rr ...RR) {
 	for _, r := range rr {
 		octets := r.Octets()

@@ -38,7 +38,8 @@ const (
 	OpcodeUpdate = dnswire.Opcode(5)
 )
 
-// Header is the header of an RR. All DNS resource records share this.
+// Header is the header of an RR. All DNS resource records share this. The length of the header in an RR can
+// be calculated by taking the length of the RR's Octets() and subtracting Len().
 type Header interface {
 	// If Type does not have a parameter it returns the RR's type. If a parameter is given it sets the RR's type.
 	// Note that Type is usualy superfluous as the RR's type is implicitly enccoded in the Go type of the struct.
@@ -57,8 +58,12 @@ type Header interface {
 	String() string
 }
 
-// An RR represents a resource record. When defining a RR struct tags are used to generate the Rdata accessor functions and example
-// from the MX record being:
+const (
+	MsgHeaderLen = 12 // MsgHeaderLen is the length of the header in the DNS message.
+)
+
+// An RR represents a resource record. When defining a RR struct tags are used to generate the data accessor
+// functions. An example from the MX record being:
 //
 //	octets []byte `dns:"Preference:Uint16,Mx:Name"`
 //
@@ -90,7 +95,7 @@ type EDNS0 interface {
 // In this library _another_ section is added the [Pseudo ]section; this section contains EDNS0 "records" and a possible TSIG record.
 type Msg struct {
 	octets []byte
-	ps     uint16 // pseudo section counter, returns EDNS0 RR in OPT + TSIG
+	ps     uint16 // pseudo section counter, returns EDNS0 RRs in OPT + TSIG
 }
 
 // Section is a section in a DNS message.
