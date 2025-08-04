@@ -7,6 +7,7 @@ Principles of design:
 - Building a message is done by making a DNS message (\*Msg), adding a section and then adding the appropriate RRs.
 - Creating a message means copying data _to_ the message.
 - Getting data out of a message means copying data _from_ the message.
+- Everything is an RR, question section -> holds RRs, pseudo section (invention of this package) -> holds RRs.
 
 With the latter two points, we allow these elements to be self contained (albeit with copying), otherwise you
 will get into the situation that an RR that is added to a message can be altered (in sometimes bad ways) when
@@ -14,6 +15,10 @@ the message is altered (think randomizing the RRs in a section), or just setting
 then influence the RR that you have in a cache.
 
 This library uncompresses (resolves all compression pointers) when receiving a message (Uncompress function).
+
+More details:
+
+- Question section only holds 1 quesstion.
 
 ## When am I happy with the API?
 

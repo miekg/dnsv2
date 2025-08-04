@@ -179,13 +179,6 @@ func (m *Msg) Pscount(x ...uint16) uint16 {
 	return 0
 }
 
-// Compress performs DNS name compression on the entire DNS message. After this you should not add more RRs to
-// the message because this messes up the compression pointers (unless you add at the end, either the
-// Additional or Pseudo section.
-func (m *Msg) Compress() {
-	// todo
-}
-
 // jumprrs jumps rrs RRs through octets. The returned offset is just after the last RR.
 func jumprrs(octets []byte, off, rrs int) int {
 	for range rrs {
