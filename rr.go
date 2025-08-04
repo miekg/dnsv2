@@ -50,7 +50,8 @@ func _Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
 	}
 	if len(x) == 0 {
 		i := binary.BigEndian.Uint16(rr.Octets()[off:])
-		if i == 0 { // infer from type (should we then also set it??)
+		if i == 0 {
+			return RRToType(rr), nil
 		}
 		return dnswire.Type(i), nil
 	}

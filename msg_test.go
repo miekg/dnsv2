@@ -32,6 +32,7 @@ func TestReadMsgBinary(t *testing.T) {
 	buf, _ := os.ReadFile("testdata/dig-mx-miek.nl")
 	msg := new(Msg)
 	msg.Octets(buf)
+	msg.Decompress()
 	t.Logf("   Msg %d %v\n", len(msg.Octets()), msg.Octets())
 
 	a := msg.Answer()
@@ -47,6 +48,6 @@ func TestReadMsgBinary(t *testing.T) {
 		t.Fatalf("expected %d RRs when range-ing the answer section, got %d", 5, i)
 	}
 	for rr := range a.RRs() {
-		t.Logf("%s", rr.String())
+		t.Logf("%v\n%s", rr.Octets(), rr.String())
 	}
 }

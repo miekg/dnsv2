@@ -43,6 +43,7 @@ const (
 type Header interface {
 	// If Type does not have a parameter it returns the RR's type. If a parameter is given it sets the RR's type.
 	// Note that Type is usualy superfluous as the RR's type is implicitly enccoded in the Go type of the struct.
+	// If the found type is zero the type of the struct is returned - if the RR type is known.
 	Type(x ...dnswire.Type) (dnswire.Type, error)
 	// If TTL does not have a parameter it returns the RR's TTL. If a parameter is given it sets the RR's TTL.
 	TTL(x ...dnswire.TTL) (dnswire.TTL, error)
@@ -60,7 +61,7 @@ type Header interface {
 
 const (
 	MsgHeaderLen = 12 // MsgHeaderLen is the length of the header in the DNS message.
-	maxPointers  = 10 // maxPointers is the maximum number of pointers we will follow when decompressing a DNS name.
+	maxPtrs      = 10 // maxPointers is the maximum number of pointers we will follow when decompressing a DNS name.
 )
 
 // An RR represents a resource record. When defining a RR struct tags are used to generate the data accessor

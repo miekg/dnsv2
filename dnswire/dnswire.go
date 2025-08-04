@@ -49,10 +49,9 @@ func (n Name) String() string {
 			off += c
 
 		case 0xC0:
-			// panic?
 			// pointer, shouldn't happen here
-			off++
 			s.WriteString(".")
+			return s.String()
 		}
 	}
 	// haven't seen 00 ending...?
@@ -91,6 +90,7 @@ var classToString = map[uint16]string{
 // Marshal encodes s into a DNS encoded domain. It can deal with fully and non-fully qualified names.
 // Although in the later case it allocates a new string by adding the final dot for you.
 // This also takes care of all the esoteric encoding allowed like \DDD and \. to escape a dot.
+// TODO: ugly?
 func (n Name) Marshal(s string) Name {
 	if s == "." {
 		n = []byte{0}
@@ -143,14 +143,16 @@ func JumpName(octets []byte, off int) int {
 // Jump jumps from octets[off:] to the end of the RR that should start on off. If something is wrong 0 is returned.
 func Jump(octets []byte, off int) int {
 	off = JumpName(octets, off)
-	if off == 0 {
-		return 0
-	}
-
-	if off+10 > len(octets)-1 { // can get to rdlength
+	if off == 0 || off+10 > len(octets)-1 { // wrong or too little to reach rdlenght
 		return 0
 	}
 	off += 8
 	rdlength := binary.BigEndian.Uint16(octets[off:])
 	return off + int(rdlength) + 2 // 2 for starting after rdlength
+}
+
+// Extent expands octets at offset with expand bytes.
+func Extent(octets []byte, off, expand int) []byte {
+	octets = append(octets[:off], append(make([]byte, expand), octets[off:]...)...)
+	return octets
 }
