@@ -67,72 +67,72 @@ var (
 // Note, they start with _ (so unpexported), because type is not an allowed identifier.
 
 func _Type(rr RR, x ...dnswire.Type) (dnswire.Type, error) {
-	off := dnswire.JumpName(rr.Octets(), 0)
+	octets := rr.Octets()
+	off := dnswire.JumpName(octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+2 > len(rr.Octets()) {
+	if off+2 > len(octets) {
 		return TypeNone, &Error{err: "overflow reading RR type"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint16(rr.Octets()[off:])
-		if i == 0 {
-			return RRToType(rr), nil
+		i := binary.BigEndian.Uint16(octets[off:])
+		if i > 0 {
+			return dnswire.Type(i), nil
 		}
-		return dnswire.Type(i), nil
+		return RRToType(rr), nil
 	}
-	binary.BigEndian.PutUint16(rr.Octets()[off:], uint16(x[0]))
+	binary.BigEndian.PutUint16(octets[off:], uint16(x[0]))
 	return TypeNone, nil
 }
 
 func _Class(rr RR, x ...dnswire.Class) (dnswire.Class, error) {
-	off := dnswire.JumpName(rr.Octets(), 0)
+	octets := rr.Octets()
+	off := dnswire.JumpName(octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+4 > len(rr.Octets()) {
+	if off+4 > len(octets) {
 		return ClassNone, &Error{err: "overflow reading RR class"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint16(rr.Octets()[off+2:])
+		i := binary.BigEndian.Uint16(octets[off+2:])
 		return dnswire.Class(i), nil
 	}
-	binary.BigEndian.PutUint16(rr.Octets()[off+2:], uint16(x[0]))
+	binary.BigEndian.PutUint16(octets[off+2:], uint16(x[0]))
 	return ClassNone, nil
 }
 
 func _TTL(rr RR, x ...dnswire.TTL) (dnswire.TTL, error) {
-	off := dnswire.JumpName(rr.Octets(), 0)
+	octets := rr.Octets()
+	off := dnswire.JumpName(octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+8 > len(rr.Octets()) {
+	if off+8 > len(octets) {
 		return dnswire.TTL(0), &Error{err: "overflow reading RR ttl"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint32(rr.Octets()[off+4:])
+		i := binary.BigEndian.Uint32(octets[off+4:])
 		return dnswire.TTL(i), nil
 	}
-	binary.BigEndian.PutUint32(rr.Octets()[off+4:], uint32(x[0]))
+	binary.BigEndian.PutUint32(octets[off+4:], uint32(x[0]))
 	return dnswire.TTL(0), nil
 }
 
 func _DataLen(rr RR, x ...uint16) (uint16, error) {
-	off := dnswire.JumpName(rr.Octets(), 0)
+	octets := rr.Octets()
+	off := dnswire.JumpName(octets, 0)
 	if off == 0 {
 		return 0, ErrBufName
 	}
-	if off+10 > len(rr.Octets()) {
+	if off+10 > len(octets) {
 		return 0, &Error{err: "overflow reading RR rdlength"}
 	}
 	if len(x) == 0 {
-		i := binary.BigEndian.Uint16(rr.Octets()[off+8:])
-		if off+int(i) > len(rr.Octets()) {
-			return 0, &Error{err: "bad rdlength"}
-		}
-		return i, nil
+		return binary.BigEndian.Uint16(octets[off+8:]), nil
 	}
-	binary.BigEndian.PutUint16(rr.Octets()[off+8:], x[0])
+	binary.BigEndian.PutUint16(octets[off+8:], x[0])
 	return 0, nil
 }
 
@@ -144,11 +144,12 @@ func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 		rr.Octets(buf)
 		return nil, nil
 	}
-	off := dnswire.JumpName(rr.Octets(), 0)
+	octets := rr.Octets()
+	off := dnswire.JumpName(octets, 0)
 	if off == 0 {
 		return nil, ErrBufName
 	}
-	return dnswire.Name(rr.Octets()[0:off]), nil
+	return dnswire.Name(octets[0:off]), nil
 }
 
 func _Len(rr RR) int {

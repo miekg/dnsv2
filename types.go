@@ -65,8 +65,7 @@ type Header interface {
 	// header. Name also sets the RR's type based on the Go struct type.
 	Name(x ...dnswire.Name) (dnswire.Name, error)
 	// If DataLen does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
-	// An error is returned when the octets that contain this length are not there, or the length exceeds the
-	// number of octets in the RR.
+	// An error is returned when the octets that contain this length are not there.
 	DataLen(x ...uint16) (uint16, error)
 	// String returns the string representation of the RR's header.
 	String() string
