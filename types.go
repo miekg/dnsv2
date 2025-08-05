@@ -1,77 +1,27 @@
 package dns
 
-import (
-	"github.com/miekg/dnsv2/dnswire"
-)
-
-const (
-	TypeNone = dnswire.Type(0) // TypeNone signals a type not found condition.
-	// Valid DNS RR types. Not that *most* of the time the RR type will be derived from the Go struct type.
-	TypeA    = dnswire.Type(1)
-	TypeNS   = dnswire.Type(2)
-	TypePTR  = dnswire.Type(12)
-	TypeAAAA = dnswire.Type(28)
-	TypeMX   = dnswire.Type(15)
-	TypeSOA  = dnswire.Type(16)
-	TypeOPT  = dnswire.Type(41)
-)
-
-const (
-	ClassNone = dnswire.Class(0) // ClassNone signals a class not found condition.
-	// Valid classes in DNS, usually only ClassINET is used.
-	ClassINET   = dnswire.Class(1)
-	ClassCSNET  = dnswire.Class(2)
-	ClassCHAOS  = dnswire.Class(3)
-	ClassHESIOD = dnswire.Class(4)
-	ClassNONE   = dnswire.Class(254)
-	ClassANY    = dnswire.Class(255)
-)
-
-const (
-	// Valid EDNS "RR" option type codes.
-	CodeNSID    = dnswire.Type(0x3) // nsid (See RFC 5001)
-	CodePADDING = dnswire.Type(0xc) // padding (See RFC 7830)
-)
-
-const (
-	// Message opcodes. There is no 3.
-	OpcodeQuery  = dnswire.Opcode(0)
-	OpcodeIQuery = dnswire.Opcode(1)
-	OpcodeStatus = dnswire.Opcode(2)
-	OpcodeNotify = dnswire.Opcode(4)
-	OpcodeUpdate = dnswire.Opcode(5)
-)
-
-// Header is the header of an RR. All DNS resource records share this. The length of the header in an RR can
-// be calculated by taking the length of the RR's Octets() and subtracting Len(). The different length are
-// visialized like so:
-//
-//	 Name | Type | Class | TTL | rdlength | rdata
-//	|_____________________________________|__________...
-//	              Len()                     DataLen()
-//	|________________________________________________...
-//	                   len(rr.Octets())
-type Header interface {
-	// If Type does not have a parameter it returns the RR's type. If a parameter is given it sets the RR's type.
-	// Note that Type is usualy superfluous as the RR's type is implicitly enccoded in the Go type of the struct.
-	// If the found type is zero the type of the struct is returned - if the RR type is known.
-	Type(x ...dnswire.Type) (dnswire.Type, error)
-	// If TTL does not have a parameter it returns the RR's TTL. If a parameter is given it sets the RR's TTL.
-	TTL(x ...dnswire.TTL) (dnswire.TTL, error)
-	// If Class does not have a parameter it returns the RR's class. If a parameter is given it sets the RR's class.
-	Class(x ...dnswire.Class) (dnswire.Class, error)
-	// If Name does not have a parameter it returns the RR's owner name. If a parameter is given it sets the
-	// RR's owner name. This is the only method that allocates a buffer in the RR with enough space the entire
-	// header. Name also sets the RR's type based on the Go struct type.
-	Name(x ...dnswire.Name) (dnswire.Name, error)
-	// If DataLen does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
-	// An error is returned when the octets that contain this length are not there.
-	DataLen(x ...uint16) (uint16, error)
-	// String returns the string representation of the RR's header.
+// An RR represents a DNS resource record.
+type RR interface {
+	// Header returns the header of an resource record.
+	Header() Header
+	// String returns the text representation of the resource record.
 	String() string
-	// Len returns the length of the header, that is the length of the name, plus type, class, ttl (4 octets)
-	// and the rdlength (2). Note that only the existence of the name is checked.
-	Len() int
+	// Data returns all the rdata fields of the resource record.
+	Data() []Field
+}
+
+// Field is a rdata element in a resource record.
+type Field interface {
+	// empty interface for now, maybe String()?
+}
+
+// Header is the header in a DNS resource record.
+type Header struct {
+	Name  string `dns:"cdomain-name"`
+	Type  uint16 // Type is the type of the RR, normally this is left empty as the type is inferred from the Go type.
+	Class uint16 // Class is the class of the RR, this is mostly [ClassINET].
+	TTL   uint32 // TTL is the time-to-live of the RR.
+	// rdlength is calculated.
 }
 
 const (
@@ -79,98 +29,170 @@ const (
 	maxPtrs      = 10 // maxPointers is the maximum number of pointers we will follow when decompressing a DNS name.
 )
 
-// An RR represents a resource record. When defining a RR struct tags are used to generate the data accessor
-// functions. An example from the MX record being:
-//
-//	octets []byte `dns:"Preference:Uint16,Mx:Name"`
-//
-// This defines the rdata as being a []byte (as is custom) and the defines 2 rdata fields:
-//   - Preference, a dnswire.Uint16, and
-//   - Mx, a dnswire.Name
-//
-// This generates two methods on *[MX]:
-//   - Preference(x ...dnswire.Uint16) dnswire.Uint16, and
-//   - Mx(x ...dnswire.Name) dnswire.Name
-//
-// That allows for setting and getting the fields' values. Note that the return types should all exist in the
-// [dnswire] package, alternatively you can use native Go types.
-//
-// When building an RR the name of it should be set first as this allocates enough space for the rest of the
-// header. Other RR methods will error or silently fail if this is not properly allocated.
-type RR interface {
-	Header
-	// If Octets does not have a parameter it returns the wire encoding octets for this RR. If a parameter is
-	// given the octets are written to the RR.
-	Octets(x ...[]byte) []byte
-}
-
 // EDNS0 determines if the "RR" is posing as an EDNS0 option. EDNS0 options are considered just RRs and must
 // be added to the [Pseudo] section of a DNS message.
 type EDNS0 interface {
+	RR
 	Pseudo() bool
 }
 
-// Msg contains the layout of a DNS message. A DNS message has 4 sections, the [Question], [Answer], [Ns]
-// (authority) and [Extra] (additional) section.
-// In this library _another_ section is added the [Pseudo] section; this section contains EDNS0 "records" and a possible TSIG record.
+// MsgHeader is the header of a DNS message. This contains most header bits, except Rcode as that needs to be
+// set via a function because of the extended Rcode that lives in the pseudo section.
+type MsgHeader struct {
+	ID                 uint16
+	Response           bool
+	Opcode             int8
+	Authoritative      bool
+	Truncated          bool
+	RecursionDesired   bool
+	RecursionAvailable bool
+	Zero               bool
+	AuthenticatedData  bool
+	CheckingDisabled   bool
+	//	Rcode              int
+}
+
+// Msg is a DNS message.
 type Msg struct {
-	octets []byte
-	ps     uint16 // pseudo section counter, returns EDNS0 RRs in OPT + TSIG
+	Question RR   // Holds the RR of the question section.
+	Answer   []RR // Holds the RR(s) of the answer section.
+	Ns       []RR // Holds the RR(s) of the authority section.
+	Extra    []RR // Holds the RR(s) of the additional section.
+	Pseudo   []RR // Holds the RR(s) of the (virtual) peusdo section.
 }
 
-// section is a section in a DNS message.
-type section struct {
-	// Offsets into Msg where this section begins and ends, buf[start:end] are the octets this section occupies.
-	start int
-	end   int
-}
+// Wire constants and supported types.
+const (
+	// valid RR types.
+	TypeNone       uint16 = 0
+	TypeA          uint16 = 1
+	TypeNS         uint16 = 2
+	TypeMD         uint16 = 3
+	TypeMF         uint16 = 4
+	TypeCNAME      uint16 = 5
+	TypeSOA        uint16 = 6
+	TypeMB         uint16 = 7
+	TypeMG         uint16 = 8
+	TypeMR         uint16 = 9
+	TypeNULL       uint16 = 10
+	TypePTR        uint16 = 12
+	TypeHINFO      uint16 = 13
+	TypeMINFO      uint16 = 14
+	TypeMX         uint16 = 15
+	TypeTXT        uint16 = 16
+	TypeRP         uint16 = 17
+	TypeAFSDB      uint16 = 18
+	TypeX25        uint16 = 19
+	TypeISDN       uint16 = 20
+	TypeRT         uint16 = 21
+	TypeNSAPPTR    uint16 = 23
+	TypeSIG        uint16 = 24
+	TypeKEY        uint16 = 25
+	TypePX         uint16 = 26
+	TypeGPOS       uint16 = 27
+	TypeAAAA       uint16 = 28
+	TypeLOC        uint16 = 29
+	TypeNXT        uint16 = 30
+	TypeEID        uint16 = 31
+	TypeNIMLOC     uint16 = 32
+	TypeSRV        uint16 = 33
+	TypeATMA       uint16 = 34
+	TypeNAPTR      uint16 = 35
+	TypeKX         uint16 = 36
+	TypeCERT       uint16 = 37
+	TypeDNAME      uint16 = 39
+	TypeOPT        uint16 = 41 // EDNS
+	TypeAPL        uint16 = 42
+	TypeDS         uint16 = 43
+	TypeSSHFP      uint16 = 44
+	TypeIPSECKEY   uint16 = 45
+	TypeRRSIG      uint16 = 46
+	TypeNSEC       uint16 = 47
+	TypeDNSKEY     uint16 = 48
+	TypeDHCID      uint16 = 49
+	TypeNSEC3      uint16 = 50
+	TypeNSEC3PARAM uint16 = 51
+	TypeTLSA       uint16 = 52
+	TypeSMIMEA     uint16 = 53
+	TypeHIP        uint16 = 55
+	TypeNINFO      uint16 = 56
+	TypeRKEY       uint16 = 57
+	TypeTALINK     uint16 = 58
+	TypeCDS        uint16 = 59
+	TypeCDNSKEY    uint16 = 60
+	TypeOPENPGPKEY uint16 = 61
+	TypeCSYNC      uint16 = 62
+	TypeZONEMD     uint16 = 63
+	TypeSVCB       uint16 = 64
+	TypeHTTPS      uint16 = 65
+	TypeSPF        uint16 = 99
+	TypeUINFO      uint16 = 100
+	TypeUID        uint16 = 101
+	TypeGID        uint16 = 102
+	TypeUNSPEC     uint16 = 103
+	TypeNID        uint16 = 104
+	TypeL32        uint16 = 105
+	TypeL64        uint16 = 106
+	TypeLP         uint16 = 107
+	TypeEUI48      uint16 = 108
+	TypeEUI64      uint16 = 109
+	TypeNXNAME     uint16 = 128
+	TypeURI        uint16 = 256
+	TypeCAA        uint16 = 257
+	TypeAVC        uint16 = 258
+	TypeAMTRELAY   uint16 = 260
+	TypeRESINFO    uint16 = 261
 
-// Valid DNS sections. A section always belong to a Msg. Note the pseudo section is non-existent on the wire. It is purely for convenience for
-// accessing EDNS0 meta records, those masquerade as RRs.
-type (
-	// Question holds the question section. RRs can be added just like any other sections.
-	Question struct {
-		*Msg
-		section
-	}
-	// Answer holds the answer section.
-	Answer struct {
-		*Msg
-		section
-	}
-	// Ns holds the authority section.
-	Ns struct {
-		*Msg
-		section
-	}
-	// Extra holds the additional section. [OPT] (EDNS0) and [TISG] RRs are placed in the [Pseudo] section, not here.
-	Extra struct {
-		*Msg
-		section
-	}
-	// Pseudo is a non-on-the-wire section that holds [OPT] and [TSIG] rrs. [OPT] is treated in such a way
-	// that this section also seems to hold RRs of the [EDNS0] variety.
-	Pseudo struct {
-		*Msg
-		section
-	}
+	TypeTKEY uint16 = 249
+	TypeTSIG uint16 = 250
+
+	// Valid Question types only.
+	TypeIXFR  uint16 = 251
+	TypeAXFR  uint16 = 252
+	TypeMAILB uint16 = 253
+	TypeMAILA uint16 = 254
+	TypeANY   uint16 = 255
+
+	TypeTA       uint16 = 32768
+	TypeDLV      uint16 = 32769
+	TypeReserved uint16 = 65535
+
+	// Valid DNS classes.
+	ClassINET   = 1
+	ClassCSNET  = 2
+	ClassCHAOS  = 3
+	ClassHESIOD = 4
+	ClassNONE   = 254
+	ClassANY    = 255
+
+	// Message Response Codes, see https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml
+	RcodeSuccess                    = 0  // NoError   - No Error                          [DNS]
+	RcodeFormatError                = 1  // FormErr   - Format Error                      [DNS]
+	RcodeServerFailure              = 2  // ServFail  - Server Failure                    [DNS]
+	RcodeNameError                  = 3  // NXDomain  - Non-Existent Domain               [DNS]
+	RcodeNotImplemented             = 4  // NotImp    - Not Implemented                   [DNS]
+	RcodeRefused                    = 5  // Refused   - Query Refused                     [DNS]
+	RcodeYXDomain                   = 6  // YXDomain  - Name Exists when it should not    [DNS Update]
+	RcodeYXRrset                    = 7  // YXRRSet   - RR Set Exists when it should not  [DNS Update]
+	RcodeNXRrset                    = 8  // NXRRSet   - RR Set that should exist does not [DNS Update]
+	RcodeNotAuth                    = 9  // NotAuth   - Server Not Authoritative for zone [DNS Update]
+	RcodeNotZone                    = 10 // NotZone   - Name not contained in zone        [DNS Update/TSIG]
+	RcodeStatefulTypeNotImplemented = 11 // DSOTypeNI - DSO-TYPE not implemented          [DNS Stateful Operations] https://www.rfc-editor.org/rfc/rfc8490.html#section-10.2
+	RcodeBadSig                     = 16 // BADSIG    - TSIG Signature Failure            [TSIG]  https://www.rfc-editor.org/rfc/rfc6895.html#section-2.3
+	RcodeBadVers                    = 16 // BADVERS   - Bad OPT Version                   [EDNS0] https://www.rfc-editor.org/rfc/rfc6895.html#section-2.3
+	RcodeBadKey                     = 17 // BADKEY    - Key not recognized                [TSIG]
+	RcodeBadTime                    = 18 // BADTIME   - Signature out of time window      [TSIG]
+	RcodeBadMode                    = 19 // BADMODE   - Bad TKEY Mode                     [TKEY]
+	RcodeBadName                    = 20 // BADNAME   - Duplicate key name                [TKEY]
+	RcodeBadAlg                     = 21 // BADALG    - Algorithm not supported           [TKEY]
+	RcodeBadTrunc                   = 22 // BADTRUNC  - Bad Truncation                    [TSIG]
+	RcodeBadCookie                  = 23 // BADCOOKIE - Bad/missing Server Cookie         [DNS Cookies]
+
+	// Message Opcodes. There is no 3.
+	OpcodeQuery    = 0
+	OpcodeIQuery   = 1
+	OpcodeStatus   = 2
+	OpcodeNotify   = 4
+	OpcodeUpdate   = 5
+	OpcodeStateful = 6
 )
-
-// ClassToString is a maps Classes to strings for each class wire type.
-var ClassToString = map[dnswire.Class]string{
-	ClassINET:   "IN",
-	ClassCSNET:  "CS",
-	ClassCHAOS:  "CH",
-	ClassHESIOD: "HS",
-	ClassNONE:   "NONE",
-	ClassANY:    "ANY",
-}
-
-// OpcodeToString maps Opcodes to strings.
-var OpcodeToString = map[dnswire.Opcode]string{
-	OpcodeQuery:  "QUERY",
-	OpcodeIQuery: "IQUERY",
-	OpcodeStatus: "STATUS",
-	OpcodeNotify: "NOTIFY",
-	OpcodeUpdate: "UPDATE",
-}
