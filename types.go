@@ -62,7 +62,7 @@ type Header interface {
 	Class(x ...dnswire.Class) (dnswire.Class, error)
 	// If Name does not have a parameter it returns the RR's owner name. If a parameter is given it sets the
 	// RR's owner name. This is the only method that allocates a buffer in the RR with enough space the entire
-	// header. Subsequent methods only extend this.
+	// header. Name also sets the RR's type based on the Go struct type.
 	Name(x ...dnswire.Name) (dnswire.Name, error)
 	// If DataLen does not have a parameter it returns the RR's rdata length. If a parameter is given is sets the length.
 	// An error is returned when the octets that contain this length are not there, or the length exceeds the
@@ -119,9 +119,8 @@ type Msg struct {
 	ps     uint16 // pseudo section counter, returns EDNS0 RRs in OPT + TSIG
 }
 
-// Section is a section in a DNS message.
-type Section struct {
-	*Msg // Msg is a pointer back the message this section belong in.
+// section is a section in a DNS message.
+type section struct {
 	// Offsets into Msg where this section begins and ends, buf[start:end] are the octets this section occupies.
 	start int
 	end   int
@@ -131,16 +130,31 @@ type Section struct {
 // accessing EDNS0 meta records, those masquerade as RRs.
 type (
 	// Question holds the question section. RRs can be added just like any other sections.
-	Question struct{ Section }
+	Question struct {
+		*Msg
+		section
+	}
 	// Answer holds the answer section.
-	Answer struct{ Section }
+	Answer struct {
+		*Msg
+		section
+	}
 	// Ns holds the authority section.
-	Ns struct{ Section }
+	Ns struct {
+		*Msg
+		section
+	}
 	// Extra holds the additional section. [OPT] (EDNS0) and [TISG] RRs are placed in the [Pseudo] section, not here.
-	Extra struct{ Section }
+	Extra struct {
+		*Msg
+		section
+	}
 	// Pseudo is a non-on-the-wire section that holds [OPT] and [TSIG] rrs. [OPT] is treated in such a way
 	// that this section also seems to hold RRs of the [EDNS0] variety.
-	Pseudo struct{ Section }
+	Pseudo struct {
+		*Msg
+		section
+	}
 )
 
 // ClassToString is a maps Classes to strings for each class wire type.

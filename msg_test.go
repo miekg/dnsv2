@@ -16,14 +16,12 @@ func TestMakeMsgQuestionMX(t *testing.T) {
 	mx := new(MX)
 	mx.Name(dnswire.Name{}.Marshal("miek.nl"))
 	mx.Class(ClassINET)
-	t.Logf("%d %v\n", 10, mx.String())
+	t.Logf("%d %v %s\n", len(mx.Octets()), mx.Octets(), mx.String())
 
 	msg := new(Msg)
-	q := new(Question)
-	q.Msg = msg
+	msg.ID(ID())
+	q := &Question{Msg: msg}
 	q.Append(mx)
-	t.Logf("%d %v\n", len(q.octets), q.octets)
-	msg.Question(q)
 
 	t.Logf("%d %v\n", len(msg.Octets()), msg.Octets())
 }

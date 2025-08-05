@@ -22,11 +22,15 @@ func id() uint16 {
 	return id
 }
 
+func allocHeader(m *Msg) {
+	if len(m.octets) < MsgHeaderLen {
+		m.octets = make([]byte, MsgHeaderLen)
+	}
+}
+
 // ID sets (with parameter) or reads the ID from the DNS message.
 func (m *Msg) ID(x ...uint16) (uint16, error) {
-	if len(m.octets) < 12 {
-		return 0, ErrBuf
-	}
+	allocHeader(m)
 	if len(x) == 0 {
 		return binary.BigEndian.Uint16(m.octets[0:]), nil
 	}
@@ -47,9 +51,8 @@ func (m *Msg) Octets(x ...[]byte) []byte {
 // QR sets or returns the QR header bit from the message, this returns true if the Msg is a response.
 func (m *Msg) QR(x ...bool) (bool, error) {
 	const _QR = 1 << 7 // query/response (response=1)
-	if len(m.octets) < 12 {
-		return false, ErrBuf
-	}
+	allocHeader(m)
+
 	if len(x) == 0 {
 		qr := m.octets[0] & _QR
 		return qr == 1, nil
@@ -67,7 +70,7 @@ func (m *Msg) QR(x ...bool) (bool, error) {
 
 // Opcode sets or returns the opcode from the DNS message.
 func (m *Msg) Opcode(x ...dnswire.Opcode) (dnswire.Opcode, error) {
-	// todo
+	allocHeader(m)
 	return OpcodeQuery, nil
 }
 
@@ -84,41 +87,24 @@ func (m *Msg) DO(x ...bool) (bool, error) {
 	return false, nil
 }
 
-// Question returns the question section of a DNS message. The qdcount must be set to the expected number of RRs (usually 1 for this section).
-// If a parameter is given, the section will be set in the message as the question section, the qdcount will be updated appropriately.
-func (m *Msg) Question(x ...*Question) *Question {
-	if len(x) == 0 {
-		if len(m.octets) < MsgHeaderLen {
-			return nil
-		}
-		// check question count?
-		end := jumpquestion(m.octets)
-		return &Question{Section{Msg: m, start: MsgHeaderLen, end: end}}
+// Question returns the question section of a DNS message.
+func (m *Msg) Question() *Question {
+	if len(m.octets) < MsgHeaderLen {
+		return nil
 	}
-	// TODO: what if we already have something here? Cut it out and replace...?
-	if m.octets == nil {
-		m.octets = make([]byte, 12)
-		m.octets = append(m.octets, x[0].octets...)
-		l := x[0].Len()
-		m.Qdcount(uint16(l))
-	}
-	return nil
+	// check question count?
+	end := jumpquestion(m.octets)
+	return &Question{m, section{start: MsgHeaderLen, end: end}}
 }
 
-// Answer reads or sets the answer section. The section references the octets in the message, as long as the
-// message stays the same the section is valid.
-func (m *Msg) Answer(x ...*Answer) *Answer {
-	if len(x) == 0 {
-		if len(m.octets) < MsgHeaderLen {
-			return nil
-		}
-		start := jumpquestion(m.octets)
-		end := jumprrs(m.octets, start, int(m.Ancount()))
-		return &Answer{Section{Msg: m, start: start, end: end}}
+// Answer reads the answer section.
+func (m *Msg) Answer() *Answer {
+	if len(m.octets) < MsgHeaderLen {
+		return nil
 	}
-	// TODO: setting
-
-	return &Answer{}
+	start := jumpquestion(m.octets)
+	end := jumprrs(m.octets, start, int(m.Ancount()))
+	return &Answer{m, section{start: start, end: end}}
 }
 
 func (q *Question) Octets() []byte { return q.Msg.octets[q.start:q.end] }
@@ -138,7 +124,7 @@ func (m *Msg) Pseudo(x ...*Pseudo) *Pseudo { return &Pseudo{} }
 
 // Qdcount returns the number of RRs in the question section. This should normally be just 1.
 func (m *Msg) Qdcount(x ...uint16) uint16 {
-	if len(m.octets) < 6 {
+	if len(m.octets) < MsgHeaderLen {
 		return 0
 	}
 	if len(x) == 0 {
@@ -150,7 +136,7 @@ func (m *Msg) Qdcount(x ...uint16) uint16 {
 
 // Ancount returns the number of RRs in the answer section.
 func (m *Msg) Ancount(x ...uint16) uint16 {
-	if len(m.octets) < 8 {
+	if len(m.octets) < MsgHeaderLen {
 		return 0
 	}
 	if len(x) == 0 {
@@ -162,7 +148,7 @@ func (m *Msg) Ancount(x ...uint16) uint16 {
 
 // Nscount returns the number of RRs in the authority section.
 func (m *Msg) Nscount(x ...uint16) uint16 {
-	if len(m.octets) < 10 {
+	if len(m.octets) < MsgHeaderLen {
 		return 0
 	}
 	if len(x) == 0 {
@@ -175,7 +161,7 @@ func (m *Msg) Nscount(x ...uint16) uint16 {
 // Arcount returns the number of RRs in the additional section. Note that the Pscount is subtracted from this
 // when a value is returned.
 func (m *Msg) Arcount(x ...uint16) uint16 {
-	if len(m.octets) < 12 {
+	if len(m.octets) < MsgHeaderLen {
 		return 0
 	}
 	if len(x) == 0 {
@@ -209,12 +195,8 @@ func jumprrs(octets []byte, off, rrs int) int {
 // jumpquestion jumps "rr" in the question section.
 func jumpquestion(octets []byte) int {
 	j := dnswire.JumpName(octets, MsgHeaderLen)
-	if j == 0 {
+	if j == 0 || j+4 > len(octets) {
 		return 0
 	}
-	j += 4
-	if j > len(octets) {
-		return 0
-	}
-	return j
+	return j + 4
 }

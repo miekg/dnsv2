@@ -138,8 +138,9 @@ func _DataLen(rr RR, x ...uint16) (uint16, error) {
 
 func _Name(rr RR, x ...dnswire.Name) (dnswire.Name, error) {
 	if len(x) != 0 {
-		buf := rr.Octets() // assume empty for now when setting
-		buf = append(x[0], make([]byte, 10)...)
+		buf := append(x[0], make([]byte, 10)...)
+		rrtype := RRToType(rr)
+		binary.BigEndian.PutUint16(buf[len(x[0]):], uint16(rrtype))
 		rr.Octets(buf)
 		return nil, nil
 	}

@@ -8,19 +8,19 @@ import (
 )
 
 // rrs() count the RR in sections that holds them: answer, ns, and extra, pseudo and question are different.
-func (s Section) rrs() iter.Seq[RR] {
-	if s.Msg == nil || len(s.Msg.octets) == 0 {
+func (s section) rrs(m *Msg) iter.Seq[RR] {
+	if m == nil || len(m.octets) == 0 {
 		return func(yield func(RR) bool) { return }
 	}
 	off := s.start
 	return func(yield func(RR) bool) {
 		for {
-			end := dnswire.Jump(s.Msg.octets, off)
+			end := dnswire.Jump(m.octets, off)
 			if end == 0 || end > s.end {
 				break
 			}
-			typeoffset := dnswire.JumpName(s.Msg.octets, off)
-			rrtype := dnswire.Type(binary.BigEndian.Uint16(s.Msg.octets[typeoffset:]))
+			typeoffset := dnswire.JumpName(m.octets, off)
+			rrtype := dnswire.Type(binary.BigEndian.Uint16(m.octets[typeoffset:]))
 
 			var rr RR
 			if newRR, ok := TypeToRR[rrtype]; ok {
@@ -29,7 +29,7 @@ func (s Section) rrs() iter.Seq[RR] {
 				rr = new(RFC3597)
 			}
 			buf := make([]byte, end-off)
-			copy(buf, s.Msg.octets[off:end])
+			copy(buf, m.octets[off:end])
 			rr.Octets(buf)
 			off = end
 			if !yield(rr) {
@@ -40,14 +40,14 @@ func (s Section) rrs() iter.Seq[RR] {
 }
 
 // len returns the number of RRs that are stored in this section. Again pseudo and question are different.
-func (s Section) len() int {
-	if s.Msg == nil || len(s.Msg.octets) == 0 {
+func (s section) len(m *Msg) int {
+	if m == nil || len(m.octets) == 0 {
 		return 0
 	}
 	l := 0
 	off := s.start
 	for {
-		end := dnswire.Jump(s.Msg.octets, off)
+		end := dnswire.Jump(m.octets, off)
 		if end == 0 || end > s.end {
 			break
 		}
@@ -62,22 +62,22 @@ func (s Section) len() int {
 
 // RRs returns an iterator the allows ranging over the RRs in s. Returned RRs are still tied to the DNS
 // message they come from. This is to resolve compression pointers if they are present when calling rr.Name.
-func (a *Answer) RRs() iter.Seq[RR] { return a.Section.rrs() }
+func (a *Answer) RRs() iter.Seq[RR] { return a.section.rrs(a.Msg) }
 
 // See [Answer.RRs].
-func (n *Ns) RRs() iter.Seq[RR] { return n.Section.rrs() }
+func (n *Ns) RRs() iter.Seq[RR] { return n.section.rrs(n.Msg) }
 
 // See [Answer.RRs].
-func (e *Extra) RRs() iter.Seq[RR] { return e.Section.rrs() }
+func (e *Extra) RRs() iter.Seq[RR] { return e.section.rrs(e.Msg) }
 
 // Len returns the number of RRs that are availble in this section.
-func (a *Answer) Len() int { return a.Section.len() }
+func (a *Answer) Len() int { return a.section.len(a.Msg) }
 
 // See [Answer.Len].
-func (n *Ns) Len() int { return n.Section.len() }
+func (n *Ns) Len() int { return n.section.len(n.Msg) }
 
 // See [Answer.Len].
-func (e *Extra) Len() int { return e.Section.len() }
+func (e *Extra) Len() int { return e.section.len(e.Msg) }
 
 // RRs() returns an iterator that holds the one "RR" from the question section.
 func (q *Question) RRs() iter.Seq[RR] {
@@ -121,15 +121,17 @@ func (q *Question) Len() int {
 	return 1
 }
 
-// Append adds the RR to the section. If multiple RRs are given only the first one will be added.
+// Append copies the RR to the question section. As the question section can only contain a single RR only the
+// first RR is used. This copies the RR's octets into the message.
 func (q *Question) Append(rr ...RR) {
-	for _, r := range rr {
-		octets := r.Octets()
-		// set the type based on the RR type, and for the question we don't need to the TTL, so cut that off, as also the rdlength.
-		end := dnswire.JumpName(octets, 0)
-		i := RRToType(r)
-		binary.BigEndian.PutUint16(octets[end:], uint16(i))
-		end += 4
-		q.octets = append(q.octets, octets[0:end]...)
+	if len(rr) == 0 {
+		return
 	}
+	octets := rr[0].Octets()
+	// just append for now, later check for other stuff.
+	end := dnswire.JumpName(octets, 0)
+	end += 4
+	q.octets = append(q.octets, make([]byte, end)...)
+	copy(q.octets[MsgHeaderLen:], octets[0:end])
+	q.Msg.Qdcount(1)
 }
