@@ -1,3 +1,3 @@
 package dns
 
-//go:generate go run rr_generate.go
+//go:generate go run zrr_generate.go

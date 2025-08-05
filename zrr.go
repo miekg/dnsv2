@@ -36,6 +36,21 @@ func (rr *A) Octets(x ...[]byte) []byte {
 	return nil
 }
 
+func (rr *PTR) Name(x ...dnswire.Name) (dnswire.Name, error)    { return _Name(rr, x...) }
+func (rr *PTR) Type(x ...dnswire.Type) (dnswire.Type, error)    { return _Type(rr, x...) }
+func (rr *PTR) DataLen(x ...uint16) (uint16, error)             { return _DataLen(rr, x...) }
+func (rr *PTR) Class(x ...dnswire.Class) (dnswire.Class, error) { return _Class(rr, x...) }
+func (rr *PTR) TTL(x ...dnswire.TTL) (dnswire.TTL, error)       { return _TTL(rr, x...) }
+func (rr *PTR) String() string                                  { return _String(rr) }
+func (rr *PTR) Len() int                                        { return _Len(rr) }
+func (rr *PTR) Octets(x ...[]byte) []byte {
+	if len(x) == 0 {
+		return rr.octets
+	}
+	rr.octets = x[0]
+	return nil
+}
+
 func (rr *AAAA) Name(x ...dnswire.Name) (dnswire.Name, error)    { return _Name(rr, x...) }
 func (rr *AAAA) Type(x ...dnswire.Type) (dnswire.Type, error)    { return _Type(rr, x...) }
 func (rr *AAAA) DataLen(x ...uint16) (uint16, error)             { return _DataLen(rr, x...) }
@@ -57,7 +72,6 @@ func (rr *MX) DataLen(x ...uint16) (uint16, error)             { return _DataLen
 func (rr *MX) Class(x ...dnswire.Class) (dnswire.Class, error) { return _Class(rr, x...) }
 func (rr *MX) TTL(x ...dnswire.TTL) (dnswire.TTL, error)       { return _TTL(rr, x...) }
 func (rr *MX) Len() int                                        { return _Len(rr) }
-
 func (rr *MX) Octets(x ...[]byte) []byte {
 	if len(x) == 0 {
 		return rr.octets

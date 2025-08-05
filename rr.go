@@ -19,6 +19,12 @@ type A struct {
 	octets []byte `dns:"A:IPv4"`
 }
 
+// PTR RR. See RFC 1035.
+type PTR struct {
+	Header
+	octets []byte `dns:"Ptr:Name"`
+}
+
 // AAAA RR. See RFC 3596.
 type AAAA struct {
 	Header

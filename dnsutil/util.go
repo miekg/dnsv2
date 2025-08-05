@@ -5,7 +5,7 @@ package dnsutil
 import (
 	"bytes"
 
-	"github.com/miekg/dns"
+	dns "github.com/miekg/dnsv2"
 	"github.com/miekg/dnsv2/dnswire"
 )
 
