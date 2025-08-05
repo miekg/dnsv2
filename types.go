@@ -8,25 +8,28 @@ type RR interface {
 	String() string
 	// Data returns all the rdata fields of the resource record.
 	Data() []Field
+	// Len is the length if the RR when encoded in wire format, this is not a perfect metric and returning
+	// a slightly too large value is OK.
+	Len() int
 }
 
 // Field is a rdata element in a resource record.
 type Field interface {
-	// empty interface for now, maybe String()?
+	// String returns the text representation of the field.
+	String() string
 }
 
 // Header is the header in a DNS resource record.
 type Header struct {
 	Name  string `dns:"cdomain-name"`
 	Type  uint16 // Type is the type of the RR, normally this is left empty as the type is inferred from the Go type.
-	Class uint16 // Class is the class of the RR, this is mostly [ClassINET].
+	Class uint16 // Class is the class of the RR, this is almost always [ClassINET].
 	TTL   uint32 // TTL is the time-to-live of the RR.
 	// rdlength is calculated.
 }
 
 const (
 	MsgHeaderLen = 12 // MsgHeaderLen is the length of the header in the DNS message.
-	maxPtrs      = 10 // maxPointers is the maximum number of pointers we will follow when decompressing a DNS name.
 )
 
 // EDNS0 determines if the "RR" is posing as an EDNS0 option. EDNS0 options are considered just RRs and must
@@ -49,13 +52,14 @@ type MsgHeader struct {
 	Zero               bool
 	AuthenticatedData  bool
 	CheckingDisabled   bool
-	//	Rcode              int
+
+	rcode uint16 // 12 bits are defined, some live in the OPT RR.
 }
 
 // Msg is a DNS message.
 type Msg struct {
 	MsgHeader
-	Question RR   // Holds the RR of the question section.
+	Question []RR // Holds the RR of the question section.
 	Answer   []RR // Holds the RR(s) of the answer section.
 	Ns       []RR // Holds the RR(s) of the authority section.
 	Extra    []RR // Holds the RR(s) of the additional section.
