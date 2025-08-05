@@ -45,7 +45,7 @@ func (rr *{{.}}) Octets(x ...[]byte) []byte {
 }
 {{end}}`))
 
-const out = "_zrr.go" // does not work for checking the struct tags.
+const out = "_zrr.go" // does not work for checking the struct tags yet.
 
 func main() {
 	fset := token.NewFileSet()

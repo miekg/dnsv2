@@ -5,6 +5,7 @@ package dnsutil
 import (
 	"bytes"
 
+	"github.com/miekg/dns"
 	"github.com/miekg/dnsv2/dnswire"
 )
 
@@ -25,7 +26,7 @@ func FromReverse(reverse dnswire.Name) string {
 // or
 
 // Reverse returns the standard reverse record name of a PTR record into an IP address.
-func Reverse(ptr dnsv2.PTR) string {
+func Reverse(ptr dns.PTR) string {
 	return ""
 	// or dnswire.Name?
 }

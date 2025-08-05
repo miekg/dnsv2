@@ -5,6 +5,18 @@ import (
 )
 
 const (
+	TypeNone = dnswire.Type(0) // TypeNone signals a type not found condition.
+	// Valid DNS RR types. Not that *most* of the time the RR type will be derived from the Go struct type.
+	TypeA    = dnswire.Type(1)
+	TypeNS   = dnswire.Type(2)
+	TypePTR  = dnswire.Type(12)
+	TypeAAAA = dnswire.Type(28)
+	TypeMX   = dnswire.Type(15)
+	TypeSOA  = dnswire.Type(16)
+	TypeOPT  = dnswire.Type(41)
+)
+
+const (
 	ClassNone = dnswire.Class(0) // ClassNone signals a class not found condition.
 	// Valid classes in DNS, usually only ClassINET is used.
 	ClassINET   = dnswire.Class(1)
@@ -13,17 +25,6 @@ const (
 	ClassHESIOD = dnswire.Class(4)
 	ClassNONE   = dnswire.Class(254)
 	ClassANY    = dnswire.Class(255)
-)
-
-const (
-	TypeNone = dnswire.Type(0) // TypeNone signals a type not found condition.
-	// Valid DNS RR types. Not that *most* of the time the RR type will be derived from the Go struct type.
-	TypeA    = dnswire.Type(1)
-	TypeNS   = dnswire.Type(2)
-	TypeAAAA = dnswire.Type(28)
-	TypeMX   = dnswire.Type(15)
-	TypeSOA  = dnswire.Type(16)
-	TypeOPT  = dnswire.Type(41)
 )
 
 const (
