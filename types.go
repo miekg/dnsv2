@@ -112,7 +112,7 @@ type EDNS0 interface {
 
 // Msg contains the layout of a DNS message. A DNS message has 4 sections, the [Question], [Answer], [Ns]
 // (authority) and [Extra] (additional) section.
-// In this library _another_ section is added the [Pseudo ]section; this section contains EDNS0 "records" and a possible TSIG record.
+// In this library _another_ section is added the [Pseudo] section; this section contains EDNS0 "records" and a possible TSIG record.
 type Msg struct {
 	octets []byte
 	ps     uint16 // pseudo section counter, returns EDNS0 RRs in OPT + TSIG
@@ -125,7 +125,7 @@ type section struct {
 	end   int
 }
 
-// Valid DNS sections. A section always belong to a Msg. Note the Pseudo section is non-existent on the wire. It is purely for convenience for
+// Valid DNS sections. A section always belong to a Msg. Note the pseudo section is non-existent on the wire. It is purely for convenience for
 // accessing EDNS0 meta records, those masquerade as RRs.
 type (
 	// Question holds the question section. RRs can be added just like any other sections.

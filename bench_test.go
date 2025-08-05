@@ -7,9 +7,10 @@ import (
 )
 
 func BenchmarkMakeMsgQuestionMX(b *testing.B) {
+	miek := dnswire.Name{}.Marshal("miek.nl.")
 	for b.Loop() {
 		mx := new(MX)
-		mx.Name(dnswire.Name{}.Marshal("miek.nl."))
+		mx.Name(miek)
 		mx.Class(ClassINET)
 
 		msg := new(Msg)
