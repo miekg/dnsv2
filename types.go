@@ -54,11 +54,16 @@ type MsgHeader struct {
 
 // Msg is a DNS message.
 type Msg struct {
+	MsgHeader
 	Question RR   // Holds the RR of the question section.
 	Answer   []RR // Holds the RR(s) of the answer section.
 	Ns       []RR // Holds the RR(s) of the authority section.
 	Extra    []RR // Holds the RR(s) of the additional section.
 	Pseudo   []RR // Holds the RR(s) of the (virtual) peusdo section.
+
+	// Data is the data of the message that was either received from the wire or is about to be send
+	// over the wire. Note that this data is a snapshot of the Msg as it was packed or unpacked.
+	Data []byte
 }
 
 // Wire constants and supported types.
