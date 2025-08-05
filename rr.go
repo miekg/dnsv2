@@ -172,3 +172,25 @@ func _String(rr RR) string {
 
 	return s.String()
 }
+
+// format formats the args as 's1 + \t + s2 + " " + s3 + " " ...
+func format(x ...string) string {
+	s := strings.Builder{}
+	s.WriteString(x[0])
+	s.WriteByte('\t')
+	for i := range len(x) - 1 {
+		if i > 0 {
+			s.WriteByte(' ')
+		}
+		s.WriteString(x[i+1])
+	}
+	return s.String()
+}
+
+func octets(rr []byte, x ...[]byte) []byte {
+	if len(x) == 0 {
+		return rr
+	}
+	rr = x[0]
+	return nil
+}
