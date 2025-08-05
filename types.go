@@ -26,6 +26,11 @@ type Header struct {
 	// rdlength is calculated.
 }
 
+func (h Header) String(rr RR) string {
+	rrtype := RRToType(rr)
+	rrstr := TypeToString[rrtype]
+}
+
 const (
 	MsgHeaderLen = 12 // MsgHeaderLen is the length of the header in the DNS message.
 )
@@ -203,3 +208,12 @@ const (
 	OpcodeUpdate   = 5
 	OpcodeStateful = 6
 )
+
+// RRToType is the reverse of TypeToRR, implemented as a function.
+func RRToType(rr RR) uint16 {
+	switch rr.(type) {
+	case *MX:
+		return TypeMX
+	}
+	return TypeNone
+}

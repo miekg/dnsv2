@@ -33,6 +33,8 @@ type MX struct {
 	Mx         string `dns:"cdomain-name"`
 }
 
+var _ RR = &MX{}
+
 /*
 // NS RR. See RFC 1035.
 type NS struct {
