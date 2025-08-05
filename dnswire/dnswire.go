@@ -2,7 +2,6 @@
 package dnswire
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"strconv"
@@ -96,32 +95,32 @@ var classToString = map[uint16]string{
 }
 
 // Marshal encodes s into a DNS encoded domain. It can deal with fully and non-fully qualified names.
-// Although in the later case it allocates a new string by adding the final dot for you.
-// This also takes care of all the esoteric encoding allowed like \DDD and \. to escape a dot.
-// TODO: ugly API? dnswire.Name.Marshal("....") to get something.
+// Although in the later case it allocates a new string by adding the final dot. \. is allowed to escape a
+// dot.
 func (n Name) Marshal(s string) Name {
+	// TODO: ugly API? dnswire.Name.Marshal("....") to get something.
 	if s == "." {
 		n = []byte{0}
 		return n
 	}
 
+	// check if name starts with a . (so the i-1 check below will never crash)
 	if s[len(s)-1] != '.' {
 		s += "."
 	}
 
-	name := bytes.NewBuffer(make([]byte, 0, 32))
+	name := make([]byte, 0, 32) // 32 enough for most names, will be slower
 	start := 0
 	for i := range len(s) {
-		if s[i] == '.' {
+		if s[i] == '.' && s[i-1] != '\\' {
 			l := i - start
-			name.WriteByte(byte(l & 0x3F))
-			name.WriteString(s[start:i])
-
+			name = append(name, byte(l&0x3F))
+			name = append(name, s[start:i]...)
 			start = i + 1
 		}
 	}
-	name.WriteByte(0)
-	n = name.Bytes()
+	name = append(name, byte(0))
+	n = name
 	return n
 }
 
