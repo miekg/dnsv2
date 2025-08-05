@@ -29,6 +29,7 @@ type Header struct {
 func (h Header) String(rr RR) string {
 	rrtype := RRToType(rr)
 	rrstr := TypeToString[rrtype]
+	return ""
 }
 
 const (
