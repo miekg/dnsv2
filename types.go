@@ -2,8 +2,6 @@ package dns
 
 // An RR represents a DNS resource record.
 type RR interface {
-	// Header returns the header of an resource record.
-	Header() Header
 	// String returns the text representation of the resource record.
 	String() string
 	// Data returns all the rdata fields of the resource record.
@@ -21,9 +19,9 @@ type Field interface {
 
 // Header is the header in a DNS resource record.
 type Header struct {
-	Name  string `dns:"cdomain-name"`
-	Type  uint16 // Type is the type of the RR, normally this is left empty as the type is inferred from the Go type.
-	Class uint16 // Class is the class of the RR, this is almost always [ClassINET].
+	Name string `dns:"cdomain-name"`
+	// type  uint16 // Inferred from the Go type.
+	Class uint16 // Class is the class of the RR, this is almost always [ClassINET], if left zero, ClassINET is assumed when sending a message.
 	TTL   uint32 // TTL is the time-to-live of the RR.
 	// rdlength is calculated.
 }

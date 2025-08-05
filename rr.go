@@ -1,11 +1,10 @@
 package dns
 
-import "net"
-
+/*
 // RFC3597 represents an unknown/generic RR. See RFC 3597.
 type RFC3597 struct {
 	Header
-	octets []byte `dns:"Data:Hex"`
+	Data []byte `dns:"hex"`
 }
 
 // A RR. See RFC 1035.
@@ -25,6 +24,7 @@ type AAAA struct {
 	Header
 	AAAA net.IP `dns:"aaaa"`
 }
+*/
 
 // MX RR, See RFC 1035.
 type MX struct {
@@ -33,6 +33,7 @@ type MX struct {
 	Mx         string `dns:"cdomain-name"`
 }
 
+/*
 // NS RR. See RFC 1035.
 type NS struct {
 	Header
@@ -56,3 +57,4 @@ type OPT struct {
 	Header
 	Option []EDNS0
 }
+*/

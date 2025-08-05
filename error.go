@@ -1,7 +1,5 @@
 package dns
 
-import "fmt"
-
 // Error represents a DNS error.
 type Error struct {
 	Msg string
@@ -19,16 +17,16 @@ var (
 	ErrKeyAlg        error = &Error{Msg: "bad key algorithm"}              // ErrKeyAlg indicates that the algorithm in the key is not valid.
 	ErrKey           error = &Error{Msg: "bad key"}
 	ErrKeySize       error = &Error{Msg: "bad key size"}
-	ErrLongDomain    error = &Error{Msg: fmt.Sprintf("domain name exceeded %d wire format octets", maxDomainNameWireOctets)}
-	ErrNoSig         error = &Error{Msg: "no signature found"}
-	ErrPrivKey       error = &Error{Msg: "bad private key"}
-	ErrRdata         error = &Error{Msg: "bad rdata"}
-	ErrRRset         error = &Error{Msg: "bad rrset"}
-	ErrSecret        error = &Error{Msg: "no secrets defined"}
-	ErrShortRead     error = &Error{Msg: "short read"}
-	ErrSig           error = &Error{Msg: "bad signature"} // ErrSig indicates that a signature can not be cryptographically validated.
-	ErrSoa           error = &Error{Msg: "no SOA"}        // ErrSOA indicates that no SOA RR was seen when doing zone transfers.
-	ErrTime          error = &Error{Msg: "bad time"}      // ErrTime indicates a timing error in TSIG authentication.
+	//	ErrLongDomain    error = &Error{Msg: fmt.Sprintf("domain name exceeded %d wire format octets", maxDomainNameWireOctets)}
+	ErrNoSig     error = &Error{Msg: "no signature found"}
+	ErrPrivKey   error = &Error{Msg: "bad private key"}
+	ErrRdata     error = &Error{Msg: "bad rdata"}
+	ErrRRset     error = &Error{Msg: "bad rrset"}
+	ErrSecret    error = &Error{Msg: "no secrets defined"}
+	ErrShortRead error = &Error{Msg: "short read"}
+	ErrSig       error = &Error{Msg: "bad signature"} // ErrSig indicates that a signature can not be cryptographically validated.
+	ErrSoa       error = &Error{Msg: "no SOA"}        // ErrSOA indicates that no SOA RR was seen when doing zone transfers.
+	ErrTime      error = &Error{Msg: "bad time"}      // ErrTime indicates a timing error in TSIG authentication.
 )
 
 func (e *Error) Error() string { return "dns: " + e.Msg }
