@@ -1,21 +1,30 @@
 package dns
 
 import (
+	"fmt"
 	"testing"
-
-	"github.com/miekg/dnsv2/dnswire"
 )
 
+// BenchmarkCreateMsg benchmarks the creation of a small Msg with a question section only.
 func BenchmarkMakeMsgQuestionMX(b *testing.B) {
-	miek := dnswire.Name{}.Marshal("miek.nl.")
 	for b.Loop() {
-		mx := new(MX)
-		mx.Name(miek)
-		mx.Class(ClassINET)
-
 		msg := new(Msg)
-		msg.ID(ID())
-		q := &Question{Msg: msg}
-		q.Append(mx)
+		msg.Id = Id()
+		msg.Compress = true
+		msg.RecursionDesired = true
+		msg.Question = make([]Question, 1)
+		msg.Question[0] = Question{"miek.nl.", TypeMX, ClassINET}
+		buf, _ := msg.Pack()
+		buf = buf
 	}
+}
+
+func TestXX(t *testing.T) {
+	msg := new(Msg)
+	msg.Id = Id()
+	msg.RecursionDesired = true
+	msg.Question = make([]Question, 1)
+	msg.Question[0] = Question{"miek.nl.", TypeMX, ClassINET}
+	buf, _ := msg.Pack()
+	fmt.Printf("%v\n", buf)
 }
