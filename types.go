@@ -2,6 +2,8 @@ package dns
 
 // An RR represents a DNS resource record.
 type RR interface {
+	// Header returns the header of an resource record. The header contains everything up to the rdata.
+	Header() *Header
 	// String returns the text representation of the resource record.
 	String() string
 	// Data returns all the rdata fields of the resource record.
