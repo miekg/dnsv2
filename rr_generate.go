@@ -12,6 +12,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/miekg/dns/internal/generate"
 )
@@ -38,7 +39,10 @@ func RRToType(rr RR) uint16 {
 {{range .}}{{if ne . "RFC3597"}}  case *{{.}}:
 	return Type{{.}}
 {{end}}{{end}} }
-	// if here, we don't have the RR in our lef
+	// if here, we don't have the RR in our pkg, check if it does Typer.
+	if x, ok := rr.(Typer); ok {
+		return x.Type()
+	}
     return TypeNone
 }
 
@@ -50,13 +54,23 @@ var headerFunc = template.Must(template.New("headerFunc").Parse(`
 
 `))
 
-const out = "_zrr.go" // does not work for checking the struct tags yet. TMP TODO
+var funcMap = template.FuncMap{
+	"join": strings.Join,
+}
+
+var fieldFunc = template.Must(template.New("fieldFunc").Funcs(funcMap).Parse(`
+{{range $t, $fs := .}}  func (rr *{{$t}}) Fields() *Fields { return Fields{ {{join $fs ","}} }}
+{{end}}
+
+`))
+
+const out = "_zrr.go" // tmp
 
 var flagDebug = flag.Bool("debug", false, "Emit the non-formatted code to standard output and do not write it to a file.")
 
 func main() {
 	flag.Parse()
-	types, err := generate.ExportedTypes("types.go")
+	types, err := generate.Types("types.go")
 	if err != nil {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
@@ -73,15 +87,23 @@ func main() {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 
-	if *flagDebug {
-		fmt.Print(source.String())
-		return
+	fields, err := generate.Fields("types.go")
+	if err != nil {
+		log.Fatalf("Failed to generate %s: %v", out, err)
+	}
+	if err := fieldFunc.Execute(source, fields); err != nil {
+		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 
 	formatted, err := format.Source(source.Bytes())
 	if err != nil {
 		source.WriteTo(os.Stderr)
 		log.Fatalf("Failed to generate %s: %v", out, err)
+	}
+
+	if *flagDebug {
+		fmt.Print(string(formatted))
+		return
 	}
 
 	if err := os.WriteFile(out, formatted, 0640); err != nil {

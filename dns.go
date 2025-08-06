@@ -18,6 +18,8 @@ const (
 	MinMsgSize = 512
 	// MaxMsgSize is the largest possible DNS message.
 	MaxMsgSize = 65535
+	// MsgHeaderLen is the length of the header in the DNS message.
+	MsgHeaderSize = 12
 
 	year68     = 1 << 31 // For RFC1982 (Serial Arithmetic) calculations in 32 bits.
 	defaultTtl = 3600    // Default internal TTL.
@@ -86,10 +88,6 @@ func (h *Header) String(rr RR) string {
 }
 
 func (h *Header) Len() int { return len(h.Name) + 10 }
-
-const (
-	MsgHeaderLen = 12 // MsgHeaderLen is the length of the header in the DNS message.
-)
 
 // EDNS0 determines if the "RR" is posing as an EDNS0 option. EDNS0 options are considered just RRs and must
 // be added to the [Pseudo] section of a DNS message.

@@ -228,7 +228,7 @@ var CertTypeToString = map[uint16]string{
 // Prefix for IPv4 encoded as IPv6 address
 const ipv4InIPv6Prefix = "::ffff:"
 
-// ANY is a wild card record. See RFC 1035, Section 3.2.3. ANY
+// ANY is a wildcard record. See RFC 1035, Section 3.2.3. ANY
 // is named "*" there.
 type ANY struct {
 	Hdr Header
@@ -262,6 +262,10 @@ type CNAME struct {
 	Target string `dns:"cdomain-name"`
 }
 
+func (rr *CNAME) Fields() []Field {
+	return []Field{rr.Target}
+}
+
 func (rr *CNAME) String() string { return rr.Hdr.String() + sprintName(rr.Target) }
 
 // HINFO RR. See RFC 1034.
@@ -269,6 +273,10 @@ type HINFO struct {
 	Hdr Header
 	Cpu string
 	Os  string
+}
+
+func (rr *HINFO) Fields() []Field {
+	return []Field{rr.Cpu, rr.Os}
 }
 
 func (rr *HINFO) String() string {
