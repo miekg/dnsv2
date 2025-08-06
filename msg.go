@@ -1,14 +1,4 @@
-// DNS packet assembly, see RFC 1035. Converting from - Unpack() -
-// and to - Pack() - wire format.
-// All the packers and unpackers take a (msg []byte, off int)
-// and return (off1 int, ok bool).  If they return ok==false, they
-// also return off1==len(msg), so that the next unpacker will
-// also fail.  This lets us avoid checks of ok until the end of a
-// packing sequence.
-
 package dns
-
-//go:generate go run msg_generate.go
 
 import (
 	"crypto/rand"
@@ -78,7 +68,7 @@ var ClassToString = map[uint16]string{
 }
 
 // OpcodeToString maps Opcodes to strings.
-var OpcodeToString = map[int]string{
+var OpcodeToString = map[uint8]string{
 	OpcodeQuery:  "QUERY",
 	OpcodeIQuery: "IQUERY",
 	OpcodeStatus: "STATUS",
@@ -87,7 +77,7 @@ var OpcodeToString = map[int]string{
 }
 
 // RcodeToString maps Rcodes to strings.
-var RcodeToString = map[int]string{
+var RcodeToString = map[uint16]string{
 	RcodeSuccess:        "NOERROR",
 	RcodeFormatError:    "FORMERR",
 	RcodeServerFailure:  "SERVFAIL",
@@ -110,41 +100,7 @@ var RcodeToString = map[int]string{
 	RcodeBadCookie: "BADCOOKIE",
 }
 
-// compressionMap is used to allow a more efficient compression map
-// to be used for internal packDomainName calls without changing the
-// signature or functionality of public API.
-//
-// In particular, map[string]uint16 uses 25% less per-entry memory
-// than does map[string]int.
-type compressionMap struct {
-	ext map[string]int    // external callers
-	int map[string]uint16 // internal callers
-}
-
-func (m compressionMap) valid() bool {
-	return m.int != nil || m.ext != nil
-}
-
-func (m compressionMap) insert(s string, pos int) {
-	if m.ext != nil {
-		m.ext[s] = pos
-	} else {
-		m.int[s] = uint16(pos)
-	}
-}
-
-func (m compressionMap) find(s string) (uint16, bool) {
-	if m.ext != nil {
-		pos, ok := m.ext[s]
-		return uint16(pos), ok
-	}
-
-	pos, ok := m.int[s]
-	return pos, ok
-}
-
-// Domain names are a sequence of counted strings
-// split at the dots. They end with a zero-length string.
+// Domain names are a sequence of counted strings split at the dots. They end with a zero-length string.
 
 // PackDomainName packs a domain name s into msg[off:].
 // If compression is wanted compress must be true and the compression
@@ -154,7 +110,7 @@ func PackDomainName(s string, msg []byte, off int, compression map[string]int, c
 	return packDomainName(s, msg, off, compressionMap{ext: compression}, compress)
 }
 
-func packDomainName(s string, msg []byte, off int, compression compressionMap, compress bool) (off1 int, err error) {
+func packDomainName(s string, msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	// XXX: A logical copy of this function exists in IsDomainName and
 	// should be kept in sync with this function.
 
@@ -221,18 +177,18 @@ loop:
 		case '.':
 			if i == 0 && len(s) > 1 {
 				// leading dots are not legal except for the root zone
-				return len(msg), ErrRdata
+				return len(msg), ErrName
 			}
 
 			if wasDot {
 				// two dots back to back is not legal
-				return len(msg), ErrRdata
+				return len(msg), ErrName
 			}
 			wasDot = true
 
 			labelLen := i - begin
 			if labelLen >= 1<<6 { // top two bits of length must be clear
-				return len(msg), ErrRdata
+				return len(msg), ErrLabel
 			}
 
 			// off can already (we're in a loop) be bigger than len(msg)
@@ -646,50 +602,6 @@ func unpackRRWithHeader(h RR_Header, msg *cryptobyte.String, msgBuf []byte) (RR,
 	}
 
 	return rr, nil
-}
-
-// Convert a MsgHdr to a string, with dig-like headers:
-//
-// ;; opcode: QUERY, status: NOERROR, id: 48404
-//
-// ;; flags: qr aa rd ra;
-func (h *MsgHdr) String() string {
-	if h == nil {
-		return "<nil> MsgHdr"
-	}
-
-	s := ";; opcode: " + OpcodeToString[h.Opcode]
-	s += ", status: " + RcodeToString[h.Rcode]
-	s += ", id: " + strconv.Itoa(int(h.Id)) + "\n"
-
-	s += ";; flags:"
-	if h.Response {
-		s += " qr"
-	}
-	if h.Authoritative {
-		s += " aa"
-	}
-	if h.Truncated {
-		s += " tc"
-	}
-	if h.RecursionDesired {
-		s += " rd"
-	}
-	if h.RecursionAvailable {
-		s += " ra"
-	}
-	if h.Zero { // Hmm
-		s += " z"
-	}
-	if h.AuthenticatedData {
-		s += " ad"
-	}
-	if h.CheckingDisabled {
-		s += " cd"
-	}
-
-	s += ";"
-	return s
 }
 
 // Pack packs a Msg: it is converted to to wire format.

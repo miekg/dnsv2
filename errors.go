@@ -14,8 +14,10 @@ var (
 	ErrConnEmpty        = &Error{err: "conn has no connection"} // ErrConnEmpty indicates a connection is being used before it is initialized.
 	ErrExtendedRcode    = &Error{err: "bad extended rcode"}
 	ErrFqdn             = &Error{err: "domain must be fully qualified"} // ErrFqdn indicates that a domain name does not have a closing dot.
-	ErrId               = &Error{err: "id mismatch"}                    // ErrId indicates there is a mismatch with the message's ID.
-	ErrKeyAlg           = &Error{err: "bad key algorithm"}              // ErrKeyAlg indicates that the algorithm in the key is not valid.
+	ErrName             = &Error{err: "bad domain name"}
+	ErrLabel            = &Error{err: "bad label type"}
+	ErrId               = &Error{err: "id mismatch"}       // ErrId indicates there is a mismatch with the message's ID.
+	ErrKeyAlg           = &Error{err: "bad key algorithm"} // ErrKeyAlg indicates that the algorithm in the key is not valid.
 	ErrKey              = &Error{err: "bad key"}
 	ErrKeySize          = &Error{err: "bad key size"}
 	ErrLongDomain       = &Error{err: fmt.Sprintf("domain name exceeded %d wire-format octets", maxDomainNameWireOctets)}

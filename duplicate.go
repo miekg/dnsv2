@@ -1,6 +1,8 @@
 package dns
 
-//go:generate go run duplicate_generate.go
+// Use fields here?? and then have a single function Equal(a, b RR)
+// equality between field... might see the real type and compare those, if that fails, convefrt to string
+// Sort too?
 
 // IsDuplicate checks of r1 and r2 are duplicates of each other, excluding the TTL.
 // So this means the header data is equal *and* the RDATA is the same. Returns true

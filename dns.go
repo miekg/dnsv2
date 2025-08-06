@@ -3,7 +3,13 @@ package dns
 import (
 	"encoding/hex"
 	"strconv"
+	"strings"
 )
+
+//go:generate go run types_generate.go
+// //go:generate go run rr_generate.go
+//go:generate go run msg_generate.go
+//go:generate go run duplicate_generate.go
 
 const (
 	// DefaultMsgSize is the standard default for messages larger than 512 bytes.
@@ -28,6 +34,7 @@ type RR interface {
 	// Len is the length if the RR when encoded in wire format, this is not a perfect metric and returning
 	// a slightly too large value is OK.
 	Len() int
+	// Packer
 }
 
 // Field is a rdata element in a resource record.
@@ -36,20 +43,44 @@ type Field interface {
 	String() string
 }
 
+// The Packer interface defines the Pack and Unpack methods that are used to convert RRs to and from wire format.
+type Packer interface {
+	// Pack packs the RR into msg at offset off. Compress is used for compression, see examples in zpack.go.
+	// The returned int is the new offset in msg when this RR is packed.
+	Pack(msg []byte, off int, compress map[string]uint16) (int, error)
+	// Unpack unpacks the RR. Data is the byte slice that should contain the all the data for the RR, msg is
+	// the byte slice with the entire message; this is only used to resolve compression pointers and the new
+	// RRs that can contain those (only those defined in RFC 1035).
+	Unpack(data, msg []byte) error
+}
+
 // Header is the header in a DNS resource record.
 type Header struct {
 	Name string `dns:"cdomain-name"`
-	// type  uint16 // Inferred from the Go type.
+	// type is inferred from the Go type.
 	Class uint16 // Class is the class of the RR, this is almost always [ClassINET], if left zero, ClassINET is assumed when sending a message.
 	TTL   uint32 // TTL is the time-to-live of the RR.
-	// rdlength is calculated.
+	// rdlength has no use
 }
 
-func (h Header) String(rr RR) string {
+// String returns the string representation of h.
+func (h *Header) String(rr RR) string {
+	sb := strings.Builder{}
+	sb.WriteString(sprintName(h.Name))
+	sb.WriteByte('\t')
+
+	sb.WriteString(strconv.FormatInt(int64(h.TTL), 10))
+	sb.WriteByte('\t')
+
+	sb.WriteString(sprintClass(h.Class))
+	sb.WriteByte('\t')
+
 	rrtype := RRToType(rr)
-	rrstr := TypeToString[rrtype]
-	return ""
+	sb.WriteString(sprintClass(rrtype))
+	return sb.String()
 }
+
+func (h *Header) Len() int { return len(h.Name) + 10 }
 
 const (
 	MsgHeaderLen = 12 // MsgHeaderLen is the length of the header in the DNS message.
@@ -67,7 +98,7 @@ type EDNS0 interface {
 type MsgHeader struct {
 	ID                 uint16
 	Response           bool
-	Opcode             int8
+	Opcode             uint8
 	Authoritative      bool
 	Truncated          bool
 	RecursionDesired   bool
@@ -91,40 +122,65 @@ type Msg struct {
 	// Data is the data of the message that was either received from the wire or is about to be send
 	// over the wire. Note that this data is a snapshot of the Msg as it was packed or unpacked.
 	Data []byte
+
+	Options Option // Option is a bit mask of options that control the unpacking. When zero the entire message is unpacked.
 }
 
-func (h *Header) String() string {
-	var s string
+// Option is an option on how to handle a message. Options can be combined.
+type Option uint16
 
-	if h.Rrtype == TypeOPT {
-		s = ";"
-		// and maybe other things
+const (
+	OptionUnpackNone     Option = 1 << iota // Do not unpack anything, dump the message in Data and call it a day.
+	OptionUnpackHeader                      // Unpack only the header of the message.
+	OptionUnpackQuestion                    // Unpack only the question section of the message
+)
+
+func (h *MsgHeader) SetRcode(code uint16) {}
+func (h *MsgHeader) Rcode() uint16        { return h.rcode }
+
+// Convert a MsgHeader to a string, with dig-like headers:
+//
+// ;; opcode: QUERY, status: NOERROR, id: 48404
+//
+// ;; flags: qr aa rd ra;
+func (h *MsgHeader) String() string {
+	sb := strings.Builder{}
+	sb.WriteString(";; opcode: ")
+	sb.WriteString(OpcodeToString[h.Opcode])
+	sb.WriteString(", status: ")
+	sb.WriteString(RcodeToString[h.Rcode()])
+	sb.WriteString(", id: ")
+	sb.WriteString(strconv.Itoa(int(h.ID)))
+	sb.WriteByte('\n')
+
+	sb.WriteString(";; flags:")
+	if h.Response {
+		sb.WriteString(" qr")
+	}
+	if h.Authoritative {
+		sb.WriteString(" aa")
+	}
+	if h.Truncated {
+		sb.WriteString(" tc")
+	}
+	if h.RecursionDesired {
+		sb.WriteString(" rd")
+	}
+	if h.RecursionAvailable {
+		sb.WriteString(" ra")
+	}
+	if h.Zero {
+		sb.WriteString(" z")
+	}
+	if h.AuthenticatedData {
+		sb.WriteString(" ad")
+	}
+	if h.CheckingDisabled {
+		sb.WriteString(" cd")
 	}
 
-	s += sprintName(h.Name) + "\t"
-	s += strconv.FormatInt(int64(h.Ttl), 10) + "\t"
-	s += Class(h.Class).String() + "\t"
-	s += Type(h.Rrtype).String() + "\t"
-	return s
-}
-
-func (h *RR_Header) len(off int, compression map[string]struct{}) int {
-	l := domainNameLen(h.Name, off, compression, true)
-	l += 10 // rrtype(2) + class(2) + ttl(4) + rdlength(2)
-	return l
-}
-
-func (h *RR_Header) pack(msg []byte, off int, compression compressionMap, compress bool) (off1 int, err error) {
-	// RR_Header has no RDATA to pack.
-	return off, nil
-}
-
-func (h *RR_Header) unpack(data, msgBuf []byte) error {
-	panic("dns: internal error: unpack should never be called on RR_Header")
-}
-
-func (h *RR_Header) parse(c *zlexer, origin string) *ParseError {
-	panic("dns: internal error: parse should never be called on RR_Header")
+	sb.WriteString(";")
+	return sb.String()
 }
 
 // ToRFC3597 converts a known RR to the unknown RR representation from RFC 3597.
