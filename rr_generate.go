@@ -59,7 +59,7 @@ var funcMap = template.FuncMap{
 }
 
 var fieldFunc = template.Must(template.New("fieldFunc").Funcs(funcMap).Parse(`
-{{range $t, $fs := .}}  func (rr *{{$t}}) Fields() *Fields { return Fields{ {{join $fs ","}} }}
+{{range $t, $fs := .}}  func (rr *{{$t}}) Data() *Fields { return Fields{ {{join $fs ","}} }}
 {{end}}
 
 `))

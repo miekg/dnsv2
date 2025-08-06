@@ -262,11 +262,19 @@ type CNAME struct {
 	Target string `dns:"cdomain-name"`
 }
 
-func (rr *CNAME) Fields() []Field {
-	return []Field{rr.Target}
+func (rr *CNAME) String() string {
+	sb := strings.Builder{}
+	sb.WriteString(rr.Hdr.String(rr))
+	sb.WriteByte('\t')
+	fields := rr.Data()
+	for i, f := range fields {
+		sb.WriteString(f.String())
+		if i < len(fields)-1 {
+			sb.WriteByte(' ')
+		}
+	}
+	return sb.String()
 }
-
-func (rr *CNAME) String() string { return rr.Hdr.String() + sprintName(rr.Target) }
 
 // HINFO RR. See RFC 1034.
 type HINFO struct {
