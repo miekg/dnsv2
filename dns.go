@@ -37,11 +37,16 @@ type RR interface {
 	// Packer
 }
 
-// Field is a rdata element in a resource record.
-type Field interface {
-	// String returns the text representation of the field.
-	String() string
+// If an RR implements the Typer interface it will be used to return the type of RR in the RRToType function.
+// This is only needed for RRs that are defined outside of this package.
+type Typer interface {
+	Type() uint16
 }
+
+// Field is a rdata element in a resource record. If a Field implements the Stringer interface it will be used
+// to return the string presentation; otherwise the default from Go is taken, i.e. a string will just be a
+// string, an uint16, just a number, etc.
+type Field any
 
 // The Packer interface defines the Pack and Unpack methods that are used to convert RRs to and from wire format.
 type Packer interface {

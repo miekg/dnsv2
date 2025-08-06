@@ -40,26 +40,12 @@ import (
 
 `
 
-var TypeToRR = template.Must(template.New("TypeToRR").Parse(`
-// TypeToRR is a map of constructors for each RR type.
-var TypeToRR = map[uint16]func() RR{
-{{range .}}{{if ne . "RFC3597"}}  Type{{.}}:  func() RR { return new({{.}}) },
-{{end}}{{end}}                    }
-
-`))
-
 var typeToString = template.Must(template.New("typeToString").Parse(`
 // TypeToString is a map of strings for each RR type.
 var TypeToString = map[uint16]string{
 {{range .}}{{if ne . "NSAPPTR"}}  Type{{.}}: "{{.}}",
 {{end}}{{end}}                    TypeNSAPPTR:    "NSAP-PTR",
 }
-
-`))
-
-var headerFunc = template.Must(template.New("headerFunc").Parse(`
-{{range .}}  func (rr *{{.}}) Header() *RR_Header { return &rr.Hdr }
-{{end}}
 
 `))
 

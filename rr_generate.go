@@ -8,16 +8,12 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"go/ast"
 	"go/format"
-	"go/parser"
-	"go/token"
 	"html/template"
 	"log"
 	"os"
-	"reflect"
-	"unicode"
-	"unicode/utf8"
+
+	"github.com/miekg/dns/internal/generate"
 )
 
 var hdr = `
@@ -37,13 +33,20 @@ var TypeToRR = map[uint16]func() RR{
 
 var RRToType = template.Must(template.New("RRToType").Parse(`
 // RRToType is the reverse of TypeToRR, implemented as a function.
-func RRToType(rr RR) dnswire.Type {
+func RRToType(rr RR) uint16 {
     switch rr.(type) {
 {{range .}}{{if ne . "RFC3597"}}  case *{{.}}:
 	return Type{{.}}
 {{end}}{{end}} }
+	// if here, we don't have the RR in our lef
     return TypeNone
 }
+
+`))
+
+var headerFunc = template.Must(template.New("headerFunc").Parse(`
+{{range .}}  func (rr *{{.}}) Header() *Header { return &rr.Hdr }
+{{end}}
 
 `))
 
@@ -53,33 +56,16 @@ var flagDebug = flag.Bool("debug", false, "Emit the non-formatted code to standa
 
 func main() {
 	flag.Parse()
-	fset := token.NewFileSet()
-	node, err := parser.ParseFile(fset, "types.go", nil, parser.ParseComments)
+	types, err := generate.ExportedTypes("types.go")
 	if err != nil {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 
-	// Grab all exported types from types.go
-	types := []string{}
-	for _, decl := range node.Decls {
-		declType := reflect.TypeOf(decl)
-
-		if declType.String() == "*ast.GenDecl" {
-			genDecl := decl.(*ast.GenDecl)
-			if genDecl.Tok == token.TYPE {
-				for _, spec := range genDecl.Specs {
-					if typeSpec, ok := spec.(*ast.TypeSpec); ok {
-						rn, _ := utf8.DecodeRuneInString(typeSpec.Name.Name)
-						if unicode.IsUpper(rn) {
-							types = append(types, typeSpec.Name.Name)
-						}
-					}
-				}
-			}
-		}
-	}
 	source := &bytes.Buffer{}
 	source.WriteString(hdr)
+	if err := headerFunc.Execute(source, types); err != nil {
+		log.Fatalf("Failed to generate %s: %v", out, err)
+	}
 	if err := TypeToRR.Execute(source, types); err != nil {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
