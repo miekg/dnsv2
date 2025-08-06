@@ -163,7 +163,7 @@ type ZoneParser struct {
 
 	defttl *ttlState
 
-	h RR_Header
+	h Header
 
 	// sub is used to parse $INCLUDE files and $GENERATE directives.
 	// Next, by calling subNext, forwards the resulting RRs from this

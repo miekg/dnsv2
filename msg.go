@@ -552,7 +552,7 @@ func UnpackRR(msg []byte, off int) (rr RR, off1 int, err error) {
 
 // UnpackRRWithHeader unpacks the record type specific payload given an existing
 // RR_Header.
-func UnpackRRWithHeader(h RR_Header, msg []byte, off int) (rr RR, off1 int, err error) {
+func UnpackRRWithHeader(h Header, msg []byte, off int) (rr RR, off1 int, err error) {
 	if off < 0 || off > len(msg) {
 		h := h // Avoid spilling h to the heap in the happy path.
 		return &h, off, &Error{err: "bad off"}
@@ -623,7 +623,7 @@ func (dns *Msg) PackBuffer(buf []byte) (msg []byte, err error) {
 }
 
 // packBufferWithCompressionMap packs a Msg, using the given buffer buf.
-func (dns *Msg) packBufferWithCompressionMap(buf []byte, compression compressionMap, compress bool) (msg []byte, err error) {
+func (dns *Msg) packBufferWithCompressionMap(buf []byte, compress map[string]uint16) (msg []byte, err error) {
 	if dns.Rcode < 0 || dns.Rcode > 0xFFF {
 		return nil, ErrRcode
 	}
@@ -639,7 +639,7 @@ func (dns *Msg) packBufferWithCompressionMap(buf []byte, compression compression
 
 	// Convert convenient Msg into wire-like Header.
 	var dh Header
-	dh.Id = dns.Id
+	dh.ID = dns.ID
 	dh.Bits = uint16(dns.Opcode)<<11 | uint16(dns.Rcode&0xF)
 	if dns.Response {
 		dh.Bits |= _QR

@@ -218,8 +218,8 @@ func makeSVCBKeyValue(key SVCBKey) SVCBKeyValue {
 // The API, including constants and types related to SVCBKeyValues, may
 // change in future versions in accordance with the latest drafts.
 type SVCB struct {
-	Hdr      RR_Header
-	Priority uint16         // If zero, Value must be empty or discarded by the user of this library
+	Hdr      Header
+	Priority uint16         // If zero, Value must be empty or discarded by the user of this library.
 	Target   string         `dns:"domain-name"`
 	Value    []SVCBKeyValue `dns:"pairs"`
 }
