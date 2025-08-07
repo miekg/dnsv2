@@ -795,7 +795,7 @@ func (rr *NSEC) String() string {
 
 func (rr *NSEC) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.NextDomain, 0, nil, false)
+	l += len(rr.NextDomain)
 	l += typeBitMapLen(rr.TypeBitMap)
 	return l
 }

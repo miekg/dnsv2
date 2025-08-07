@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"strconv"
-	"strings"
 
 	"github.com/miekg/dnsv2/dnsutil"
 	"github.com/miekg/dnsv2/internal/ddd"
@@ -912,65 +911,6 @@ func (m *Msg) Len() int {
 	}
 
 	return l
-}
-
-func domainNameLen(s string, off int, compression map[string]struct{}, compress bool) int {
-	if s == "" || s == "." {
-		return 1
-	}
-
-	escaped := strings.Contains(s, "\\")
-
-	if compression != nil && (compress || off < maxCompressionOffset) {
-		// compressionLenSearch will insert the entry into the compression
-		// map if it doesn't contain it.
-		if l, ok := compressionLenSearch(compression, s, off); ok && compress {
-			if escaped {
-				return escapedNameLen(s[:l]) + 2
-			}
-
-			return l + 2
-		}
-	}
-
-	if escaped {
-		return escapedNameLen(s) + 1
-	}
-
-	return len(s) + 1
-}
-
-func escapedNameLen(s string) int {
-	nameLen := len(s)
-	for i := 0; i < len(s); i++ {
-		if s[i] != '\\' {
-			continue
-		}
-
-		if ddd.Is(s[i+1:]) {
-			nameLen -= 3
-			i += 3
-		} else {
-			nameLen--
-			i++
-		}
-	}
-
-	return nameLen
-}
-
-func compressionLenSearch(c map[string]struct{}, s string, msgOff int) (int, bool) {
-	for off, end := 0, false; !end; off, end = dnsutil.Next(s, off) {
-		if _, ok := c[s[off:]]; ok {
-			return off, true
-		}
-
-		if msgOff+off < maxCompressionOffset {
-			c[s[off:]] = struct{}{}
-		}
-	}
-
-	return 0, false
 }
 
 func (dh *header) pack(msg []byte, off int) (int, error) {

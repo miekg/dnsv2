@@ -80,9 +80,9 @@ func main() {
 				case `dns:"-"`:
 					// ignored
 				case `dns:"cdomain-name"`:
-					o("for _, x := range rr.%s { l += domainNameLen(x, 0, nil, false) }\n")
+					o("for _, x := range rr.%s { l += len(x) }\n")
 				case `dns:"domain-name"`:
-					o("for _, x := range rr.%s { l += domainNameLen(x, 0, nil, false) }\n")
+					o("for _, x := range rr.%s { l += len(x) }\n")
 				case `dns:"txt"`:
 					o("for _, x := range rr.%s { l += len(x) + 1 }\n")
 				case `dns:"apl"`:
@@ -99,9 +99,9 @@ func main() {
 			case tag == `dns:"-"`:
 				// ignored
 			case tag == `dns:"cdomain-name"`:
-				o("l += domainNameLen(rr.%s, 0, nil, false)\n")
+				o("l += len(rr.%s)\n")
 			case tag == `dns:"domain-name"`:
-				o("l += domainNameLen(rr.%s, 0, nil, false)\n")
+				o("l += len(rr.%s)\n")
 			case tag == `dns:"octet"`:
 				o("l += len(rr.%s)\n")
 			case strings.HasPrefix(tag, `dns:"size-base64`):

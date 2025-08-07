@@ -20,7 +20,7 @@ func (rr *NULL) Len() int {
 
 func (rr *CNAME) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Target, 0, nil, false)
+	l += len(rr.Target)
 	return l
 }
 
@@ -33,52 +33,52 @@ func (rr *HINFO) Len() int {
 
 func (rr *MB) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Mb, 0, nil, false)
+	l += len(rr.Mb)
 	return l
 }
 
 func (rr *MG) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Mg, 0, nil, false)
+	l += len(rr.Mg)
 	return l
 }
 
 func (rr *MINFO) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Rmail, 0, nil, false)
-	l += domainNameLen(rr.Email, 0, nil, false)
+	l += len(rr.Rmail)
+	l += len(rr.Email)
 	return l
 }
 
 func (rr *MR) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Mr, 0, nil, false)
+	l += len(rr.Mr)
 	return l
 }
 
 func (rr *MF) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Mf, 0, nil, false)
+	l += len(rr.Mf)
 	return l
 }
 
 func (rr *MD) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Md, 0, nil, false)
+	l += len(rr.Md)
 	return l
 }
 
 func (rr *MX) Len() int {
 	l := rr.Hdr.Len()
 	l += 2 // Preference
-	l += domainNameLen(rr.Mx, 0, nil, false)
+	l += len(rr.Mx)
 	return l
 }
 
 func (rr *AFSDB) Len() int {
 	l := rr.Hdr.Len()
 	l += 2 // Subtype
-	l += domainNameLen(rr.Hostname, 0, nil, false)
+	l += len(rr.Hostname)
 	return l
 }
 
@@ -91,33 +91,33 @@ func (rr *X25) Len() int {
 func (rr *RT) Len() int {
 	l := rr.Hdr.Len()
 	l += 2 // Preference
-	l += domainNameLen(rr.Host, 0, nil, false)
+	l += len(rr.Host)
 	return l
 }
 
 func (rr *NS) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Ns, 0, nil, false)
+	l += len(rr.Ns)
 	return l
 }
 
 func (rr *PTR) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Ptr, 0, nil, false)
+	l += len(rr.Ptr)
 	return l
 }
 
 func (rr *RP) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Mbox, 0, nil, false)
-	l += domainNameLen(rr.Txt, 0, nil, false)
+	l += len(rr.Mbox)
+	l += len(rr.Txt)
 	return l
 }
 
 func (rr *SOA) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Ns, 0, nil, false)
-	l += domainNameLen(rr.Mbox, 0, nil, false)
+	l += len(rr.Ns)
+	l += len(rr.Mbox)
 	l += 4 // Serial
 	l += 4 // Refresh
 	l += 4 // Retry
@@ -155,7 +155,7 @@ func (rr *SRV) Len() int {
 	l += 2 // Priority
 	l += 2 // Weight
 	l += 2 // Port
-	l += domainNameLen(rr.Target, 0, nil, false)
+	l += len(rr.Target)
 	return l
 }
 
@@ -166,7 +166,7 @@ func (rr *NAPTR) Len() int {
 	l += len(rr.Flags) + 1
 	l += len(rr.Service) + 1
 	l += len(rr.Regexp) + 1
-	l += domainNameLen(rr.Replacement, 0, nil, false)
+	l += len(rr.Replacement)
 	return l
 }
 
@@ -181,7 +181,7 @@ func (rr *CERT) Len() int {
 
 func (rr *DNAME) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Target, 0, nil, false)
+	l += len(rr.Target)
 	return l
 }
 
@@ -204,8 +204,8 @@ func (rr *AAAA) Len() int {
 func (rr *PX) Len() int {
 	l := rr.Hdr.Len()
 	l += 2 // Preference
-	l += domainNameLen(rr.Map822, 0, nil, false)
-	l += domainNameLen(rr.Mapx400, 0, nil, false)
+	l += len(rr.Map822)
+	l += len(rr.Mapx400)
 	return l
 }
 
@@ -243,7 +243,7 @@ func (rr *RRSIG) Len() int {
 	l += 4 // Expiration
 	l += 4 // Inception
 	l += 2 // KeyTag
-	l += domainNameLen(rr.SignerName, 0, nil, false)
+	l += len(rr.SignerName)
 	l += base64.StdEncoding.DecodedLen(len(rr.Signature))
 	return l
 }
@@ -270,7 +270,7 @@ func (rr *DS) Len() int {
 func (rr *KX) Len() int {
 	l := rr.Hdr.Len()
 	l += 2 // Preference
-	l += domainNameLen(rr.Exchanger, 0, nil, false)
+	l += len(rr.Exchanger)
 	return l
 }
 
@@ -285,8 +285,8 @@ func (rr *TA) Len() int {
 
 func (rr *TALINK) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.PreviousName, 0, nil, false)
-	l += domainNameLen(rr.NextName, 0, nil, false)
+	l += len(rr.PreviousName)
+	l += len(rr.NextName)
 	return l
 }
 
@@ -360,7 +360,7 @@ func (rr *RKEY) Len() int {
 
 func (rr *NSAPPTR) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Ptr, 0, nil, false)
+	l += len(rr.Ptr)
 	return l
 }
 
@@ -376,7 +376,7 @@ func (rr *NSEC3PARAM) Len() int {
 
 func (rr *TKEY) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.Algorithm, 0, nil, false)
+	l += len(rr.Algorithm)
 	l += 4 // Inception
 	l += 4 // Expiration
 	l += 2 // Mode
@@ -434,7 +434,7 @@ func (rr *HIP) Len() int {
 	l += len(rr.Hit) / 2
 	l += base64.StdEncoding.DecodedLen(len(rr.PublicKey))
 	for _, x := range rr.RendezvousServers {
-		l += domainNameLen(x, 0, nil, false)
+		l += len(x)
 	}
 	return l
 }
@@ -473,7 +473,7 @@ func (rr *L64) Len() int {
 func (rr *LP) Len() int {
 	l := rr.Hdr.Len()
 	l += 2 // Preference
-	l += domainNameLen(rr.Fqdn, 0, nil, false)
+	l += len(rr.Fqdn)
 	return l
 }
 
