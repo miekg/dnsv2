@@ -184,6 +184,10 @@ const (
 	_Z  = 1 << 6  // Z
 	_AD = 1 << 5  // authenticated data
 	_CD = 1 << 4  // checking disabled
+
+	// EDNS0 OPT "Header.Bits"
+	_DO = 1 << 15 // DNSSEC OK
+	// _CO
 )
 
 // Various constants used in the LOC RR. See RFC 1876.
