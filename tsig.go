@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/miekg/dnsv2/dnsutil"
 	"golang.org/x/crypto/cryptobyte"
 )
 
@@ -43,7 +44,7 @@ func (key tsigHMACProvider) Generate(msg []byte, t *TSIG) ([]byte, error) {
 		return nil, err
 	}
 	var h hash.Hash
-	switch CanonicalName(t.Algorithm) {
+	switch dnsutil.Canonical(t.Algorithm) {
 	case HmacSHA1:
 		h = hmac.New(sha1.New, rawsecret)
 	case HmacSHA224:
@@ -97,7 +98,7 @@ func (ts tsigSecretProvider) Verify(msg []byte, t *TSIG) error {
 // TSIG is the RR the holds the transaction signature of a message.
 // See RFC 2845 and RFC 4635.
 type TSIG struct {
-	Hdr        RR_Header
+	Hdr        Header
 	Algorithm  string `dns:"domain-name"`
 	TimeSigned uint64 `dns:"uint48"`
 	Fudge      uint16
@@ -109,11 +110,17 @@ type TSIG struct {
 	OtherData  string `dns:"size-hex:OtherLen"`
 }
 
+func (rr *TSIG) Data() []Field {
+	return []Field{rr.Algorithm, rr.TimeSigned, rr.Fudge, rr.MACSize, rr.MAC, rr.OrigId, rr.Error, rr.OtherLen, rr.OtherData}
+}
+
+func (rr *TSIG) Header() *Header { return &rr.Hdr }
+
 // TSIG has no official presentation format, but this will suffice.
 
 func (rr *TSIG) String() string {
 	s := "\n;; TSIG PSEUDOSECTION:\n; " // add another semi-colon to signify TSIG does not have a presentation format
-	s += rr.Hdr.String() +
+	s += rr.Hdr.String(rr) +
 		" " + rr.Algorithm +
 		" " + tsigTimeToString(rr.TimeSigned) +
 		" " + strconv.Itoa(int(rr.Fudge)) +

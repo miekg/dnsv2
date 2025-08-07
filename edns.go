@@ -70,8 +70,7 @@ func makeDataOpt(code uint16) EDNS0 {
 	}
 }
 
-// OPT is the EDNS0 RR appended to messages to convey extra (meta) information.
-// See RFC 6891.
+// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
 type OPT struct {
 	Hdr    RR_Header
 	Option []EDNS0 `dns:"opt"`

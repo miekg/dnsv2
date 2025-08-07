@@ -8,7 +8,7 @@ import (
 
 //go:generate go run rr_generate.go
 //go:generate go run msg_generate.go
-//go:generate go run duplicate_generate.go
+// //go:generate go run duplicate_generate.go remove too?
 
 const (
 	// DefaultMsgSize is the standard default for messages larger than 512 bytes.

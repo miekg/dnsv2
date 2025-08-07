@@ -1,12 +1,6 @@
 package dns
 
-import (
-	"net"
-	"strconv"
-
-	"github.com/miekg/dnsv2/dnsutil"
-)
-
+/*
 const hexDigit = "0123456789abcdef"
 
 // Everything is assumed in ClassINET.
@@ -308,3 +302,4 @@ func ReverseAddr(addr string) (arpa string, err error) {
 	buf = append(buf, "ip6.arpa."...)
 	return string(buf), nil
 }
+*/

@@ -85,3 +85,32 @@ func fields(node ast.Node) []string {
 	}
 	return fields
 }
+
+// StructTypeSpecs returns the struct types from file that can be inspected for the struct tags.
+func StructTypeSpecs(file string) ([]*ast.TypeSpec, error) {
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, file, nil, parser.AllErrors|parser.ParseComments|parser.SkipObjectResolution)
+	if err != nil {
+		return nil, err
+	}
+	structs := []*ast.TypeSpec{}
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		typeSpec, ok := n.(*ast.TypeSpec)
+		if !ok {
+			return true
+		}
+
+		if _, ok := typeSpec.Type.(*ast.StructType); !ok {
+			return true
+		}
+
+		if !typeSpec.Name.IsExported() {
+			return true
+		}
+
+		structs = append(structs, typeSpec)
+		return true
+	})
+	return structs, nil
+}

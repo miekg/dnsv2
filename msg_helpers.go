@@ -24,19 +24,15 @@ func offset(data, buf []byte) int {
 
 // helper functions called from the generated zmsg.go
 
-// These function are named after the tag to help pack/unpack, if there is no tag it is the name
-// of the type they pack/unpack (string, int, etc). We prefix all with unpackData or packData, so packDataA or
-// packDataDomainName.
-
-func unpackDataA(s *cryptobyte.String) (net.IP, error) {
+func unpackA(s *cryptobyte.String) (net.IP, error) {
 	ip := make(net.IP, net.IPv4len)
 	if !s.CopyBytes(ip) {
-		return nil, errUnpackOverflow
+		return nil, ErrUnpackOverflow
 	}
 	return ip, nil
 }
 
-func packDataA(a net.IP, msg []byte, off int) (int, error) {
+func packA(a net.IP, msg []byte, off int) (int, error) {
 	switch len(a) {
 	case net.IPv4len, net.IPv6len:
 		// It must be a slice of 4, even if it is 16, we encode only the first 4
@@ -56,15 +52,15 @@ func packDataA(a net.IP, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func unpackDataAAAA(s *cryptobyte.String) (net.IP, error) {
+func unpackAAAA(s *cryptobyte.String) (net.IP, error) {
 	ip := make(net.IP, net.IPv6len)
 	if !s.CopyBytes(ip) {
-		return nil, errUnpackOverflow
+		return nil, ErrUnpackOverflow
 	}
 	return ip, nil
 }
 
-func packDataAAAA(aaaa net.IP, msg []byte, off int) (int, error) {
+func packAAAA(aaaa net.IP, msg []byte, off int) (int, error) {
 	switch len(aaaa) {
 	case net.IPv6len:
 		if off+net.IPv6len > len(msg) {
@@ -84,39 +80,40 @@ func packDataAAAA(aaaa net.IP, msg []byte, off int) (int, error) {
 }
 
 // unpackRRHeader unpacks an RR header advancing msg.
-func unpackRRHeader(msg *cryptobyte.String, msgBuf []byte) (RR_Header, error) {
+func unpackRRHeader(msg *cryptobyte.String, msgBuf []byte) (Header, error) {
 	var (
-		hdr RR_Header
+		hdr Header
 		err error
 	)
 	hdr.Name, err = unpackDomainName(msg, msgBuf)
 	if err != nil {
-		if errors.Is(err, errUnpackOverflow) {
-			return hdr, errTruncatedMessage
+		if errors.Is(err, ErrUnpackOverflow) {
+			return hdr, ErrTruncatedMessage
 		}
 		return hdr, err
 	}
-	if !msg.ReadUint16(&hdr.Rrtype) ||
+	var discard uint16
+	if !msg.ReadUint16(&discard) ||
 		!msg.ReadUint16(&hdr.Class) ||
-		!msg.ReadUint32(&hdr.Ttl) ||
-		!msg.ReadUint16(&hdr.Rdlength) {
-		return hdr, errTruncatedMessage
+		!msg.ReadUint32(&hdr.TTL) ||
+		!msg.ReadUint16(&discard) {
+		return hdr, ErrTruncatedMessage
 	}
 	return hdr, nil
 }
 
 // packHeader packs an RR header, returning the offset to the end of the header.
 // See PackDomainName for documentation about the compression.
-func (hdr RR_Header) packHeader(msg []byte, off int, compression compressionMap, compress bool) (int, error) {
+func (hdr Header) packHeader(msg []byte, off int, rrtype uint16, compress map[string]uint16) (int, error) {
 	if off == len(msg) {
 		return off, nil
 	}
 
-	off, err := packDomainName(hdr.Name, msg, off, compression, compress)
+	off, err := packDomainName(hdr.Name, msg, off, compress)
 	if err != nil {
 		return len(msg), err
 	}
-	off, err = packUint16(hdr.Rrtype, msg, off)
+	off, err = packUint16(rrtype, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
@@ -124,7 +121,7 @@ func (hdr RR_Header) packHeader(msg []byte, off int, compression compressionMap,
 	if err != nil {
 		return len(msg), err
 	}
-	off, err = packUint32(hdr.Ttl, msg, off)
+	off, err = packUint32(hdr.TTL, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
@@ -348,7 +345,7 @@ func packStringTxt(s []string, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func unpackDataOpt(s *cryptobyte.String) ([]EDNS0, error) {
+func unpackOpt(s *cryptobyte.String) ([]EDNS0, error) {
 	var opts []EDNS0
 	for !s.Empty() {
 		var (
@@ -368,7 +365,7 @@ func unpackDataOpt(s *cryptobyte.String) ([]EDNS0, error) {
 	return opts, nil
 }
 
-func packDataOpt(options []EDNS0, msg []byte, off int) (int, error) {
+func packOpt(options []EDNS0, msg []byte, off int) (int, error) {
 	for _, el := range options {
 		b, err := el.pack()
 		if err != nil || off+4 > len(msg) {
@@ -399,7 +396,7 @@ func packStringOctet(s string, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func unpackDataNsec(s *cryptobyte.String) ([]uint16, error) {
+func unpackNsec(s *cryptobyte.String) ([]uint16, error) {
 	var nsec []uint16
 	lastwindow := -1
 	for !s.Empty() {
@@ -451,7 +448,7 @@ func typeBitMapLen(bitmap []uint16) int {
 			lastlength = 0
 		}
 		if window < lastwindow || length < lastlength {
-			// packDataNsec would return Error{err: "nsec bits out of order"} here, but
+			// packNsec would return Error{err: "nsec bits out of order"} here, but
 			// when computing the length, we want do be liberal.
 			continue
 		}
@@ -461,7 +458,7 @@ func typeBitMapLen(bitmap []uint16) int {
 	return l
 }
 
-func packDataNsec(bitmap []uint16, msg []byte, off int) (int, error) {
+func packNsec(bitmap []uint16, msg []byte, off int) (int, error) {
 	if len(bitmap) == 0 {
 		return off, nil
 	}
@@ -501,7 +498,7 @@ func packDataNsec(bitmap []uint16, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func unpackDataSVCB(s *cryptobyte.String) ([]SVCBKeyValue, error) {
+func unpackSVCB(s *cryptobyte.String) ([]SVCBKeyValue, error) {
 	var kvs []SVCBKeyValue
 	for !s.Empty() {
 		var (
@@ -527,7 +524,7 @@ func unpackDataSVCB(s *cryptobyte.String) ([]SVCBKeyValue, error) {
 	return kvs, nil
 }
 
-func packDataSVCB(pairs []SVCBKeyValue, msg []byte, off int) (int, error) {
+func packSVCB(pairs []SVCBKeyValue, msg []byte, off int) (int, error) {
 	pairs = cloneSlice(pairs)
 	sort.Slice(pairs, func(i, j int) bool {
 		return pairs[i].Key() < pairs[j].Key()
@@ -556,7 +553,7 @@ func packDataSVCB(pairs []SVCBKeyValue, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func unpackDataDomainNames(s *cryptobyte.String, msgBuf []byte) ([]string, error) {
+func unpackDomainNames(s *cryptobyte.String, msgBuf []byte) ([]string, error) {
 	var names []string
 	for !s.Empty() {
 		name, err := unpackDomainName(s, msgBuf)
@@ -568,10 +565,10 @@ func unpackDataDomainNames(s *cryptobyte.String, msgBuf []byte) ([]string, error
 	return names, nil
 }
 
-func packDataDomainNames(names []string, msg []byte, off int, compression compressionMap, compress bool) (int, error) {
+func packDomainNames(names []string, msg []byte, off int, compress map[string]uint16) (int, error) {
 	var err error
 	for _, name := range names {
-		off, err = packDomainName(name, msg, off, compression, compress)
+		off, err = packDomainName(name, msg, off, compress)
 		if err != nil {
 			return len(msg), err
 		}
@@ -579,10 +576,10 @@ func packDataDomainNames(names []string, msg []byte, off int, compression compre
 	return off, nil
 }
 
-func packDataApl(data []APLPrefix, msg []byte, off int) (int, error) {
+func packApl(data []APLPrefix, msg []byte, off int) (int, error) {
 	var err error
 	for i := range data {
-		off, err = packDataAplPrefix(&data[i], msg, off)
+		off, err = packAplPrefix(&data[i], msg, off)
 		if err != nil {
 			return len(msg), err
 		}
@@ -590,7 +587,7 @@ func packDataApl(data []APLPrefix, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func packDataAplPrefix(p *APLPrefix, msg []byte, off int) (int, error) {
+func packAplPrefix(p *APLPrefix, msg []byte, off int) (int, error) {
 	if len(p.Network.IP) != len(p.Network.Mask) {
 		return len(msg), &Error{err: "address and mask lengths don't match"}
 	}
@@ -641,10 +638,10 @@ func packDataAplPrefix(p *APLPrefix, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func unpackDataApl(s *cryptobyte.String) ([]APLPrefix, error) {
+func unpackApl(s *cryptobyte.String) ([]APLPrefix, error) {
 	var prefixes []APLPrefix
 	for !s.Empty() {
-		prefix, err := unpackDataAplPrefix(s)
+		prefix, err := unpackAplPrefix(s)
 		if err != nil {
 			return nil, err
 		}
@@ -653,7 +650,7 @@ func unpackDataApl(s *cryptobyte.String) ([]APLPrefix, error) {
 	return prefixes, nil
 }
 
-func unpackDataAplPrefix(s *cryptobyte.String) (APLPrefix, error) {
+func unpackAplPrefix(s *cryptobyte.String) (APLPrefix, error) {
 	var (
 		family       uint16
 		prefix, nlen byte
@@ -707,9 +704,9 @@ func unpackIPSECGateway(s *cryptobyte.String, msgBuf []byte, gatewayType uint8) 
 	switch gatewayType {
 	case IPSECGatewayNone: // do nothing
 	case IPSECGatewayIPv4:
-		addr, err = unpackDataA(s)
+		addr, err = unpackA(s)
 	case IPSECGatewayIPv6:
-		addr, err = unpackDataAAAA(s)
+		addr, err = unpackAAAA(s)
 	case IPSECGatewayHost:
 		name, err = unpackDomainName(s, msgBuf)
 	}
@@ -722,9 +719,9 @@ func packIPSECGateway(gatewayAddr net.IP, gatewayString string, msg []byte, off 
 	switch gatewayType {
 	case IPSECGatewayNone: // do nothing
 	case IPSECGatewayIPv4:
-		off, err = packDataA(gatewayAddr, msg, off)
+		off, err = packA(gatewayAddr, msg, off)
 	case IPSECGatewayIPv6:
-		off, err = packDataAAAA(gatewayAddr, msg, off)
+		off, err = packAAAA(gatewayAddr, msg, off)
 	case IPSECGatewayHost:
 		off, err = packDomainName(gatewayString, msg, off, compression, compress)
 	}

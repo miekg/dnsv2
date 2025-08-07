@@ -7,15 +7,10 @@ var StringToType = reverseInt16(TypeToString)
 var StringToClass = reverseInt16(ClassToString)
 
 // StringToOpcode is a map of opcodes to strings.
-var StringToOpcode = reverseInt(OpcodeToString)
+var StringToOpcode = reverseInt8(OpcodeToString)
 
 // StringToRcode is a map of rcodes to strings.
-var StringToRcode = reverseInt(RcodeToString)
-
-func init() {
-	// Preserve previous NOTIMP typo, see github.com/miekg/dns/issues/733.
-	StringToRcode["NOTIMPL"] = RcodeNotImplemented
-}
+var StringToRcode = reverseInt16(RcodeToString)
 
 // StringToAlgorithm is the reverse of AlgorithmToString.
 var StringToAlgorithm = reverseInt8(AlgorithmToString)
@@ -37,14 +32,6 @@ func reverseInt8(m map[uint8]string) map[string]uint8 {
 
 func reverseInt16(m map[uint16]string) map[string]uint16 {
 	n := make(map[string]uint16, len(m))
-	for u, s := range m {
-		n[s] = u
-	}
-	return n
-}
-
-func reverseInt(m map[int]string) map[string]int {
-	n := make(map[string]int, len(m))
 	for u, s := range m {
 		n[s] = u
 	}

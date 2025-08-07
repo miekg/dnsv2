@@ -169,7 +169,7 @@ const (
 
 // header is the wire format for the DNS packet header.
 type header struct {
-	Id                                 uint16
+	ID                                 uint16
 	Bits                               uint16
 	Qdcount, Ancount, Nscount, Arcount uint16
 }

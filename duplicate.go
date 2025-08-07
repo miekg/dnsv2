@@ -1,5 +1,6 @@
 package dns
 
+/*
 // Use fields here?? and then have a single function Equal(a, b RR)
 // equality between field... might see the real type and compare those, if that fails, convefrt to string
 // Sort too?
@@ -37,3 +38,4 @@ func (r1 *RR_Header) isDuplicate(_r2 RR) bool {
 
 // isDuplicateName checks if the domain names s1 and s2 are equal.
 func isDuplicateName(s1, s2 string) bool { return equal(s1, s2) }
+*/
