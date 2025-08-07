@@ -1,8 +1,10 @@
 package dns
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func sprintName(s string) string {
@@ -189,4 +191,53 @@ func sprintClass(c uint16) string {
 		}
 	}
 	return "CLASS" + strconv.Itoa(int(c))
+}
+
+// TimeToString translates the RRSIG's incep. and expir. times to the
+// string representation used when printing the record.
+// It takes serial arithmetic (RFC 1982) into account.
+func TimeToString(t uint32) string {
+	mod := (int64(t)-time.Now().Unix())/year68 - 1
+	if mod < 0 {
+		mod = 0
+	}
+	ti := time.Unix(int64(t)-mod*year68, 0).UTC()
+	return ti.Format("20060102150405")
+}
+
+// StringToTime translates the RRSIG's incep. and expir. times from
+// string values like "20110403154150" to an 32 bit integer.
+// It takes serial arithmetic (RFC 1982) into account.
+func StringToTime(s string) (uint32, error) {
+	t, err := time.Parse("20060102150405", s)
+	if err != nil {
+		return 0, err
+	}
+	mod := t.Unix()/year68 - 1
+	if mod < 0 {
+		mod = 0
+	}
+	return uint32(t.Unix() - mod*year68), nil
+}
+
+// saltToString converts a NSECX salt to uppercase and returns "-" when it is empty.
+func saltToString(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return strings.ToUpper(s)
+}
+
+func euiToString(eui uint64, bits int) (hex string) {
+	switch bits {
+	case 64:
+		hex = fmt.Sprintf("%16.16x", eui)
+		hex = hex[0:2] + "-" + hex[2:4] + "-" + hex[4:6] + "-" + hex[6:8] +
+			"-" + hex[8:10] + "-" + hex[10:12] + "-" + hex[12:14] + "-" + hex[14:16]
+	case 48:
+		hex = fmt.Sprintf("%12.12x", eui)
+		hex = hex[0:2] + "-" + hex[2:4] + "-" + hex[4:6] + "-" + hex[6:8] +
+			"-" + hex[8:10] + "-" + hex[10:12]
+	}
+	return
 }
