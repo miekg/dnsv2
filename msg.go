@@ -501,7 +501,7 @@ func intToBytes(i *big.Int, length int) []byte {
 // PackRR packs a resource record rr into msg[off:].
 // See PackDomainName for documentation about the compression.
 func PackRR(rr RR, msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	_, off1, err = packRR(rr, msg, off, compression)
+	_, off1, err = packRR(rr, msg, off, compression, compress)
 	return off1, err
 }
 
@@ -516,7 +516,7 @@ func packRR(rr RR, msg []byte, off int, compression map[string]uint16) (headerEn
 		return headerEnd, len(msg), err
 	}
 
-	off1, err = rr.pack(msg, headerEnd, compression)
+	off1, err = pack(rr, msg, headerEnd, compression)
 	if err != nil {
 		return headerEnd, len(msg), err
 	}
@@ -579,7 +579,7 @@ func unpackRRWithHeader(h Header, rdlength uint16, msg *cryptobyte.String, msgBu
 		return rr, nil
 	}
 
-	if err := rr.unpack(data, msgBuf); err != nil {
+	if err := unpack(rr, data, msgBuf); err != nil {
 		// TODO(tmthrgd): Do we want to return a partially filled in RR here
 		// or even the RR_Header we were given like above?
 		return nil, err
@@ -669,10 +669,11 @@ func (m *Msg) packBufferWithCompressionMap(buf []byte, compress map[string]uint1
 		return nil, err
 	}
 	for _, r := range m.Question {
-		off, err = r.pack(msg, off, compress)
+		off, err = packquestion(msg, off, compress)
 		if err != nil {
 			return nil, err
 		}
+		break
 	}
 	for _, r := range m.Answer {
 		_, off, err = packRR(r, msg, off, compress)

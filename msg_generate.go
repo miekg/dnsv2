@@ -45,7 +45,9 @@ func main() {
 		// Pack functions
 		//
 
-		fmt.Fprintf(b, "func (rr *%s) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {\n", rrname)
+		// We know which RRs rdata can be compressed. No need to put in the API.
+
+		fmt.Fprintf(b, "func (rr *%s) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {\n", rrname)
 
 		strct := spec.Type.(*ast.StructType)
 		for _, field := range strct.Fields.List {

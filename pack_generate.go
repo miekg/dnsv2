@@ -28,7 +28,7 @@ import (
 `
 
 var packFunc = template.Must(template.New("packFunc").Parse(`
-func pack(rr RR, msg []byte, off int, compression map[string]uint16) (uint16, error) {
+func pack(rr RR, msg []byte, off int, compression map[string]uint16) (int, error) {
 	switch x := rr.(type) {
 {{range .}}{{if ne . "RFC3597"}}  case *{{.}}:
 	return x.pack(msg, off, compression)

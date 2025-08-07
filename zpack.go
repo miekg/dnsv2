@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func pack(rr RR, msg []byte, off int, compression map[string]uint16) (uint16, error) {
+func pack(rr RR, msg []byte, off int, compression map[string]uint16) (int, error) {
 	switch x := rr.(type) {
 	case *ANY:
 		return x.pack(msg, off, compression)

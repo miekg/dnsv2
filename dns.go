@@ -9,8 +9,7 @@ import (
 //go:generate go run rr_generate.go
 //go:generate go run msg_generate.go
 //go:generate go run pack_generate.go
-
-// //go:generate go run duplicate_generate.go remove too?
+//go:generate go run len_generate.go
 
 const (
 	// DefaultMsgSize is the standard default for messages larger than 512 bytes.
@@ -56,7 +55,7 @@ type Packer interface {
 	// header is taken care off. For examples of such code look in zmsg.go. The returned int is the new offset in
 	// msg when this RR is packed. New RRs do not have to deal with compression, as compressed rdata is not
 	// allowed anymore.
-	Pack(msg []byte, off int) (uint16, error)
+	Pack(msg []byte, off int) (int, error)
 	// Unpack unpacks the RR. Data is the byte slice that should contain the all the data for the RR.
 	Unpack(data []byte) error
 }
@@ -204,7 +203,7 @@ func (h *MsgHeader) String() string {
 // ToRFC3597 converts a known RR to the unknown RR representation from RFC 3597.
 func (rr *RFC3597) ToRFC3597(r RR) error {
 	buf := make([]byte, r.Len())
-	headerEnd, off, err := packRR(r, buf, 0, map[string]uint16{}, false)
+	headerEnd, off, err := packRR(r, buf, 0, map[string]uint16{})
 	if err != nil {
 		return err
 	}

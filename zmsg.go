@@ -4,7 +4,7 @@ package dns
 
 import "golang.org/x/crypto/cryptobyte"
 
-func (rr *ANY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *ANY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	return off, nil
 }
 
@@ -16,7 +16,7 @@ func (rr *ANY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NULL) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NULL) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringAny(rr.Null, msg, off)
 	if err != nil {
 		return off, err
@@ -36,7 +36,7 @@ func (rr *NULL) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *CNAME) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *CNAME) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Target, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -56,7 +56,7 @@ func (rr *CNAME) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *HINFO) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *HINFO) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packString(rr.Cpu, msg, off)
 	if err != nil {
 		return off, err
@@ -84,7 +84,7 @@ func (rr *HINFO) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *MB) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *MB) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Mb, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -104,7 +104,7 @@ func (rr *MB) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *MG) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *MG) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Mg, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -124,7 +124,7 @@ func (rr *MG) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *MINFO) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *MINFO) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Rmail, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -152,7 +152,7 @@ func (rr *MINFO) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *MR) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *MR) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Mr, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -172,7 +172,7 @@ func (rr *MR) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *MF) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *MF) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Mf, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -192,7 +192,7 @@ func (rr *MF) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *MD) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *MD) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Md, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -212,7 +212,7 @@ func (rr *MD) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *MX) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *MX) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -239,7 +239,7 @@ func (rr *MX) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *AFSDB) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *AFSDB) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Subtype, msg, off)
 	if err != nil {
 		return off, err
@@ -266,7 +266,7 @@ func (rr *AFSDB) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *X25) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *X25) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packString(rr.PSDNAddress, msg, off)
 	if err != nil {
 		return off, err
@@ -286,7 +286,7 @@ func (rr *X25) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *RT) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *RT) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -313,7 +313,7 @@ func (rr *RT) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NS) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NS) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Ns, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -333,7 +333,7 @@ func (rr *NS) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *PTR) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *PTR) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Ptr, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -353,7 +353,7 @@ func (rr *PTR) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *RP) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *RP) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Mbox, msg, off, compression, false)
 	if err != nil {
 		return off, err
@@ -381,7 +381,7 @@ func (rr *RP) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *SOA) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *SOA) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Ns, msg, off, compression, compress)
 	if err != nil {
 		return off, err
@@ -444,7 +444,7 @@ func (rr *SOA) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *TXT) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *TXT) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringTxt(rr.Txt, msg, off)
 	if err != nil {
 		return off, err
@@ -464,7 +464,7 @@ func (rr *TXT) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *SPF) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *SPF) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringTxt(rr.Txt, msg, off)
 	if err != nil {
 		return off, err
@@ -484,7 +484,7 @@ func (rr *SPF) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *AVC) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *AVC) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringTxt(rr.Txt, msg, off)
 	if err != nil {
 		return off, err
@@ -504,7 +504,7 @@ func (rr *AVC) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *SRV) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *SRV) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Priority, msg, off)
 	if err != nil {
 		return off, err
@@ -545,7 +545,7 @@ func (rr *SRV) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NAPTR) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NAPTR) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Order, msg, off)
 	if err != nil {
 		return off, err
@@ -603,7 +603,7 @@ func (rr *NAPTR) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *CERT) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *CERT) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Type, msg, off)
 	if err != nil {
 		return off, err
@@ -644,7 +644,7 @@ func (rr *CERT) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *DNAME) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *DNAME) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Target, msg, off, compression, false)
 	if err != nil {
 		return off, err
@@ -664,7 +664,7 @@ func (rr *DNAME) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *A) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *A) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packA(rr.A, msg, off)
 	if err != nil {
 		return off, err
@@ -684,7 +684,7 @@ func (rr *A) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *AAAA) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *AAAA) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packAAAA(rr.AAAA, msg, off)
 	if err != nil {
 		return off, err
@@ -704,7 +704,7 @@ func (rr *AAAA) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *PX) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *PX) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -739,7 +739,7 @@ func (rr *PX) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *GPOS) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *GPOS) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packString(rr.Longitude, msg, off)
 	if err != nil {
 		return off, err
@@ -775,7 +775,7 @@ func (rr *GPOS) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *LOC) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *LOC) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Version, msg, off)
 	if err != nil {
 		return off, err
@@ -836,7 +836,7 @@ func (rr *LOC) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *SIG) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *SIG) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	return off, nil
 }
 
@@ -848,7 +848,7 @@ func (rr *SIG) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *RRSIG) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *RRSIG) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.TypeCovered, msg, off)
 	if err != nil {
 		return off, err
@@ -925,7 +925,7 @@ func (rr *RRSIG) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NSEC) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NSEC) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.NextDomain, msg, off, compression, false)
 	if err != nil {
 		return off, err
@@ -953,7 +953,7 @@ func (rr *NSEC) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *DLV) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *DLV) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	return off, nil
 }
 
@@ -965,7 +965,7 @@ func (rr *DLV) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *CDS) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *CDS) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	return off, nil
 }
 
@@ -977,7 +977,7 @@ func (rr *CDS) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *DS) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *DS) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.KeyTag, msg, off)
 	if err != nil {
 		return off, err
@@ -1018,7 +1018,7 @@ func (rr *DS) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *KX) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *KX) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -1045,7 +1045,7 @@ func (rr *KX) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *TA) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *TA) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.KeyTag, msg, off)
 	if err != nil {
 		return off, err
@@ -1086,7 +1086,7 @@ func (rr *TA) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *TALINK) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *TALINK) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.PreviousName, msg, off, compression, false)
 	if err != nil {
 		return off, err
@@ -1114,7 +1114,7 @@ func (rr *TALINK) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *SSHFP) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *SSHFP) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Algorithm, msg, off)
 	if err != nil {
 		return off, err
@@ -1148,7 +1148,7 @@ func (rr *SSHFP) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *KEY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *KEY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	return off, nil
 }
 
@@ -1160,7 +1160,7 @@ func (rr *KEY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *CDNSKEY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *CDNSKEY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	return off, nil
 }
 
@@ -1172,7 +1172,7 @@ func (rr *CDNSKEY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *DNSKEY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *DNSKEY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Flags, msg, off)
 	if err != nil {
 		return off, err
@@ -1213,7 +1213,7 @@ func (rr *DNSKEY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *IPSECKEY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *IPSECKEY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Precedence, msg, off)
 	if err != nil {
 		return off, err
@@ -1262,7 +1262,7 @@ func (rr *IPSECKEY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *AMTRELAY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *AMTRELAY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Precedence, msg, off)
 	if err != nil {
 		return off, err
@@ -1296,7 +1296,7 @@ func (rr *AMTRELAY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *RKEY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *RKEY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Flags, msg, off)
 	if err != nil {
 		return off, err
@@ -1337,7 +1337,7 @@ func (rr *RKEY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NSAPPTR) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NSAPPTR) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Ptr, msg, off, compression, false)
 	if err != nil {
 		return off, err
@@ -1357,7 +1357,7 @@ func (rr *NSAPPTR) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NSEC3) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NSEC3) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Hash, msg, off)
 	if err != nil {
 		return off, err
@@ -1431,7 +1431,7 @@ func (rr *NSEC3) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NSEC3PARAM) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NSEC3PARAM) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Hash, msg, off)
 	if err != nil {
 		return off, err
@@ -1482,7 +1482,7 @@ func (rr *NSEC3PARAM) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *TKEY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *TKEY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packDomainName(rr.Algorithm, msg, off, compression, false)
 	if err != nil {
 		return off, err
@@ -1560,7 +1560,7 @@ func (rr *TKEY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *RFC3597) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *RFC3597) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringHex(rr.Rdata, msg, off)
 	if err != nil {
 		return off, err
@@ -1580,7 +1580,7 @@ func (rr *RFC3597) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *URI) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *URI) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Priority, msg, off)
 	if err != nil {
 		return off, err
@@ -1614,7 +1614,7 @@ func (rr *URI) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *DHCID) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *DHCID) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringBase64(rr.Digest, msg, off)
 	if err != nil {
 		return off, err
@@ -1634,7 +1634,7 @@ func (rr *DHCID) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *TLSA) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *TLSA) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Usage, msg, off)
 	if err != nil {
 		return off, err
@@ -1675,7 +1675,7 @@ func (rr *TLSA) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *SMIMEA) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *SMIMEA) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Usage, msg, off)
 	if err != nil {
 		return off, err
@@ -1716,7 +1716,7 @@ func (rr *SMIMEA) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *HIP) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *HIP) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.HitLength, msg, off)
 	if err != nil {
 		return off, err
@@ -1773,7 +1773,7 @@ func (rr *HIP) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NINFO) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NINFO) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringTxt(rr.ZSData, msg, off)
 	if err != nil {
 		return off, err
@@ -1793,7 +1793,7 @@ func (rr *NINFO) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NID) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NID) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -1819,7 +1819,7 @@ func (rr *NID) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *L32) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *L32) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -1846,7 +1846,7 @@ func (rr *L32) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *L64) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *L64) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -1872,7 +1872,7 @@ func (rr *L64) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *LP) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *LP) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint16(rr.Preference, msg, off)
 	if err != nil {
 		return off, err
@@ -1899,7 +1899,7 @@ func (rr *LP) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *EUI48) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *EUI48) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint48(rr.Address, msg, off)
 	if err != nil {
 		return off, err
@@ -1918,7 +1918,7 @@ func (rr *EUI48) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *EUI64) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *EUI64) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint64(rr.Address, msg, off)
 	if err != nil {
 		return off, err
@@ -1937,7 +1937,7 @@ func (rr *EUI64) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *CAA) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *CAA) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint8(rr.Flag, msg, off)
 	if err != nil {
 		return off, err
@@ -1972,7 +1972,7 @@ func (rr *CAA) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *UID) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *UID) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint32(rr.Uid, msg, off)
 	if err != nil {
 		return off, err
@@ -1991,7 +1991,7 @@ func (rr *UID) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *GID) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *GID) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint32(rr.Gid, msg, off)
 	if err != nil {
 		return off, err
@@ -2010,7 +2010,7 @@ func (rr *GID) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *UINFO) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *UINFO) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packString(rr.Uinfo, msg, off)
 	if err != nil {
 		return off, err
@@ -2030,7 +2030,7 @@ func (rr *UINFO) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *EID) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *EID) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringHex(rr.Endpoint, msg, off)
 	if err != nil {
 		return off, err
@@ -2050,7 +2050,7 @@ func (rr *EID) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *NIMLOC) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *NIMLOC) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringHex(rr.Locator, msg, off)
 	if err != nil {
 		return off, err
@@ -2070,7 +2070,7 @@ func (rr *NIMLOC) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *OPENPGPKEY) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *OPENPGPKEY) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packStringBase64(rr.PublicKey, msg, off)
 	if err != nil {
 		return off, err
@@ -2090,7 +2090,7 @@ func (rr *OPENPGPKEY) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *CSYNC) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *CSYNC) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint32(rr.Serial, msg, off)
 	if err != nil {
 		return off, err
@@ -2124,7 +2124,7 @@ func (rr *CSYNC) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *ZONEMD) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *ZONEMD) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packUint32(rr.Serial, msg, off)
 	if err != nil {
 		return off, err
@@ -2165,7 +2165,7 @@ func (rr *ZONEMD) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
-func (rr *APL) pack(msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
+func (rr *APL) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packApl(rr.Prefixes, msg, off)
 	if err != nil {
 		return off, err

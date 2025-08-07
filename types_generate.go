@@ -20,6 +20,8 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+// does the copy function only
+
 var skipLen = map[string]struct{}{
 	"NSEC":  {},
 	"NSEC3": {},
