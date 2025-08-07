@@ -59,8 +59,10 @@ type Packer interface {
 	Unpack(data []byte) error
 }
 
-// New RR don't do comression, only the owner name may be compressed, so there should be no need to saddle
-// them with compression stuff. TODO(miek). But needed for the header unpack
+// The Copier interface defines a copy function that returns a deep copy of the RR.
+type Copier interface {
+	Copy() RR
+}
 
 // Header is the header in a DNS resource record. It implements the RR interface, as a header is the RR
 // without any data.
@@ -72,6 +74,10 @@ type Header struct {
 	t uint16 // type is inferred from the Go type, and not exported
 	// rdlength has no use for user of RRs in this library.
 }
+
+func (h *Header) Len() int        { return len(h.Name) + 10 }
+func (h *Header) Data() []Field   { return nil }
+func (h *Header) Header() *Header { return h }
 
 // String returns the string representation of h.
 func (h *Header) String() string {
@@ -88,9 +94,6 @@ func (h *Header) String() string {
 	sb.WriteString(sprintType(h.t))
 	return sb.String()
 }
-
-func (h *Header) Len() int      { return len(h.Name) + 10 }
-func (h *Header) Data() []Field { return nil }
 
 // EDNS0 determines if the "RR" is posing as an EDNS0 option. EDNS0 options are considered just RRs and must
 // be added to the [Pseudo] section of a DNS message.
