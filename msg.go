@@ -187,7 +187,7 @@ loop:
 			// Don't try to compress '.'
 			// We should only compress when compress is true, but we should also still pick
 			// up names that can be used for *future* compression(s).
-			if !isRootLabel(s, bs, begin, ls) {
+			if !isRootLabel(s, bs, begin, ls) && compression != nil {
 				if p, ok := compression[s[compBegin:]]; ok {
 					// The first hit is the longest matching dname
 					// keep the pointer offset we get back and store
