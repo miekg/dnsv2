@@ -2,6 +2,7 @@
 package generate
 
 import (
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -11,6 +12,8 @@ import (
 )
 
 var exclude = []string{"APLPrefix", "RFC3597"}
+
+var FlagDebug = flag.Bool("debug", false, "Emit the non-formatted code to standard output and do not write it to a file.")
 
 // Types returns all types names from the file that are exported.
 func Types(file string) ([]string, error) {

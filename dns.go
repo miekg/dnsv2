@@ -8,6 +8,8 @@ import (
 
 //go:generate go run rr_generate.go
 //go:generate go run msg_generate.go
+//go:generate go run pack_generate.go
+
 // //go:generate go run duplicate_generate.go remove too?
 
 const (
@@ -54,7 +56,7 @@ type Packer interface {
 	// header is taken care off. For examples of such code look in zmsg.go. The returned int is the new offset in
 	// msg when this RR is packed. New RRs do not have to deal with compression, as compressed rdata is not
 	// allowed anymore.
-	Pack(msg []byte, off int) (int, error)
+	Pack(msg []byte, off int) (uint16, error)
 	// Unpack unpacks the RR. Data is the byte slice that should contain the all the data for the RR.
 	Unpack(data []byte) error
 }

@@ -26,8 +26,6 @@ import "golang.org/x/crypto/cryptobyte"
 
 const out = "zmsg.go"
 
-var flagDebug = flag.Bool("debug", false, "Emit the non-formatted code to standard output and do not write it to a file.")
-
 func main() {
 	flag.Parse()
 	specs, err := generate.StructTypeSpecs("types.go")
@@ -319,7 +317,7 @@ if rr.%s != "-" {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 
-	if *flagDebug {
+	if *generate.FlagDebug {
 		fmt.Print(string(formatted))
 		return
 	}
