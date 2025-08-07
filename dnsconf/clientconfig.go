@@ -6,10 +6,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/miekg/dnsv2/dnsutil"
 )
 
-// ClientConfig wraps the contents of the /etc/resolv.conf file.
-type ClientConfig struct {
+// Config wraps the contents of the /etc/resolv.conf file.
+type Config struct {
 	Servers  []string // servers to use
 	Search   []string // suffixes to append to local name
 	Port     string   // what port to use
@@ -18,20 +20,19 @@ type ClientConfig struct {
 	Attempts int      // lost packets before giving up on server, not used in the package dns
 }
 
-// ClientConfigFromFile parses a resolv.conf(5) like file and returns
-// a *ClientConfig.
-func ClientConfigFromFile(resolvconf string) (*ClientConfig, error) {
+// FromFile parses a resolv.conf(5) like file and returns a *Config.
+func FromFile(resolvconf string) (*Config, error) {
 	file, err := os.Open(resolvconf)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	return ClientConfigFromReader(file)
+	return FromReader(file)
 }
 
-// ClientConfigFromReader works like ClientConfigFromFile but takes an io.Reader as argument
-func ClientConfigFromReader(resolvconf io.Reader) (*ClientConfig, error) {
-	c := new(ClientConfig)
+// FromReader works like FromFile but takes an io.Reader as argument.
+func FromReader(resolvconf io.Reader) (*Config, error) {
+	c := new(Config)
 	scanner := bufio.NewScanner(resolvconf)
 	c.Servers = make([]string, 0)
 	c.Search = make([]string, 0)
@@ -105,9 +106,9 @@ func ClientConfigFromReader(resolvconf io.Reader) (*ClientConfig, error) {
 // NameList returns all of the names that should be queried based on the
 // config. It is based off of go's net/dns name building, but it does not
 // check the length of the resulting names.
-func (c *ClientConfig) NameList(name string) []string {
+func (c *Config) NameList(name string) []string {
 	// if this domain is already fully qualified, no append needed.
-	if IsFqdn(name) {
+	if dnsutil.IsFqdn(name) {
 		return []string{name}
 	}
 
@@ -115,7 +116,7 @@ func (c *ClientConfig) NameList(name string) []string {
 	// the domain fully qualified.
 	hasNdots := CountLabel(name) > c.Ndots
 	// Make the domain fully qualified.
-	name = Fqdn(name)
+	name = dnsutil.Fqdn(name)
 
 	// Make a list of names based off search.
 	names := []string{}
@@ -125,11 +126,21 @@ func (c *ClientConfig) NameList(name string) []string {
 		names = append(names, name)
 	}
 	for _, s := range c.Search {
-		names = append(names, Fqdn(name+s))
+		names = append(names, dnsutil.Fqdn(name+s))
 	}
 	// If we didn't have enough dots, try after suffixes.
 	if !hasNdots {
 		names = append(names, name)
 	}
 	return names
+}
+
+// Note copied from types.go
+
+// cloneSlice returns a shallow copy of s.
+func cloneSlice[E any, S ~[]E](s S) S {
+	if s == nil {
+		return nil
+	}
+	return append(S(nil), s...)
 }

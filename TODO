@@ -1,0 +1,7 @@
+get to most minimal code that actually compiles and can send data
+
+clientconfig.go -> its own package
+
+dnsutil -> extend
+
+rrpack -> check the type cal pack/unpack and do the Packer check

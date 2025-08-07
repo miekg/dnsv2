@@ -1,4 +1,4 @@
-// DNS server implementation.
+//go:build ignore
 
 package dns
 

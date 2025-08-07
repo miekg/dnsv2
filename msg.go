@@ -500,23 +500,23 @@ func intToBytes(i *big.Int, length int) []byte {
 
 // PackRR packs a resource record rr into msg[off:].
 // See PackDomainName for documentation about the compression.
-func PackRR(rr RR, msg []byte, off int, compress map[string]uint16) (off1 int, err error) {
-	_, off1, err = packRR(rr, msg, off, compress)
+func PackRR(rr RR, msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
+	_, off1, err = packRR(rr, msg, off, compression)
 	return off1, err
 }
 
-func packRR(rr RR, msg []byte, off int, compress map[string]uint16) (headerEnd int, off1 int, err error) {
+func packRR(rr RR, msg []byte, off int, compression map[string]uint16) (headerEnd int, off1 int, err error) {
 	if rr == nil {
 		return len(msg), len(msg), &Error{err: "nil rr"}
 	}
 
 	rrtype := RRToType(rr)
-	headerEnd, err = rr.Header().packHeader(msg, off, rrtype, compress)
+	headerEnd, err = rr.Header().packHeader(msg, off, rrtype, compression)
 	if err != nil {
 		return headerEnd, len(msg), err
 	}
 
-	off1, err = rr.pack(msg, headerEnd, compress)
+	off1, err = rr.pack(msg, headerEnd, compression)
 	if err != nil {
 		return headerEnd, len(msg), err
 	}
@@ -561,17 +561,17 @@ func UnpackRRWithHeader(h Header, msg []byte, off int) (rr RR, off1 int, err err
 }
 
 func unpackRR(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
-	h, err := unpackRRHeader(msg, msgBuf)
+	h, rrtype, rdlength, err := unpackRRHeader(msg, msgBuf)
 	if err != nil {
 		return nil, err
 	}
 
-	return unpackRRWithHeader(h, msg, msgBuf)
+	return unpackRRWithHeader(h, rdlength, msg, msgBuf)
 }
 
-func unpackRRWithHeader(h Header, msg *cryptobyte.String, msgBuf []byte) (RR, error) {
+func unpackRRWithHeader(h Header, rdlength uint16, msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	var data []byte
-	if !msg.ReadBytes(&data, int(h.Rdlength)) {
+	if !msg.ReadBytes(&data, int(rdlength)) {
 		h := h // Avoid spilling h to the heap in the happy path.
 		return &h, ErrTruncatedMessage
 	}
@@ -581,7 +581,7 @@ func unpackRRWithHeader(h Header, msg *cryptobyte.String, msgBuf []byte) (RR, er
 	msgBuf = msgBuf[:offset(*msg, msgBuf)]
 
 	var rr RR
-	if newFn, ok := TypeToRR[h.Rrtype]; ok {
+	if newFn, ok := TypeToRR[h.t]; ok {
 		rr = newFn()
 		*rr.Header() = h
 	} else {
@@ -666,7 +666,7 @@ func (m *Msg) packBufferWithCompressionMap(buf []byte, compress map[string]uint1
 	dh.Qdcount = uint16(len(m.Question))
 	dh.Ancount = uint16(len(m.Answer))
 	dh.Nscount = uint16(len(m.Ns))
-	dh.Arcount = uint16(len(m.Extra))
+	dh.Arcount = uint16(len(m.Extra)) // pseudo
 
 	// We need the uncompressed length here, because we first pack it and then compress it.
 	msg = buf
@@ -706,6 +706,50 @@ func (m *Msg) packBufferWithCompressionMap(buf []byte, compress map[string]uint1
 		}
 	}
 	return msg[:off], nil
+}
+
+// We only allow a single question in the question section.
+func unpackQuestion(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
+	// TODO(tmthrgd): Stop accepting partial questions. These are here
+	// ostensibly for dynamic updates (see RFC 2136), but that standard doesn't
+	// actually permit partial question records and this seems to be a hold over
+	// of earlier unpacking code that was more generic. Instead we should
+	// enforce that we've properly received an entire question by removing the
+	// msg.Empty() checks.
+
+	name, err := unpackDomainName(msg, msgBuf)
+	if err != nil {
+		if errors.Is(err, ErrUnpackOverflow) {
+			return nil, ErrTruncatedMessage
+		}
+		return nil, err
+	}
+	var qtype uint16
+	if !msg.Empty() && !msg.ReadUint16(&qtype) {
+		return q, ErrTruncatedMessage
+	}
+
+	// There was a bug in the previous unpacking code that meant the effective
+	// behaviour when exactly one byte remained here instead of two or more
+	// required for the class was to skip over it rather than return an error as
+	// expected. While that may seem unremarkable on its own, there is a bug, or
+	// perhaps an interesting design choice, in packDomainName means that we can
+	// accidentally generate corrupt messages that would trip this very check.
+	// This can happen when packing a message that contains exactly one question
+	// with an empty domain name. For messages that contain either multiple
+	// questions or also contain records, this is likely to lead to corrupt
+	// messages that wouldn't trip this check.
+	//
+	// if len(*msg) == 1 {
+	//      msg.Skip(1)
+	//      return q, nil
+	// }
+
+	var qclass uint16
+	if !msg.Empty() && !msg.ReadUint16(&qclass) {
+		return nil, ErrTruncatedMessage
+	}
+	return q, nil
 }
 
 func unpackQuestions(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]Question, error) {
@@ -752,7 +796,7 @@ func unpackRRs(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, error) 
 	return dst, nil
 }
 
-func (dns *Msg) unpack(dh Header, msg, msgBuf []byte) error {
+func (dns *Msg) unpack(dh header, msg, msgBuf []byte) error {
 	s := cryptobyte.String(msg)
 	// If we are at the end of the message we should return *just* the
 	// header. This can still be useful to the caller. 9.9.9.9 sends these
@@ -762,7 +806,7 @@ func (dns *Msg) unpack(dh Header, msg, msgBuf []byte) error {
 	// should be specifying that it contains no records.
 	if s.Empty() {
 		// reset sections before returning
-		dns.Question, dns.Answer, dns.Ns, dns.Extra = nil, nil, nil, nil
+		dns.Question, dns.Answer, dns.Ns, dns.Extra, dns.Pseudo = nil, nil, nil, nil, nil
 		return nil
 	}
 
@@ -807,7 +851,7 @@ func (dns *Msg) Unpack(msg []byte) error {
 
 	var dh Header
 	if !dh.unpack(&s) {
-		return errTruncatedMessage
+		return ErrTruncatedMessage
 	}
 	dns.setHdr(dh)
 

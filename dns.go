@@ -34,7 +34,7 @@ type RR interface {
 	Data() []Field
 	// Len is the length if the RR when encoded in wire format, this is not a perfect metric and returning
 	// a slightly too large value is OK.
-	// Len() int (uit voor nu)
+	Len() int
 }
 
 // If an RR implements the Typer interface it will be used to return the type of RR in the RRToType function.
@@ -50,26 +50,31 @@ type Field any
 
 // The Packer interface defines the Pack and Unpack methods that are used to convert RRs to and from wire format.
 type Packer interface {
-	// Pack packs the RR into msg at offset off. Compress is used for compression, see examples in zpack.go.
-	// The returned int is the new offset in msg when this RR is packed.
-	Pack(msg []byte, off int, compress map[string]uint16) (int, error)
-	// Unpack unpacks the RR. Data is the byte slice that should contain the all the data for the RR, msg is
-	// the byte slice with the entire message; this is only used to resolve compression pointers and the new
-	// RRs that can contain those (only those defined in RFC 1035).
-	Unpack(data, msg []byte) error
+	// Pack packs the RR into msg at offset off. This method only needs to deals with the RR's rdata, as the
+	// header is taken care off. For examples of such code look in zmsg.go. The returned int is the new offset in
+	// msg when this RR is packed. New RRs do not have to deal with compression, as compressed rdata is not
+	// allowed anymore.
+	Pack(msg []byte, off int) (int, error)
+	// Unpack unpacks the RR. Data is the byte slice that should contain the all the data for the RR.
+	Unpack(data []byte) error
 }
 
-// Header is the header in a DNS resource record.
+// New RR don't do comression, only the owner name may be compressed, so there should be no need to saddle
+// them with compression stuff. TODO(miek). But needed for the header unpack
+
+// Header is the header in a DNS resource record. It implements the RR interface, as a header is the RR
+// without any data.
 type Header struct {
-	Name string `dns:"cdomain-name"`
-	// type is inferred from the Go type.
+	Name  string `dns:"cdomain-name"`
 	Class uint16 // Class is the class of the RR, this is almost always [ClassINET], if left zero, ClassINET is assumed when sending a message.
 	TTL   uint32 // TTL is the time-to-live of the RR.
-	// rdlength has no use
+
+	t uint16 // type is inferred from the Go type, and not exported
+	// rdlength has no use for user of RRs in this library.
 }
 
 // String returns the string representation of h.
-func (h *Header) String(rr RR) string {
+func (h *Header) String() string {
 	sb := strings.Builder{}
 	sb.WriteString(sprintName(h.Name))
 	sb.WriteByte('\t')
@@ -80,12 +85,12 @@ func (h *Header) String(rr RR) string {
 	sb.WriteString(sprintClass(h.Class))
 	sb.WriteByte('\t')
 
-	rrtype := RRToType(rr)
-	sb.WriteString(sprintClass(rrtype))
+	sb.WriteString(sprintType(h.t))
 	return sb.String()
 }
 
-func (h *Header) Len() int { return len(h.Name) + 10 }
+func (h *Header) Len() int      { return len(h.Name) + 10 }
+func (h *Header) Data() []Field { return nil }
 
 // EDNS0 determines if the "RR" is posing as an EDNS0 option. EDNS0 options are considered just RRs and must
 // be added to the [Pseudo] section of a DNS message.
@@ -193,7 +198,7 @@ func (h *MsgHeader) String() string {
 
 // ToRFC3597 converts a known RR to the unknown RR representation from RFC 3597.
 func (rr *RFC3597) ToRFC3597(r RR) error {
-	buf := make([]byte, Len(r))
+	buf := make([]byte, r.Len())
 	headerEnd, off, err := packRR(r, buf, 0, compressionMap{}, false)
 	if err != nil {
 		return err

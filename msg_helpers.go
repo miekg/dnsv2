@@ -42,10 +42,6 @@ func packA(a net.IP, msg []byte, off int) (int, error) {
 
 		copy(msg[off:], a.To4())
 		off += net.IPv4len
-	case 0:
-		// Allowed, for dynamic updates.
-		//
-		// TODO(tmthrgd): This is wrong and can result in corrupt records.
 	default:
 		return len(msg), &Error{err: "overflow packing a"}
 	}
@@ -69,10 +65,6 @@ func packAAAA(aaaa net.IP, msg []byte, off int) (int, error) {
 
 		copy(msg[off:], aaaa)
 		off += net.IPv6len
-	case 0:
-		// Allowed, dynamic updates.
-		//
-		// TODO(tmthrgd): This is wrong and can result in corrupt records.
 	default:
 		return len(msg), &Error{err: "overflow packing aaaa"}
 	}
@@ -80,36 +72,31 @@ func packAAAA(aaaa net.IP, msg []byte, off int) (int, error) {
 }
 
 // unpackRRHeader unpacks an RR header advancing msg.
-func unpackRRHeader(msg *cryptobyte.String, msgBuf []byte) (Header, error) {
-	var (
-		hdr Header
-		err error
-	)
-	hdr.Name, err = unpackDomainName(msg, msgBuf)
+func unpackRRHeader(msg *cryptobyte.String, msgBuf []byte) (h Header, rdlength uint16, err error) {
+	h.Name, err = unpackDomainName(msg, msgBuf)
 	if err != nil {
 		if errors.Is(err, ErrUnpackOverflow) {
-			return hdr, ErrTruncatedMessage
+			return h, 0, ErrTruncatedMessage
 		}
-		return hdr, err
+		return h, 0, err
 	}
-	var discard uint16
-	if !msg.ReadUint16(&discard) ||
-		!msg.ReadUint16(&hdr.Class) ||
-		!msg.ReadUint32(&hdr.TTL) ||
-		!msg.ReadUint16(&discard) {
-		return hdr, ErrTruncatedMessage
+	if !msg.ReadUint16(&h.t) ||
+		!msg.ReadUint16(&h.Class) ||
+		!msg.ReadUint32(&h.TTL) ||
+		!msg.ReadUint16(&rdlength) {
+		return h, rdlength, ErrTruncatedMessage
 	}
-	return hdr, nil
+	return h, rdlength, nil
 }
 
 // packHeader packs an RR header, returning the offset to the end of the header.
 // See PackDomainName for documentation about the compression.
-func (hdr Header) packHeader(msg []byte, off int, rrtype uint16, compress map[string]uint16) (int, error) {
+func (h Header) packHeader(msg []byte, off int, rrtype uint16, compress map[string]uint16) (int, error) {
 	if off == len(msg) {
 		return off, nil
 	}
 
-	off, err := packDomainName(hdr.Name, msg, off, compress)
+	off, err := packDomainName(h.Name, msg, off, compress, true)
 	if err != nil {
 		return len(msg), err
 	}
@@ -117,11 +104,11 @@ func (hdr Header) packHeader(msg []byte, off int, rrtype uint16, compress map[st
 	if err != nil {
 		return len(msg), err
 	}
-	off, err = packUint16(hdr.Class, msg, off)
+	off, err = packUint16(h.Class, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
-	off, err = packUint32(hdr.TTL, msg, off)
+	off, err = packUint32(h.TTL, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
@@ -215,7 +202,7 @@ func packUint64(i uint64, msg []byte, off int) (off1 int, err error) {
 func unpackString(s *cryptobyte.String) (string, error) {
 	var txt cryptobyte.String
 	if !s.ReadUint8LengthPrefixed(&txt) {
-		return "", errUnpackOverflow
+		return "", ErrUnpackOverflow
 	}
 	var sb strings.Builder
 	consumed := 0
@@ -256,7 +243,7 @@ func packString(s string, msg []byte, off int) (int, error) {
 func unpackStringBase32(s *cryptobyte.String, len int) (string, error) {
 	var b []byte
 	if !s.ReadBytes(&b, len) {
-		return "", errUnpackOverflow
+		return "", ErrUnpackOverflow
 	}
 	return toBase32(b), nil
 }
@@ -277,7 +264,7 @@ func packStringBase32(s string, msg []byte, off int) (int, error) {
 func unpackStringBase64(s *cryptobyte.String, len int) (string, error) {
 	var b []byte
 	if !s.ReadBytes(&b, len) {
-		return "", errUnpackOverflow
+		return "", ErrUnpackOverflow
 	}
 	return toBase64(b), nil
 }
@@ -298,7 +285,7 @@ func packStringBase64(s string, msg []byte, off int) (int, error) {
 func unpackStringHex(s *cryptobyte.String, len int) (string, error) {
 	var b []byte
 	if !s.ReadBytes(&b, len) {
-		return "", errUnpackOverflow
+		return "", ErrUnpackOverflow
 	}
 	return hex.EncodeToString(b), nil
 }
@@ -319,7 +306,7 @@ func packStringHex(s string, msg []byte, off int) (int, error) {
 func unpackStringAny(s *cryptobyte.String, len int) (string, error) {
 	var b []byte
 	if !s.ReadBytes(&b, len) {
-		return "", errUnpackOverflow
+		return "", ErrUnpackOverflow
 	}
 	return string(b), nil
 }
@@ -354,7 +341,7 @@ func unpackOpt(s *cryptobyte.String) ([]EDNS0, error) {
 		)
 		if !s.ReadUint16(&code) ||
 			!s.ReadUint16LengthPrefixed(&data) {
-			return nil, errUnpackOverflow
+			return nil, ErrUnpackOverflow
 		}
 		opt := makeDataOpt(code)
 		if err := opt.unpack(data); err != nil {
@@ -406,7 +393,7 @@ func unpackNsec(s *cryptobyte.String) ([]uint16, error) {
 		)
 		if !s.ReadUint8(&window) ||
 			!s.ReadUint8LengthPrefixed(&bits) {
-			return nsec, errUnpackOverflow
+			return nsec, ErrUnpackOverflow
 		}
 		if int(window) <= lastwindow {
 			// RFC 4034: Blocks are present in the NSEC RR RDATA in
@@ -507,7 +494,7 @@ func unpackSVCB(s *cryptobyte.String) ([]SVCBKeyValue, error) {
 		)
 		if !s.ReadUint16(&code) ||
 			!s.ReadUint16LengthPrefixed(&data) {
-			return nil, errUnpackOverflow
+			return nil, ErrUnpackOverflow
 		}
 		kv := makeSVCBKeyValue(SVCBKey(code))
 		if kv == nil {
@@ -658,7 +645,7 @@ func unpackAplPrefix(s *cryptobyte.String) (APLPrefix, error) {
 	if !s.ReadUint16(&family) ||
 		!s.ReadUint8(&prefix) ||
 		!s.ReadUint8(&nlen) {
-		return APLPrefix{}, errUnpackOverflow
+		return APLPrefix{}, ErrUnpackOverflow
 	}
 
 	var ip net.IP
@@ -678,7 +665,7 @@ func unpackAplPrefix(s *cryptobyte.String) (APLPrefix, error) {
 		return APLPrefix{}, &Error{err: "APL length too long"}
 	}
 	if !s.CopyBytes(ip[:afdlen]) {
-		return APLPrefix{}, errUnpackOverflow
+		return APLPrefix{}, ErrUnpackOverflow
 	}
 
 	// Address MUST NOT contain trailing zero bytes per RFC3123 Sections 4.1 and 4.2.
@@ -713,7 +700,7 @@ func unpackIPSECGateway(s *cryptobyte.String, msgBuf []byte, gatewayType uint8) 
 	return addr, name, err
 }
 
-func packIPSECGateway(gatewayAddr net.IP, gatewayString string, msg []byte, off int, gatewayType uint8, compression compressionMap, compress bool) (int, error) {
+func packIPSECGateway(gatewayAddr net.IP, gatewayString string, msg []byte, off int, gatewayType uint8, compression map[string]uint16, compress bool) (int, error) {
 	var err error
 
 	switch gatewayType {
