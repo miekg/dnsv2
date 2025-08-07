@@ -34,8 +34,7 @@ type RR interface {
 	Data() []Field
 	// Len is the length if the RR when encoded in wire format, this is not a perfect metric and returning
 	// a slightly too large value is OK.
-	Len() int
-	// Packer
+	// Len() int (uit voor nu)
 }
 
 // If an RR implements the Typer interface it will be used to return the type of RR in the RRToType function.
