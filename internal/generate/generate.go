@@ -7,7 +7,10 @@ import (
 	"go/parser"
 	"go/token"
 	"reflect"
+	"slices"
 )
+
+var exclude = []string{"APLPrefix"}
 
 // Types returns all types names from the file that are exported.
 func Types(file string) ([]string, error) {
@@ -27,7 +30,9 @@ func Types(file string) ([]string, error) {
 				for _, spec := range genDecl.Specs {
 					if typeSpec, ok := spec.(*ast.TypeSpec); ok {
 						if typeSpec.Name.IsExported() {
-							types = append(types, typeSpec.Name.Name)
+							if !slices.Contains(exclude, typeSpec.Name.Name) {
+								types = append(types, typeSpec.Name.Name)
+							}
 						}
 					}
 				}

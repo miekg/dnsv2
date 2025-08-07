@@ -73,7 +73,6 @@ func (dns *Msg) SetUpdate(z string) *Msg {
 	dns.Id = Id()
 	dns.Response = false
 	dns.Opcode = OpcodeUpdate
-	dns.Compress = false // BIND9 cannot handle compression
 	dns.Question = make([]Question, 1)
 	dns.Question[0] = Question{z, TypeSOA, ClassINET}
 	return dns
@@ -85,7 +84,7 @@ func (dns *Msg) SetIxfr(z string, serial uint32, ns, mbox string) *Msg {
 	dns.Question = make([]Question, 1)
 	dns.Ns = make([]RR, 1)
 	s := new(SOA)
-	s.Hdr = RR_Header{z, TypeSOA, ClassINET, defaultTtl, 0}
+	s.Hdr = Header{z, ClassINET, defaultTtl}
 	s.Serial = serial
 	s.Ns = ns
 	s.Mbox = mbox
@@ -107,7 +106,7 @@ func (dns *Msg) SetAxfr(z string) *Msg {
 // additional section. The TSIG is calculated when the message is being send.
 func (dns *Msg) SetTsig(z, algo string, fudge uint16, timesigned int64) *Msg {
 	t := new(TSIG)
-	t.Hdr = RR_Header{z, TypeTSIG, ClassANY, 0, 0}
+	t.Hdr = Header{z, TypeTSIG, ClassANY, 0}
 	t.Algorithm = algo
 	t.Fudge = fudge
 	t.TimeSigned = uint64(timesigned)

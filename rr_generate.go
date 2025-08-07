@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/miekg/dns/internal/generate"
+	"github.com/miekg/dnsv2/internal/generate"
 )
 
 var hdr = `
@@ -48,6 +48,15 @@ func RRToType(rr RR) uint16 {
 
 `))
 
+var TypeToString = template.Must(template.New("typeToString").Parse(`
+// TypeToString is a map of strings for each RR type.
+var TypeToString = map[uint16]string{
+{{range .}}{{if ne . "NSAPPTR"}}  Type{{.}}: "{{.}}",
+{{end}}{{end}}                    TypeNSAPPTR:    "NSAP-PTR",
+}
+
+`))
+
 var headerFunc = template.Must(template.New("headerFunc").Parse(`
 {{range .}}  func (rr *{{.}}) Header() *Header { return &rr.Hdr }
 {{end}}
@@ -64,7 +73,7 @@ var fieldFunc = template.Must(template.New("fieldFunc").Funcs(funcMap).Parse(`
 
 `))
 
-const out = "_zrr.go" // tmp
+const out = "zrr.go"
 
 var flagDebug = flag.Bool("debug", false, "Emit the non-formatted code to standard output and do not write it to a file.")
 
@@ -84,6 +93,9 @@ func main() {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 	if err := RRToType.Execute(source, types); err != nil {
+		log.Fatalf("Failed to generate %s: %v", out, err)
+	}
+	if err := TypeToString.Execute(source, types); err != nil {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 

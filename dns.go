@@ -6,8 +6,7 @@ import (
 	"strings"
 )
 
-//go:generate go run types_generate.go
-// //go:generate go run rr_generate.go
+//go:generate go run rr_generate.go
 //go:generate go run msg_generate.go
 //go:generate go run duplicate_generate.go
 
@@ -118,11 +117,18 @@ type MsgHeader struct {
 // Msg is a DNS message.
 type Msg struct {
 	MsgHeader
-	Question []RR // Holds the RR of the question section.
+	// Question holds a single "RR", in quotes because it is only the domain name, type and class that is
+	// actually encoded here. This package takes care of taking and returning the right bit of an RR.
+	// Setting the question is done like so: msg.Question = []RR{&MX{Hdr: Header{Name: "miek.nl.", Class: ClassINET}}}
+	// This sets it to "miek.nl.", TypeMX, ClassINET.
+	Question []RR
 	Answer   []RR // Holds the RR(s) of the answer section.
 	Ns       []RR // Holds the RR(s) of the authority section.
-	Extra    []RR // Holds the RR(s) of the additional section.
-	Pseudo   []RR // Holds the RR(s) of the (virtual) peusdo section.
+	Extra    []RR // Holds the RR(s) of the additional section, execpt records that go into the pseudo section.
+	// The Pseudo section is a virtual (doesn't exist on the wire) section in this package. It holds the OPT
+	// EDNS0 option codes, that are interpreted as RRs. If a TSIG record is present it also sits in this
+	// section.
+	Pseudo []RR // Holds the RR(s) of the (virtual) peusdo section.
 
 	// Data is the data of the message that was either received from the wire or is about to be send
 	// over the wire. Note that this data is a snapshot of the Msg as it was packed or unpacked.

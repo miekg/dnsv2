@@ -16,7 +16,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"text/template"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -39,15 +38,6 @@ import (
 )
 
 `
-
-var typeToString = template.Must(template.New("typeToString").Parse(`
-// TypeToString is a map of strings for each RR type.
-var TypeToString = map[uint16]string{
-{{range .}}{{if ne . "NSAPPTR"}}  Type{{.}}: "{{.}}",
-{{end}}{{end}}                    TypeNSAPPTR:    "NSAP-PTR",
-}
-
-`))
 
 // getTypeStruct will take a type and the package scope, and return the
 // (innermost) struct if the type is considered a RR type (currently defined as
@@ -133,15 +123,6 @@ func main() {
 
 	b := &bytes.Buffer{}
 	b.WriteString(packageHdr)
-
-	// Generate TypeToRR
-	fatalIfErr(TypeToRR.Execute(b, namedTypes))
-
-	// Generate typeToString
-	fatalIfErr(typeToString.Execute(b, numberedTypes))
-
-	// Generate headerFunc
-	fatalIfErr(headerFunc.Execute(b, namedTypes))
 
 	// Generate len()
 	fmt.Fprint(b, "// len() functions\n")
