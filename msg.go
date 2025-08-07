@@ -289,7 +289,7 @@ func UnpackDomainName(msg []byte, off int) (string, int, error) {
 	s := cryptobyte.String(msg[off:])
 	name, err := unpackDomainName(&s, msg)
 	if err != nil {
-		if errors.Is(err, errUnpackOverflow) {
+		if errors.Is(err, ErrUnpackOverflow) {
 			// Keep existing behaviour of returning ErrBuf here.
 			return "", len(msg), ErrBuf
 		}
@@ -316,13 +316,13 @@ func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 	for {
 		var c byte
 		if !cs.ReadUint8(&c) {
-			return "", errUnpackOverflow
+			return "", ErrUnpackOverflow
 		}
 		switch c & 0xC0 {
 		case 0x00: // literal string
 			var label []byte
 			if !cs.ReadBytes(&label, int(c)) {
-				return "", errUnpackOverflow
+				return "", ErrUnpackOverflow
 			}
 			// If we see a zero-length label (root label), this is the
 			// end of the name.
@@ -348,7 +348,7 @@ func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 		case 0xC0: // pointer
 			var c1 byte
 			if !cs.ReadUint8(&c1) {
-				return "", errUnpackOverflow
+				return "", ErrUnpackOverflow
 			}
 			// If this is the first pointer we've seen, we need to
 			// advance s to our current position.
