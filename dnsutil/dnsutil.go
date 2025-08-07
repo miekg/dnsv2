@@ -121,3 +121,16 @@ func IsName(s string) (labels int, ok bool) {
 
 	return labels, true
 }
+
+// Trim removes the zone component from q. It returns the trimmed
+// name or an error is zone is longer then qname. The trimmed name will be returned
+// without a trailing dot.
+func Trim(q string, z string) string {
+	zl := Count(z)
+	i, ok := Prev(q, zl)
+	if ok || i-1 < 0 {
+		return ""
+	}
+	// This includes the '.', remove on return
+	return q[:i-1]
+}
