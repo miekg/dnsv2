@@ -7,9 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/format"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/miekg/dnsv2/internal/generate"
@@ -313,20 +311,7 @@ if rr.%s != "-" {
 		fmt.Fprint(b, "return nil }\n\n")
 	}
 
-	formatted, err := format.Source(b.Bytes())
-	if err != nil {
-		b.WriteTo(os.Stderr)
-		log.Fatalf("Failed to generate %s: %v", out, err)
-	}
-
-	if *generate.FlagDebug {
-		fmt.Print(string(formatted))
-		return
-	}
-
-	if err := os.WriteFile(out, formatted, 0640); err != nil {
-		log.Fatalf("Failed to generate %s: %v", out, err)
-	}
+	generate.Write(b, out)
 }
 
 // structMember will take a tag like dns:"size-base32:SaltLength" and return the last part of this string.

@@ -445,7 +445,7 @@ func (rr *NSEC3) Data() []Field {
 func (rr *NSEC3PARAM) Data() []Field {
 	return []Field{rr.Hash, rr.Flags, rr.Iterations, rr.SaltLength, rr.Salt}
 }
-func (rr *NULL) Data() []Field       { return []Field{rr.Data} }
+func (rr *NULL) Data() []Field       { return []Field{rr.Null} }
 func (rr *OPENPGPKEY) Data() []Field { return []Field{rr.PublicKey} }
 func (rr *PTR) Data() []Field        { return []Field{rr.Ptr} }
 func (rr *PX) Data() []Field         { return []Field{rr.Preference, rr.Map822, rr.Mapx400} }

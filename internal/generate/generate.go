@@ -2,11 +2,15 @@
 package generate
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
+	"log"
+	"os"
 	"reflect"
 	"slices"
 )
@@ -116,4 +120,21 @@ func StructTypeSpecs(file string) ([]*ast.TypeSpec, error) {
 		return true
 	})
 	return structs, nil
+}
+
+func Write(b *bytes.Buffer, out string) {
+	formatted, err := format.Source(b.Bytes())
+	if err != nil {
+		b.WriteTo(os.Stderr)
+		log.Fatalf("Failed to generate %s: %v", out, err)
+	}
+
+	if *FlagDebug {
+		fmt.Print(string(formatted))
+		return
+	}
+
+	if err := os.WriteFile(out, formatted, 0640); err != nil {
+		log.Fatalf("Failed to generate %s: %v", out, err)
+	}
 }

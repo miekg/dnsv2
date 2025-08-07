@@ -7,11 +7,8 @@ package main
 import (
 	"bytes"
 	"flag"
-	"fmt"
-	"go/format"
 	"html/template"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/miekg/dnsv2/internal/generate"
@@ -105,18 +102,5 @@ func main() {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 
-	formatted, err := format.Source(source.Bytes())
-	if err != nil {
-		source.WriteTo(os.Stderr)
-		log.Fatalf("Failed to generate %s: %v", out, err)
-	}
-
-	if *generate.FlagDebug {
-		fmt.Print(string(formatted))
-		return
-	}
-
-	if err := os.WriteFile(out, formatted, 0640); err != nil {
-		log.Fatalf("Failed to generate %s: %v", out, err)
-	}
+	generate.Write(source, out)
 }
