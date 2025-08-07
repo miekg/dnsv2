@@ -547,19 +547,6 @@ func UnpackRR(msg []byte, off int) (rr RR, off1 int, err error) {
 	return rr, offset(s, msg), err
 }
 
-// UnpackRRWithHeader unpacks the record type specific payload given an existing
-// RR_Header.
-func UnpackRRWithHeader(h Header, msg []byte, off int) (rr RR, off1 int, err error) {
-	if off < 0 || off > len(msg) {
-		h := h // Avoid spilling h to the heap in the happy path.
-		return &h, off, &Error{err: "bad off"}
-	}
-
-	s := cryptobyte.String(msg[off:])
-	rr, err = unpackRRWithHeader(h, &s, msg)
-	return rr, offset(s, msg), err
-}
-
 func unpackRR(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	h, rdlength, err := unpackRRHeader(msg, msgBuf)
 	if err != nil {
