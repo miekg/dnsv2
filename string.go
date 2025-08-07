@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/miekg/dnsv2/internal/ddd"
 )
 
 func sprintName(s string) string {
@@ -168,8 +170,8 @@ func nextByte(s string, offset int) (byte, int) {
 		return 0, 0
 	case 2, 3: // too short to be \ddd
 	default: // maybe \ddd
-		if isDDD(s[offset+1:]) {
-			return dddToByte(s[offset+1:]), 4
+		if ddd.Is(s[offset+1:]) {
+			return ddd.ToByte(s[offset+1:]), 4
 		}
 	}
 	// not \ddd, just an RFC 1035 "quoted" character
@@ -246,7 +248,7 @@ func euiToString(eui uint64, bits int) (hex string) {
 // builder.
 func sprintHeader(rr RR) strings.Builder {
 	sb := strings.Builder{}
-	sb.WriteString(rr.Header().String(rr))
+	sb.WriteString(rr.Header().String())
 	sb.WriteByte('\t')
 	return sb
 }

@@ -3,7 +3,7 @@ package dnsutil
 // Holds a bunch of helper functions for dealing with labels.
 
 // Count return the number of labels in the name s.
-func LabelCount(s string) (labels int) {
+func Count(s string) (labels int) {
 	if s == "." {
 		return
 	}

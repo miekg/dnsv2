@@ -234,7 +234,7 @@ type ANY struct {
 	// Does not have any rdata
 }
 
-func (rr *ANY) String() string { return rr.Hdr.String(rr) }
+func (rr *ANY) String() string { return rr.Hdr.String() }
 
 // REMOVE??
 func (*ANY) parse(c *zlexer, origin string) *ParseError {
@@ -249,7 +249,7 @@ type NULL struct {
 
 func (rr *NULL) String() string {
 	// There is no presentation format; prefix string with a comment.
-	return ";" + rr.Hdr.String(rr) + rr.Null
+	return ";" + rr.Hdr.String() + rr.Null
 }
 
 func (*NULL) parse(c *zlexer, origin string) *ParseError {
@@ -754,7 +754,7 @@ type RRSIG struct {
 	TypeCovered uint16
 	Algorithm   uint8
 	Labels      uint8
-	OrigTtl     uint32
+	OrigTTL     uint32
 	Expiration  uint32
 	Inception   uint32
 	KeyTag      uint16
@@ -767,7 +767,7 @@ func (rr *RRSIG) String() string {
 	sprintData(sb, sprintType(rr.TypeCovered),
 		strconv.Itoa(int(rr.Algorithm)),
 		strconv.Itoa(int(rr.Labels)),
-		strconv.FormatInt(int64(rr.OrigTtl), 10),
+		strconv.FormatInt(int64(rr.OrigTTL), 10),
 		TimeToString(rr.Expiration),
 		TimeToString(rr.Inception),
 		strconv.Itoa(int(rr.KeyTag)),
@@ -793,9 +793,9 @@ func (rr *NSEC) String() string {
 	return sb.String()
 }
 
-func (rr *NSEC) len(off int, compression map[string]struct{}) int {
+func (rr *NSEC) Len() int {
 	l := rr.Hdr.Len()
-	l += domainNameLen(rr.NextDomain, off+l, compression, false)
+	l += domainNameLen(rr.NextDomain, 0, nil, false)
 	l += typeBitMapLen(rr.TypeBitMap)
 	return l
 }
@@ -1036,7 +1036,7 @@ func (rr *NSEC3) String() string {
 	return sb.String()
 }
 
-func (rr *NSEC3) len(off int, compression map[string]struct{}) int {
+func (rr *NSEC3) Len() int {
 	l := rr.Hdr.Len()
 	l += 6 + len(rr.Salt)/2 + 1 + len(rr.NextDomain) + 1
 	l += typeBitMapLen(rr.TypeBitMap)
@@ -1303,7 +1303,7 @@ type EUI48 struct {
 	Address uint64 `dns:"uint48"`
 }
 
-func (rr *EUI48) String() string { return rr.Hdr.String(rr) + euiToString(rr.Address, 48) }
+func (rr *EUI48) String() string { return rr.Hdr.String() + euiToString(rr.Address, 48) }
 
 // EUI64 RR. See RFC 7043.
 type EUI64 struct {
@@ -1311,7 +1311,7 @@ type EUI64 struct {
 	Address uint64
 }
 
-func (rr *EUI64) String() string { return rr.Hdr.String(rr) + euiToString(rr.Address, 64) }
+func (rr *EUI64) String() string { return rr.Hdr.String() + euiToString(rr.Address, 64) }
 
 // CAA RR. See RFC 6844.
 type CAA struct {
@@ -1417,7 +1417,7 @@ func (rr *CSYNC) String() string {
 	return sb.String()
 }
 
-func (rr *CSYNC) len(off int, compression map[string]struct{}) int {
+func (rr *CSYNC) Len() int {
 	l := rr.Hdr.Len()
 	l += 4 + 2
 	l += typeBitMapLen(rr.TypeBitMap)

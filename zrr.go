@@ -453,7 +453,7 @@ func (rr *RFC3597) Data() []Field    { return []Field{rr.Rdata} }
 func (rr *RKEY) Data() []Field       { return []Field{rr.Flags, rr.Protocol, rr.Algorithm, rr.PublicKey} }
 func (rr *RP) Data() []Field         { return []Field{rr.Mbox, rr.Txt} }
 func (rr *RRSIG) Data() []Field {
-	return []Field{rr.TypeCovered, rr.Algorithm, rr.Labels, rr.OrigTtl, rr.Expiration, rr.Inception, rr.KeyTag, rr.SignerName, rr.Signature}
+	return []Field{rr.TypeCovered, rr.Algorithm, rr.Labels, rr.OrigTTL, rr.Expiration, rr.Inception, rr.KeyTag, rr.SignerName, rr.Signature}
 }
 func (rr *RT) Data() []Field  { return []Field{rr.Preference, rr.Host} }
 func (rr *SIG) Data() []Field { return []Field{} }

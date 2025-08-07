@@ -13,10 +13,10 @@ var StringToOpcode = reverseInt8(OpcodeToString)
 var StringToRcode = reverseInt16(RcodeToString)
 
 // StringToAlgorithm is the reverse of AlgorithmToString.
-// var StringToAlgorithm = reverseInt8(AlgorithmToString)
+var StringToAlgorithm = reverseInt8(AlgorithmToString)
 
 // StringToHash is a map of names to hash IDs.
-// var StringToHash = reverseInt8(HashToString)
+var StringToHash = reverseInt8(HashToString)
 
 // StringToCertType is the reverseof CertTypeToString.
 var StringToCertType = reverseInt16(CertTypeToString)

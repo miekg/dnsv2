@@ -49,7 +49,7 @@ func unpack(rr RR, data, msgBuf []byte) error {
 	if x, ok := rr.(Packer); ok {
 		return x.Unpack(data)
 	}
-    return 0, fmt.Errorf("no unpack defined")
+    return fmt.Errorf("no unpack defined")
 }
 
 `))

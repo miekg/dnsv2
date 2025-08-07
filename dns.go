@@ -9,6 +9,7 @@ import (
 //go:generate go run rr_generate.go
 //go:generate go run msg_generate.go
 //go:generate go run pack_generate.go
+//go:generate go run parse_generate.go
 //go:generate go run len_generate.go
 
 const (
@@ -22,7 +23,7 @@ const (
 	MsgHeaderSize = 12
 
 	year68     = 1 << 31 // For RFC1982 (Serial Arithmetic) calculations in 32 bits.
-	defaultTtl = 3600    // Default internal TTL.
+	defaultTTL = 3600    // Default internal TTL.
 )
 
 // An RR represents a DNS resource record.
@@ -59,6 +60,19 @@ type Packer interface {
 	// Unpack unpacks the RR. Data is the byte slice that should contain the all the data for the RR.
 	Unpack(data []byte) error
 }
+
+/*
+// Parser is used for custom RR types that are parced from their text presentation.
+type Scanner interface{
+	//Scan returns a channel on which the tokens until the end of the RR are send.
+	Scan() <-chan Token
+}
+
+type Token {
+	// TokenType
+	// Value
+}
+*/
 
 // The Copier interface defines a copy function that returns a deep copy of the RR.
 type Copier interface {
@@ -238,5 +252,5 @@ func (rr *RFC3597) fromRFC3597(r RR) error {
 		return err
 	}
 
-	return r.unpack(msg, msg)
+	return unpack(r, msg, msg)
 }

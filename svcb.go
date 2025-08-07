@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/miekg/dnsv2/internal/ddd"
 	"golang.org/x/crypto/cryptobyte"
 )
 
@@ -418,7 +419,7 @@ func (s *SVCBAlpn) unpack(b []byte) error {
 	for !sc.Empty() {
 		var data cryptobyte.String
 		if !sc.ReadUint8LengthPrefixed(&data) {
-			return errUnpackOverflow
+			return ErrUnpackOverflow
 		}
 		alpn = append(alpn, string(data))
 	}
@@ -916,8 +917,8 @@ func svcbParseParam(b string) ([]byte, error) {
 		if i+1 == len(b) {
 			return nil, errors.New("escape unterminated")
 		}
-		if isDigit(b[i+1]) {
-			if i+3 < len(b) && isDigit(b[i+2]) && isDigit(b[i+3]) {
+		if ddd.IsDigit(b[i+1]) {
+			if i+3 < len(b) && ddd.IsDigit(b[i+2]) && ddd.IsDigit(b[i+3]) {
 				a, err := strconv.ParseUint(b[i+1:i+4], 10, 8)
 				if err == nil {
 					i += 4

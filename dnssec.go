@@ -1,5 +1,3 @@
-//go:build ignore
-
 package dns
 
 import (
@@ -20,6 +18,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/miekg/dnsv2/dnsutil"
 )
 
 // DNSSEC encryption algorithm codes.
@@ -113,7 +113,7 @@ type rrsigWireFmt struct {
 	TypeCovered uint16
 	Algorithm   uint8
 	Labels      uint8
-	OrigTtl     uint32
+	OrigTTL     uint32
 	Expiration  uint32
 	Inception   uint32
 	KeyTag      uint16
@@ -179,8 +179,8 @@ func (k *DNSKEY) ToDS(h uint8) *DS {
 	ds := new(DS)
 	ds.Hdr.Name = k.Hdr.Name
 	ds.Hdr.Class = k.Hdr.Class
-	ds.Hdr.Rrtype = TypeDS
-	ds.Hdr.Ttl = k.Hdr.Ttl
+	ds.Hdr.t = TypeDS
+	ds.Hdr.TTL = k.Hdr.TTL
 	ds.Algorithm = k.Algorithm
 	ds.DigestType = h
 	ds.KeyTag = k.KeyTag()
@@ -198,7 +198,7 @@ func (k *DNSKEY) ToDS(h uint8) *DS {
 	wire = wire[:n]
 
 	owner := make([]byte, 255)
-	off, err1 := PackDomainName(CanonicalName(k.Hdr.Name), owner, 0, nil, false)
+	off, err1 := packDomainName(dnsutil.Canonical(k.Hdr.Name), owner, 0, nil, false)
 	if err1 != nil {
 		return nil
 	}
@@ -233,7 +233,7 @@ func (k *DNSKEY) ToDS(h uint8) *DS {
 func (k *DNSKEY) ToCDNSKEY() *CDNSKEY {
 	c := &CDNSKEY{DNSKEY: *k}
 	c.Hdr = k.Hdr
-	c.Hdr.Rrtype = TypeCDNSKEY
+	c.Hdr.t = TypeCDNSKEY
 	return c
 }
 
@@ -241,7 +241,7 @@ func (k *DNSKEY) ToCDNSKEY() *CDNSKEY {
 func (d *DS) ToCDS() *CDS {
 	c := &CDS{DS: *d}
 	c.Hdr = d.Hdr
-	c.Hdr.Rrtype = TypeCDS
+	c.Hdr.t = TypeCDS
 	return c
 }
 
@@ -261,14 +261,14 @@ func (rr *RRSIG) Sign(k crypto.Signer, rrset []RR) error {
 	}
 
 	h0 := rrset[0].Header()
-	rr.Hdr.Rrtype = TypeRRSIG
+	rr.Hdr.t = TypeRRSIG
 	rr.Hdr.Name = h0.Name
 	rr.Hdr.Class = h0.Class
-	if rr.OrigTtl == 0 { // If set don't override
-		rr.OrigTtl = h0.Ttl
+	if rr.OrigTTL == 0 { // If set don't override
+		rr.OrigTTL = h0.TTL
 	}
-	rr.TypeCovered = h0.Rrtype
-	rr.Labels = uint8(CountLabel(h0.Name))
+	rr.TypeCovered = h0.t
+	rr.Labels = uint8(dnsutil.Count(h0.Name))
 
 	if strings.HasPrefix(h0.Name, "*") {
 		rr.Labels-- // wildcard, remove from label count
@@ -278,12 +278,12 @@ func (rr *RRSIG) Sign(k crypto.Signer, rrset []RR) error {
 	sigwire.TypeCovered = rr.TypeCovered
 	sigwire.Algorithm = rr.Algorithm
 	sigwire.Labels = rr.Labels
-	sigwire.OrigTtl = rr.OrigTtl
+	sigwire.OrigTTL = rr.OrigTTL
 	sigwire.Expiration = rr.Expiration
 	sigwire.Inception = rr.Inception
 	sigwire.KeyTag = rr.KeyTag
 	// For signing, lowercase this name
-	sigwire.SignerName = CanonicalName(rr.SignerName)
+	sigwire.SignerName = dnsutil.Canonical(rr.SignerName)
 
 	// Create the desired binary blob
 	signdata := make([]byte, DefaultMsgSize)
@@ -388,7 +388,7 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 	// IsRRset checked that we have at least one RR and that the RRs in
 	// the set have consistent type, class, and name. Also check that type and
 	// class matches the RRSIG record.
-	if h0 := rrset[0].Header(); h0.Class != rr.Hdr.Class || h0.Rrtype != rr.TypeCovered {
+	if h0 := rrset[0].Header(); h0.Class != rr.Hdr.Class || h0.t != rr.TypeCovered {
 		return ErrRRset
 	}
 
@@ -398,11 +398,11 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 	sigwire.TypeCovered = rr.TypeCovered
 	sigwire.Algorithm = rr.Algorithm
 	sigwire.Labels = rr.Labels
-	sigwire.OrigTtl = rr.OrigTtl
+	sigwire.OrigTTL = rr.OrigTTL
 	sigwire.Expiration = rr.Expiration
 	sigwire.Inception = rr.Inception
 	sigwire.KeyTag = rr.KeyTag
-	sigwire.SignerName = CanonicalName(rr.SignerName)
+	sigwire.SignerName = dnsutil.Canonical(rr.SignerName)
 	// Create the desired binary blob
 	signeddata := make([]byte, DefaultMsgSize)
 	n, err := packSigWire(sigwire, signeddata)
@@ -602,17 +602,21 @@ func (p wireSlice) Less(i, j int) bool {
 func rawSignatureData(rrset []RR, s *RRSIG) (buf []byte, err error) {
 	wires := make(wireSlice, len(rrset))
 	for i, r := range rrset {
-		r1 := r.copy()
+		//		r1 := r.copy()
+		r1 := r
 		h := r1.Header()
-		h.Ttl = s.OrigTtl
-		labels := SplitDomainName(h.Name)
-		// 6.2. Canonical RR Form. (4) - wildcards
-		if len(labels) > int(s.Labels) {
-			// Wildcard
-			h.Name = "*." + strings.Join(labels[len(labels)-int(s.Labels):], ".") + "."
-		}
+		h.TTL = s.OrigTTL
+		/*
+			labels := SplitDomainName(h.Name)
+			// 6.2. Canonical RR Form. (4) - wildcards
+			if len(labels) > int(s.Labels) {
+				// Wildcard
+				h.Name = "*." + strings.Join(labels[len(labels)-int(s.Labels):], ".") + "."
+			}
+			// TODO
+		*/
 		// RFC 4034: 6.2.  Canonical RR Form. (2) - domain name to lowercase
-		h.Name = CanonicalName(h.Name)
+		h.Name = dnsutil.Canonical(h.Name)
 		// 6.2. Canonical RR Form. (3) - domain rdata to lowercase.
 		//   NS, MD, MF, CNAME, SOA, MB, MG, MR, PTR,
 		//   HINFO, MINFO, MX, RP, AFSDB, RT, SIG, PX, NXT, NAPTR, KX,
@@ -625,53 +629,53 @@ func rawSignatureData(rrset []RR, s *RRSIG) (buf []byte, err error) {
 		//	conversion.
 		switch x := r1.(type) {
 		case *NS:
-			x.Ns = CanonicalName(x.Ns)
+			x.Ns = dnsutil.Canonical(x.Ns)
 		case *MD:
-			x.Md = CanonicalName(x.Md)
+			x.Md = dnsutil.Canonical(x.Md)
 		case *MF:
-			x.Mf = CanonicalName(x.Mf)
+			x.Mf = dnsutil.Canonical(x.Mf)
 		case *CNAME:
-			x.Target = CanonicalName(x.Target)
+			x.Target = dnsutil.Canonical(x.Target)
 		case *SOA:
-			x.Ns = CanonicalName(x.Ns)
-			x.Mbox = CanonicalName(x.Mbox)
+			x.Ns = dnsutil.Canonical(x.Ns)
+			x.Mbox = dnsutil.Canonical(x.Mbox)
 		case *MB:
-			x.Mb = CanonicalName(x.Mb)
+			x.Mb = dnsutil.Canonical(x.Mb)
 		case *MG:
-			x.Mg = CanonicalName(x.Mg)
+			x.Mg = dnsutil.Canonical(x.Mg)
 		case *MR:
-			x.Mr = CanonicalName(x.Mr)
+			x.Mr = dnsutil.Canonical(x.Mr)
 		case *PTR:
-			x.Ptr = CanonicalName(x.Ptr)
+			x.Ptr = dnsutil.Canonical(x.Ptr)
 		case *MINFO:
-			x.Rmail = CanonicalName(x.Rmail)
-			x.Email = CanonicalName(x.Email)
+			x.Rmail = dnsutil.Canonical(x.Rmail)
+			x.Email = dnsutil.Canonical(x.Email)
 		case *MX:
-			x.Mx = CanonicalName(x.Mx)
+			x.Mx = dnsutil.Canonical(x.Mx)
 		case *RP:
-			x.Mbox = CanonicalName(x.Mbox)
-			x.Txt = CanonicalName(x.Txt)
+			x.Mbox = dnsutil.Canonical(x.Mbox)
+			x.Txt = dnsutil.Canonical(x.Txt)
 		case *AFSDB:
-			x.Hostname = CanonicalName(x.Hostname)
+			x.Hostname = dnsutil.Canonical(x.Hostname)
 		case *RT:
-			x.Host = CanonicalName(x.Host)
+			x.Host = dnsutil.Canonical(x.Host)
 		case *SIG:
-			x.SignerName = CanonicalName(x.SignerName)
+			x.SignerName = dnsutil.Canonical(x.SignerName)
 		case *PX:
-			x.Map822 = CanonicalName(x.Map822)
-			x.Mapx400 = CanonicalName(x.Mapx400)
+			x.Map822 = dnsutil.Canonical(x.Map822)
+			x.Mapx400 = dnsutil.Canonical(x.Mapx400)
 		case *NAPTR:
-			x.Replacement = CanonicalName(x.Replacement)
+			x.Replacement = dnsutil.Canonical(x.Replacement)
 		case *KX:
-			x.Exchanger = CanonicalName(x.Exchanger)
+			x.Exchanger = dnsutil.Canonical(x.Exchanger)
 		case *SRV:
-			x.Target = CanonicalName(x.Target)
+			x.Target = dnsutil.Canonical(x.Target)
 		case *DNAME:
-			x.Target = CanonicalName(x.Target)
+			x.Target = dnsutil.Canonical(x.Target)
 		}
 		// 6.2. Canonical RR Form. (5) - origTTL
-		wire := make([]byte, Len(r1)+1) // +1 to be safe(r)
-		off, err1 := PackRR(r1, wire, 0, nil, false)
+		wire := make([]byte, r1.Len()+1) // +1 to be safe(r)
+		off, err1 := PackRR(r1, wire, 0, nil)
 		if err1 != nil {
 			return nil, err1
 		}
@@ -702,7 +706,7 @@ func packSigWire(sw *rrsigWireFmt, msg []byte) (int, error) {
 	if err != nil {
 		return off, err
 	}
-	off, err = packUint32(sw.OrigTtl, msg, off)
+	off, err = packUint32(sw.OrigTTL, msg, off)
 	if err != nil {
 		return off, err
 	}
@@ -718,7 +722,7 @@ func packSigWire(sw *rrsigWireFmt, msg []byte) (int, error) {
 	if err != nil {
 		return off, err
 	}
-	off, err = PackDomainName(sw.SignerName, msg, off, nil, false)
+	off, err = packDomainName(sw.SignerName, msg, off, nil, false)
 	if err != nil {
 		return off, err
 	}
@@ -748,7 +752,6 @@ func packKeyWire(dw *dnskeyWireFmt, msg []byte) (int, error) {
 
 // Helper function for packing and unpacking
 func intToBytes(i *big.Int, length int) []byte {
-	// TODO(tmthrgd): Move this to dnssec.go.
 	buf := i.Bytes()
 	if len(buf) < length {
 		b := make([]byte, length)

@@ -338,42 +338,11 @@ func packStringTxt(s []string, msg []byte, off int) (int, error) {
 }
 
 func unpackOpt(s *cryptobyte.String) ([]EDNS0, error) {
-	var opts []EDNS0
-	for !s.Empty() {
-		var (
-			code uint16
-			data cryptobyte.String
-		)
-		if !s.ReadUint16(&code) ||
-			!s.ReadUint16LengthPrefixed(&data) {
-			return nil, ErrUnpackOverflow
-		}
-		opt := makeDataOpt(code)
-		if err := opt.unpack(data); err != nil {
-			return nil, err
-		}
-		opts = append(opts, opt)
-	}
-	return opts, nil
+	return nil, nil
 }
 
 func packOpt(options []EDNS0, msg []byte, off int) (int, error) {
-	for _, el := range options {
-		b, err := el.pack()
-		if err != nil || off+4 > len(msg) {
-			return len(msg), &Error{err: "overflow packing opt"}
-		}
-		binary.BigEndian.PutUint16(msg[off:], el.Option())      // Option code
-		binary.BigEndian.PutUint16(msg[off+2:], uint16(len(b))) // Length
-		off += 4
-		if off+len(b) > len(msg) {
-			return len(msg), &Error{err: "overflow packing opt"}
-		}
-		// Actual data
-		copy(msg[off:off+len(b)], b)
-		off += len(b)
-	}
-	return off, nil
+	return 0, nil
 }
 
 func unpackStringOctet(s *cryptobyte.String) (string, error) {
@@ -560,7 +529,7 @@ func unpackDomainNames(s *cryptobyte.String, msgBuf []byte) ([]string, error) {
 func packDomainNames(names []string, msg []byte, off int, compress map[string]uint16) (int, error) {
 	var err error
 	for _, name := range names {
-		off, err = packDomainName(name, msg, off, compress)
+		off, err = packDomainName(name, msg, off, compress, false)
 		if err != nil {
 			return len(msg), err
 		}

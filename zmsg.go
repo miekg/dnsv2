@@ -861,7 +861,7 @@ func (rr *RRSIG) pack(msg []byte, off int, compression map[string]uint16) (off1 
 	if err != nil {
 		return off, err
 	}
-	off, err = packUint32(rr.OrigTtl, msg, off)
+	off, err = packUint32(rr.OrigTTL, msg, off)
 	if err != nil {
 		return off, err
 	}
@@ -899,7 +899,7 @@ func (rr *RRSIG) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint8(&rr.Labels) {
 		return ErrUnpackOverflow
 	}
-	if !s.ReadUint32(&rr.OrigTtl) {
+	if !s.ReadUint32(&rr.OrigTTL) {
 		return ErrUnpackOverflow
 	}
 	if !s.ReadUint32(&rr.Expiration) {
@@ -1737,7 +1737,7 @@ func (rr *HIP) pack(msg []byte, off int, compression map[string]uint16) (off1 in
 	if err != nil {
 		return off, err
 	}
-	off, err = packDomainNames(rr.RendezvousServers, msg, off, compression, false)
+	off, err = packDomainNames(rr.RendezvousServers, msg, off, compression)
 	if err != nil {
 		return off, err
 	}

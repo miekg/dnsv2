@@ -412,7 +412,6 @@ func (rr *SOA) parse(c *zlexer, o string) *ParseError {
 			// We allow other fields to be unitful duration strings
 			if v, ok = stringToTTL(l.token); !ok {
 				return &ParseError{"", "bad SOA zone parameter", l}
-
 			}
 		} else {
 			v = uint32(j)
@@ -928,9 +927,9 @@ func (rr *RRSIG) parse(c *zlexer, o string) *ParseError {
 	l, _ = c.Next()
 	i, e2 := strconv.ParseUint(l.token, 10, 32)
 	if e2 != nil || l.err {
-		return &ParseError{"", "bad RRSIG OrigTtl", l}
+		return &ParseError{"", "bad RRSIG OrigTTL", l}
 	}
-	rr.OrigTtl = uint32(i)
+	rr.OrigTTL = uint32(i)
 
 	c.Next() // zBlank
 	l, _ = c.Next()

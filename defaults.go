@@ -164,91 +164,13 @@ func (dns *Msg) popEdns0() *OPT {
 	return nil
 }
 
-// IsDomainName checks if s is a valid domain name, it returns the number of
-// labels and true, when a domain name is valid.  Note that non fully qualified
-// domain name is considered valid, in this case the last label is counted in
-// the number of labels.  When false is returned the number of labels is not
-// defined.  Also note that this function is extremely liberal; almost any
-// string is a valid domain name as the DNS is 8 bit protocol. It checks if each
-// label fits in 63 characters and that the entire name will fit into the 255
-// octet wire format limit.
-func IsDomainName(s string) (labels int, ok bool) {
-	// XXX: The logic in this function was copied from packDomainName and
-	// should be kept in sync with that function.
-
-	const lenmsg = 256
-
-	if len(s) == 0 { // Ok, for instance when dealing with update RR without any rdata.
-		return 0, false
-	}
-
-	s = dnsutil.Fqdn(s)
-
-	// Each dot ends a segment of the name. Except for escaped dots (\.), which
-	// are normal dots.
-
-	var (
-		off    int
-		begin  int
-		wasDot bool
-	)
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '\\':
-			if off+1 > lenmsg {
-				return labels, false
-			}
-
-			// check for \DDD
-			if isDDD(s[i+1:]) {
-				i += 3
-				begin += 3
-			} else {
-				i++
-				begin++
-			}
-
-			wasDot = false
-		case '.':
-			if i == 0 && len(s) > 1 {
-				// leading dots are not legal except for the root zone
-				return labels, false
-			}
-
-			if wasDot {
-				// two dots back to back is not legal
-				return labels, false
-			}
-			wasDot = true
-
-			labelLen := i - begin
-			if labelLen >= 1<<6 { // top two bits of length must be clear
-				return labels, false
-			}
-
-			// off can already (we're in a loop) be bigger than lenmsg
-			// this happens when a name isn't fully qualified
-			off += 1 + labelLen
-			if off > lenmsg {
-				return labels, false
-			}
-
-			labels++
-			begin = i + 1
-		default:
-			wasDot = false
-		}
-	}
-
-	return labels, true
-}
-
 // IsSubDomain checks if child is indeed a child of the parent. If child and parent
 // are the same domain true is returned as well.
 func IsSubDomain(parent, child string) bool {
 	// Entire child is contained in parent
 	return CompareDomainName(parent, child) == CountLabel(parent)
 }
+*/
 
 // IsRRset reports whether a set of RRs is a valid RRset as defined by RFC 2181.
 // This means the RRs need to have the same type, name, and class.
@@ -260,7 +182,7 @@ func IsRRset(rrset []RR) bool {
 	baseH := rrset[0].Header()
 	for _, rr := range rrset[1:] {
 		curH := rr.Header()
-		if curH.Rrtype != baseH.Rrtype || curH.Class != baseH.Class || curH.Name != baseH.Name {
+		if curH.t != baseH.t || curH.Class != baseH.Class || curH.Name != baseH.Name {
 			// Mismatch between the records, so this is not a valid rrset for
 			// signing/verifying
 			return false
@@ -269,6 +191,8 @@ func IsRRset(rrset []RR) bool {
 
 	return true
 }
+
+/*
 
 // Copied from the official Go code.
 

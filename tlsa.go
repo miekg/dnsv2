@@ -4,11 +4,13 @@ import (
 	"crypto/x509"
 	"net"
 	"strconv"
+
+	"github.com/miekg/dnsv2/dnsutil"
 )
 
 // Sign creates a TLSA record from an SSL certificate.
 func (r *TLSA) Sign(usage, selector, matchingType int, cert *x509.Certificate) (err error) {
-	r.Hdr.Rrtype = TypeTLSA
+	r.Hdr.t = TypeTLSA
 	r.Usage = uint8(usage)
 	r.Selector = uint8(selector)
 	r.MatchingType = uint8(matchingType)
@@ -33,7 +35,7 @@ func (r *TLSA) Verify(cert *x509.Certificate) error {
 // TLSAName returns the ownername of a TLSA resource record as per the
 // rules specified in RFC 6698, Section 3.
 func TLSAName(name, service, network string) (string, error) {
-	if !IsFqdn(name) {
+	if !dnsutil.IsFqdn(name) {
 		return "", ErrFqdn
 	}
 	p, err := net.LookupPort(network, service)

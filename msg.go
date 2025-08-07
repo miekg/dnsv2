@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/miekg/dnsv2/dnsutil"
+	"github.com/miekg/dnsv2/internal/ddd"
 	"golang.org/x/crypto/cryptobyte"
 )
 
@@ -148,8 +149,8 @@ loop:
 			}
 
 			// check for \DDD
-			if isDDD(bs[i+1:]) {
-				bs[i] = dddToByte(bs[i+1:])
+			if ddd.Is(bs[i+1:]) {
+				bs[i] = ddd.ToByte(bs[i+1:])
 				copy(bs[i+1:ls-3], bs[i+4:])
 				ls -= 3
 				compOff += 3
@@ -391,8 +392,8 @@ func packTxtString(s string, msg []byte, offset int) (int, error) {
 				break
 			}
 			// check for \DDD
-			if isDDD(s[i:]) {
-				msg[offset] = dddToByte(s[i:])
+			if ddd.Is(s[i:]) {
+				msg[offset] = ddd.ToByte(s[i:])
 				i += 2
 			} else {
 				msg[offset] = s[i]
@@ -424,8 +425,8 @@ func packOctetString(s string, msg []byte, offset int) (int, error) {
 				break
 			}
 			// check for \DDD
-			if isDDD(s[i:]) {
-				msg[offset] = dddToByte(s[i:])
+			if ddd.Is(s[i:]) {
+				msg[offset] = ddd.ToByte(s[i:])
 				i += 2
 			} else {
 				msg[offset] = s[i]
@@ -448,18 +449,6 @@ func unpackTxt(s *cryptobyte.String) ([]string, error) {
 		strs = append(strs, str)
 	}
 	return strs, nil
-}
-
-// Helpers for dealing with escaped bytes
-func isDigit(b byte) bool { return b >= '0' && b <= '9' }
-
-func isDDD[T ~[]byte | ~string](s T) bool {
-	return len(s) >= 3 && isDigit(s[0]) && isDigit(s[1]) && isDigit(s[2])
-}
-
-func dddToByte[T ~[]byte | ~string](s T) byte {
-	_ = s[2] // bounds check hint to compiler; see golang.org/issue/14808
-	return byte((s[0]-'0')*100 + (s[1]-'0')*10 + (s[2] - '0'))
 }
 
 // packQuestion packs an RR into a question section.
@@ -697,7 +686,7 @@ func unpackQuestion(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	}
 	var qtype uint16
 	if !msg.Empty() && !msg.ReadUint16(&qtype) {
-		return q, ErrTruncatedMessage
+		return nil, ErrTruncatedMessage
 	}
 
 	// There was a bug in the previous unpacking code that meant the effective
@@ -720,16 +709,25 @@ func unpackQuestion(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	if !msg.Empty() && !msg.ReadUint16(&qclass) {
 		return nil, ErrTruncatedMessage
 	}
-	return q, nil
+
+	var rr RR
+	if newFn, ok := TypeToRR[qtype]; ok {
+		rr = newFn()
+		*rr.Header() = Header{Name: name, t: qtype, Class: qclass}
+	} else {
+		rr = &RFC3597{Hdr: Header{Name: name, t: qtype, Class: qclass}}
+	}
+
+	return rr, nil
 }
 
-func unpackQuestions(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]Question, error) {
+func unpackQuestions(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, error) {
 	// We don't preallocate dst according to cnt as that value may be attacker
 	// controlled. A malicious adversary could send us as 12-byte packet
 	// containing only the header that claims to contain 65535 questions. As
 	// Question takes 24-bytes, we'd end up allocating more than 1.5MiB from a
 	// mere 12-byte packet.
-	var dst []Question
+	var dst []RR
 	for i := 0; i < int(cnt); i++ {
 		// msg is already empty, cnt is a lie.
 		//
@@ -812,19 +810,17 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 // Unpack unpacks a binary message to a Msg structure.
 func (m *Msg) Unpack(msg []byte) error {
 	s := cryptobyte.String(msg)
-
-	var dh Header
+	var dh header
 	if !dh.unpack(&s) {
 		return ErrTruncatedMessage
 	}
-	m.setHdr(dh)
-
+	m.setMsgHeader(dh)
 	return m.unpack(dh, s, msg)
 }
 
 // Convert a complete message to a string with dig-like output.
 func (m *Msg) String() string {
-	// builder
+	// builder!!!
 	if m == nil {
 		return "<nil> MsgHdr"
 	}
@@ -840,13 +836,8 @@ func (m *Msg) String() string {
 		s += "AUTHORITY: " + strconv.Itoa(len(m.Ns)) + ", "
 		s += "ADDITIONAL: " + strconv.Itoa(len(m.Extra)) + "\n"
 	}
-	opt := m.IsEdns0()
-	if opt != nil {
-		// OPT PSEUDOSECTION
-		s += opt.String() + "\n"
-	}
 	if len(m.Question) > 0 {
-		if m.MsgHdr.Opcode == OpcodeUpdate {
+		if m.MsgHeader.Opcode == OpcodeUpdate {
 			s += "\n;; ZONE SECTION:\n"
 		} else {
 			s += "\n;; QUESTION SECTION:\n"
@@ -856,7 +847,7 @@ func (m *Msg) String() string {
 		}
 	}
 	if len(m.Answer) > 0 {
-		if m.MsgHdr.Opcode == OpcodeUpdate {
+		if m.MsgHeader.Opcode == OpcodeUpdate {
 			s += "\n;; PREREQUISITE SECTION:\n"
 		} else {
 			s += "\n;; ANSWER SECTION:\n"
@@ -868,7 +859,7 @@ func (m *Msg) String() string {
 		}
 	}
 	if len(m.Ns) > 0 {
-		if m.MsgHdr.Opcode == OpcodeUpdate {
+		if m.MsgHeader.Opcode == OpcodeUpdate {
 			s += "\n;; UPDATE SECTION:\n"
 		} else {
 			s += "\n;; AUTHORITY SECTION:\n"
@@ -879,10 +870,10 @@ func (m *Msg) String() string {
 			}
 		}
 	}
-	if len(m.Extra) > 0 && (opt == nil || len(m.Extra) > 1) {
+	if len(m.Extra) > 0 {
 		s += "\n;; ADDITIONAL SECTION:\n"
 		for _, r := range m.Extra {
-			if r != nil && r.Header().Rrtype != TypeOPT {
+			if r != nil {
 				s += r.String() + "\n"
 			}
 		}
@@ -956,7 +947,7 @@ func escapedNameLen(s string) int {
 			continue
 		}
 
-		if isDDD(s[i+1:]) {
+		if ddd.Is(s[i+1:]) {
 			nameLen -= 3
 			i += 3
 		} else {

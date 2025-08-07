@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/miekg/dnsv2/dnsutil"
 )
 
 const maxTok = 512 // Token buffer start size, and growth size amount.
@@ -114,7 +116,7 @@ func NewRR(s string) (RR, error) {
 // See NewRR for more documentation.
 func ReadRR(r io.Reader, file string) (RR, error) {
 	zp := NewZoneParser(r, ".", file)
-	zp.SetDefaultTTL(defaultTtl)
+	zp.SetDefaultTTL(defaultTTL)
 	zp.SetIncludeAllowed(true)
 	rr, _ := zp.Next()
 	return rr, zp.Err()
@@ -186,8 +188,8 @@ type ZoneParser struct {
 func NewZoneParser(r io.Reader, origin, file string) *ZoneParser {
 	var pe *ParseError
 	if origin != "" {
-		origin = Fqdn(origin)
-		if _, ok := IsDomainName(origin); !ok {
+		origin = dnsutil.Fqdn(origin)
+		if _, ok := dnsutil.IsName(origin); !ok {
 			pe = &ParseError{file, "bad initial origin name", lex{}}
 		}
 	}
@@ -312,7 +314,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 		case zExpectOwnerDir:
 			// We can also expect a directive, like $TTL or $ORIGIN
 			if zp.defttl != nil {
-				h.Ttl = zp.defttl.ttl
+				h.TTL = zp.defttl.ttl
 			}
 
 			h.Class = ClassINET
@@ -338,7 +340,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 			case zDirGenerate:
 				st = zExpectDirGenerateBl
 			case zRrtpe:
-				h.Rrtype = l.torc
+				h.t = l.torc
 
 				st = zExpectRdata
 			case zClass:
@@ -354,7 +356,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 					return zp.setParseError("not a TTL", l)
 				}
 
-				h.Ttl = ttl
+				h.TTL = ttl
 
 				if zp.defttl == nil || !zp.defttl.isByDirective {
 					zp.defttl = &ttlState{ttl, false}
@@ -495,7 +497,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 					return zp.setParseError("missing TTL with no previous value", l)
 				}
 
-				h.Rrtype = l.torc
+				h.t = l.torc
 
 				st = zExpectRdata
 			case zClass:
@@ -508,7 +510,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 					return zp.setParseError("not a TTL", l)
 				}
 
-				h.Ttl = ttl
+				h.TTL = ttl
 
 				if zp.defttl == nil || !zp.defttl.isByDirective {
 					zp.defttl = &ttlState{ttl, false}
@@ -537,7 +539,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 
 				st = zExpectRrtypeBl
 			case zRrtpe:
-				h.Rrtype = l.torc
+				h.t = l.torc
 
 				st = zExpectRdata
 			default:
@@ -551,7 +553,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 					return zp.setParseError("not a TTL", l)
 				}
 
-				h.Ttl = ttl
+				h.TTL = ttl
 
 				if zp.defttl == nil || !zp.defttl.isByDirective {
 					zp.defttl = &ttlState{ttl, false}
@@ -559,7 +561,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 
 				st = zExpectRrtypeBl
 			case zRrtpe:
-				h.Rrtype = l.torc
+				h.t = l.torc
 
 				st = zExpectRdata
 			default:
@@ -576,7 +578,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 				return zp.setParseError("unknown RR type", l)
 			}
 
-			h.Rrtype = l.torc
+			h.t = l.torc
 
 			st = zExpectRdata
 		case zExpectRdata:
@@ -584,7 +586,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 				rr             RR
 				parseAsRFC3597 bool
 			)
-			if newFn, ok := TypeToRR[h.Rrtype]; ok {
+			if newFn, ok := TypeToRR[h.t]; ok {
 				rr = newFn()
 				*rr.Header() = *h
 
@@ -601,8 +603,7 @@ func (zp *ZoneParser) Next() (RR, bool) {
 				rr = &RFC3597{Hdr: *h}
 			}
 
-			_, isPrivate := rr.(*PrivateRR)
-			if !isPrivate && zp.c.Peek().token == "" {
+			if zp.c.Peek().token == "" {
 				// This is a dynamic update rr.
 
 				// TODO(tmthrgd): Previously slurpRemainder was only called
@@ -621,13 +622,13 @@ func (zp *ZoneParser) Next() (RR, bool) {
 				parseAsRR = &RFC3597{Hdr: *h}
 			}
 
-			if err := parseAsRR.parse(zp.c, zp.origin); err != nil {
+			// This needs zparser which calles Parser for new types.
+			if err := parse(parseAsRR, zp.c, zp.origin); err != nil {
 				// err is a concrete *ParseError without the file field set.
 				// The setParseError call below will construct a new
 				// *ParseError with file set to zp.file.
 
-				// err.lex may be nil in which case we substitute our current
-				// lex token.
+				// err.lex may be nil in which case we substitute our current lex token.
 				if err.lex == (lex{}) {
 					return zp.setParseError(err.err, l)
 				}
@@ -1269,13 +1270,13 @@ func toAbsoluteName(name, origin string) (absolute string, ok bool) {
 	}
 
 	// require a valid domain name
-	_, ok = IsDomainName(name)
+	_, ok = dnsutil.IsName(name)
 	if !ok || name == "" {
 		return "", false
 	}
 
 	// check if name is already absolute
-	if IsFqdn(name) {
+	if dnsutil.IsFqdn(name) {
 		return name, true
 	}
 
