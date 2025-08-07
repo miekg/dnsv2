@@ -104,7 +104,7 @@ func main() {
 			switch {
 			case tag == `dns:"-"`: // ignored
 			case tag == `dns:"cdomain-name"`:
-				o("off, err = packDomainName(rr.%s, msg, off, compression, compress)\n")
+				o("off, err = packDomainName(rr.%s, msg, off, compression, true)\n")
 			case tag == `dns:"domain-name"`:
 				o("off, err = packDomainName(rr.%s, msg, off, compression, false)\n")
 			case tag == `dns:"a"`:

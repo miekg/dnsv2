@@ -104,7 +104,12 @@ func (h Header) packHeader(msg []byte, off int, rrtype uint16, compress map[stri
 	if err != nil {
 		return len(msg), err
 	}
-	off, err = packUint16(h.Class, msg, off)
+
+	class := uint16(0)
+	if h.Class == 0 {
+		class = ClassINET
+	}
+	off, err = packUint16(class, msg, off)
 	if err != nil {
 		return len(msg), err
 	}

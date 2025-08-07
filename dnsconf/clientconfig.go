@@ -114,7 +114,7 @@ func (c *Config) NameList(name string) []string {
 
 	// Check to see if the name has more labels than Ndots. Do this before making
 	// the domain fully qualified.
-	hasNdots := CountLabel(name) > c.Ndots
+	hasNdots := dnsutil.Count(name) > c.Ndots
 	// Make the domain fully qualified.
 	name = dnsutil.Fqdn(name)
 

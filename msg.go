@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
-	"math/big"
 	"strconv"
 	"strings"
 
@@ -21,12 +20,6 @@ const (
 	// octet and is separated by a period. The root label won't be represented by a
 	// compression pointer to a compression pointer, hence the -2 to exclude the
 	// smallest valid root label.
-	//
-	// It is possible to construct a valid message that has more compression pointers
-	// than this, and still doesn't loop, by pointing to a previous pointer. This is
-	// not something a well written implementation should ever do, so we leave them
-	// to trip the maximum compression pointer check.
-	maxCompressionPointers = (maxDomainNameWireOctets+1)/2 - 2
 
 	// This is the maximum length of a domain name in presentation format. The
 	// maximum wire length of a domain name is 255 octets (see above), with the
@@ -102,14 +95,6 @@ var RcodeToString = map[uint16]string{
 }
 
 // Domain names are a sequence of counted strings split at the dots. They end with a zero-length string.
-
-// PackDomainName packs a domain name s into msg[off:].
-// If compression is wanted compress must be true and the compression
-// map needs to hold a mapping between domain names and offsets
-// pointing into msg.
-func PackDomainName(s string, msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
-	return packDomainName(s, msg, off, compression, compress)
-}
 
 func packDomainName(s string, msg []byte, off int, compression map[string]uint16, compress bool) (off1 int, err error) {
 	// XXX: A logical copy of this function exists in IsDomainName and
@@ -304,8 +289,7 @@ func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 	budget := maxDomainNameWireOctets
 	var ptrs int // number of pointers followed
 
-	// If we never see a pointer, we need to ensure that we advance s to our
-	// final position.
+	// If we never see a pointer, we need to ensure that we advance s to our final position.
 	cs := *s
 	defer func() {
 		if ptrs == 0 {
@@ -324,8 +308,7 @@ func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 			if !cs.ReadBytes(&label, int(c)) {
 				return "", ErrUnpackOverflow
 			}
-			// If we see a zero-length label (root label), this is the
-			// end of the name.
+			// If we see a zero-length label (root label), this is the end of the name.
 			if len(label) == 0 {
 				if len(name) == 0 {
 					return ".", nil
@@ -354,13 +337,6 @@ func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 			// advance s to our current position.
 			if ptrs == 0 {
 				*s = cs
-			}
-			// Don't follow too many pointers in case there is a loop.
-			//
-			// TODO(tmthrgd): This check is no longer required to ensure
-			// loop free behaviour. Should we remove it?
-			if ptrs++; ptrs > maxCompressionPointers {
-				return "", &Error{err: "too many compression pointers"}
 			}
 			// The pointer should always point backwards to an earlier
 			// part of the message. Technically it could work pointing
@@ -486,22 +462,37 @@ func dddToByte[T ~[]byte | ~string](s T) byte {
 	return byte((s[0]-'0')*100 + (s[1]-'0')*10 + (s[2] - '0'))
 }
 
-// Helper function for packing and unpacking
-func intToBytes(i *big.Int, length int) []byte {
-	// TODO(tmthrgd): Move this to dnssec.go.
-	buf := i.Bytes()
-	if len(buf) < length {
-		b := make([]byte, length)
-		copy(b[length-len(buf):], buf)
-		return b
+// packQuestion packs an RR into a question section.
+func packQuestion(rr RR, msg []byte, off int) (off1 int, err error) {
+	if rr == nil {
+		return len(msg), &Error{err: "nil rr"}
 	}
-	return buf
+
+	off, err = packDomainName(rr.Header().Name, msg, off, nil, true)
+	if err != nil {
+		return len(msg), err
+	}
+	rrtype := RRToType(rr)
+	off, err = packUint16(rrtype, msg, off)
+	if err != nil {
+		return len(msg), err
+	}
+
+	class := uint16(0)
+	if rr.Header().Class == 0 {
+		class = ClassINET
+	}
+	off, err = packUint16(class, msg, off)
+	if err != nil {
+		return len(msg), err
+	}
+	return off, nil
 }
 
 // PackRR packs a resource record rr into msg[off:].
 // See PackDomainName for documentation about the compression.
 func PackRR(rr RR, msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	_, off1, err = packRR(rr, msg, off, compression, compress)
+	_, off1, err = packRR(rr, msg, off, compression)
 	return off1, err
 }
 
@@ -534,7 +525,7 @@ func packRR(rr RR, msg []byte, off int, compression map[string]uint16) (headerEn
 // UnpackRR unpacks msg[off:] into an RR.
 func UnpackRR(msg []byte, off int) (rr RR, off1 int, err error) {
 	if off < 0 || off > len(msg) {
-		return nil, off, &Error{err: "bad off"}
+		return nil, off, &Error{err: "bad offset"}
 	}
 	if off == len(msg) {
 		// Preserve this somewhat strange existing corner case of not
@@ -589,37 +580,29 @@ func unpackRRWithHeader(h Header, rdlength uint16, msg *cryptobyte.String, msgBu
 }
 
 // Pack packs a Msg: it is converted to to wire format.
-// If the dns.Compress is true the message will be in compressed wire format.
-func (dns *Msg) Pack() (msg []byte, err error) {
-	return dns.PackBuffer(nil)
-}
-
-// PackBuffer packs a Msg, using the given buffer buf. If buf is too small a new buffer is allocated.
-func (dns *Msg) PackBuffer(buf []byte) (msg []byte, err error) {
-	// If this message can't be compressed, avoid filling the
-	// compression map and creating garbage.
-	if dns.isCompressible() {
-		compress := make(map[string]uint16) // Compression pointer mappings.
-		return dns.packBufferWithCompressionMap(buf, compress)
+func (m *Msg) Pack() error {
+	if m.isCompressible() {
+		compressions := make(map[string]uint16) // Compression pointer mappings.
+		return m.pack(compressions)
 	}
-
-	return dns.packBufferWithCompressionMap(buf, compress)
+	return m.pack(nil)
 }
 
-// packBufferWithCompressionMap packs a Msg, using the given buffer buf.
-func (m *Msg) packBufferWithCompressionMap(buf []byte, compress map[string]uint16) (msg []byte, err error) {
+func (m *Msg) pack(compression map[string]uint16) (err error) {
 	if m.Rcode() < 0 || m.Rcode() > 0xFFF {
-		return nil, ErrRcode
+		return ErrRcode
 	}
 
-	// Set extended rcode unconditionally if we have an opt, this will allow
-	// resetting the extended rcode bits if they need to.
-	if opt := m.IsEdns0(); opt != nil {
-		opt.SetExtendedRcode(uint16(m.Rcode()))
-	} else if m.Rcode() > 0xF {
-		// If Rcode is an extended one and opt is nil, error out.
-		return nil, ErrExtendedRcode
-	}
+	/*
+		// Set extended rcode unconditionally if we have an opt, this will allow
+		// resetting the extended rcode bits if they need to.
+		if opt := m.IsEdns0(); opt != nil {
+			opt.SetExtendedRcode(uint16(m.Rcode()))
+		} else if m.Rcode() > 0xF {
+			// If Rcode is an extended one and opt is nil, error out.
+			return nil, ErrExtendedRcode
+		}
+	*/
 
 	// Convert convenient Msg into wire-like Header.
 	var dh header
@@ -653,47 +636,47 @@ func (m *Msg) packBufferWithCompressionMap(buf []byte, compress map[string]uint1
 	dh.Qdcount = uint16(len(m.Question))
 	dh.Ancount = uint16(len(m.Answer))
 	dh.Nscount = uint16(len(m.Ns))
-	dh.Arcount = uint16(len(m.Extra)) // pseudo
+	dh.Arcount = uint16(len(m.Extra)) // pseudo !!
 
 	// We need the uncompressed length here, because we first pack it and then compress it.
-	msg = buf
-	uncompressedLen := msgLenWithCompressionMap(m, nil)
-	if packLen := uncompressedLen + 1; len(msg) < packLen {
-		msg = make([]byte, packLen)
+	uncompressedLen := m.Len()
+	if packLen := uncompressedLen + 1; len(m.Data) < packLen {
+		m.Data = make([]byte, packLen)
 	}
 
 	// Pack it in: header and then the pieces.
 	off := 0
-	off, err = dh.pack(msg, off, compress)
+	off, err = dh.pack(m.Data, off)
 	if err != nil {
 		return nil, err
 	}
 	for _, r := range m.Question {
-		off, err = packquestion(msg, off, compress)
+		off, err = packQuestion(r, m.Data, off)
 		if err != nil {
 			return nil, err
 		}
 		break
 	}
 	for _, r := range m.Answer {
-		_, off, err = packRR(r, msg, off, compress)
+		_, off, err = packRR(r, m.Data, off, compression)
 		if err != nil {
 			return nil, err
 		}
 	}
 	for _, r := range m.Ns {
-		_, off, err = packRR(r, msg, off, compress)
+		_, off, err = packRR(r, m.Data, off, compression)
 		if err != nil {
 			return nil, err
 		}
 	}
 	for _, r := range m.Extra {
-		_, off, err = packRR(r, msg, off, compress)
+		_, off, err = packRR(r, m.Data, off, compression)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return msg[:off], nil
+	m.Data = m.Data[:off]
+	return nil
 }
 
 // We only allow a single question in the question section.
@@ -784,7 +767,7 @@ func unpackRRs(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, error) 
 	return dst, nil
 }
 
-func (dns *Msg) unpack(dh header, msg, msgBuf []byte) error {
+func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 	s := cryptobyte.String(msg)
 	// If we are at the end of the message we should return *just* the
 	// header. This can still be useful to the caller. 9.9.9.9 sends these
@@ -794,118 +777,111 @@ func (dns *Msg) unpack(dh header, msg, msgBuf []byte) error {
 	// should be specifying that it contains no records.
 	if s.Empty() {
 		// reset sections before returning
-		dns.Question, dns.Answer, dns.Ns, dns.Extra, dns.Pseudo = nil, nil, nil, nil, nil
+		m.Question, m.Answer, m.Ns, m.Extra, m.Pseudo = nil, nil, nil, nil, nil
 		return nil
 	}
 
 	var err error
-	dns.Question, err = unpackQuestions(dh.Qdcount, &s, msgBuf)
+	m.Question, err = unpackQuestions(dh.Qdcount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
-	dns.Answer, err = unpackRRs(dh.Ancount, &s, msgBuf)
+	m.Answer, err = unpackRRs(dh.Ancount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
-	dns.Ns, err = unpackRRs(dh.Nscount, &s, msgBuf)
+	m.Ns, err = unpackRRs(dh.Nscount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
-	dns.Extra, err = unpackRRs(dh.Arcount, &s, msgBuf)
-	// Set extended Rcode. We do this even if unpacking the Extra records may
-	// have failed as we may still have successfully unpacked an EDNS0 record.
-	if opt := dns.IsEdns0(); opt != nil {
-		dns.Rcode |= opt.ExtendedRcode()
-	}
+	m.Extra, err = unpackRRs(dh.Arcount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
-	// TODO(miek,tmthrgd): Return an error for trailing data:
-	//
-	//  if !s.Empty() {
-	// 	return &Error{err: "trailing message data"}
-	//  }
+	if !s.Empty() {
+		return &Error{err: "trailing message data"}
+	}
 
 	return nil
 }
 
 // Unpack unpacks a binary message to a Msg structure.
-func (dns *Msg) Unpack(msg []byte) error {
+func (m *Msg) Unpack(msg []byte) error {
 	s := cryptobyte.String(msg)
 
 	var dh Header
 	if !dh.unpack(&s) {
 		return ErrTruncatedMessage
 	}
-	dns.setHdr(dh)
+	m.setHdr(dh)
 
-	return dns.unpack(dh, s, msg)
+	return m.unpack(dh, s, msg)
 }
 
 // Convert a complete message to a string with dig-like output.
-func (dns *Msg) String() string {
+func (m *Msg) String() string {
 	// builder
-	if dns == nil {
+	if m == nil {
 		return "<nil> MsgHdr"
 	}
-	s := dns.MsgHdr.String() + " "
-	if dns.MsgHdr.Opcode == OpcodeUpdate {
-		s += "ZONE: " + strconv.Itoa(len(dns.Question)) + ", "
-		s += "PREREQ: " + strconv.Itoa(len(dns.Answer)) + ", "
-		s += "UPDATE: " + strconv.Itoa(len(dns.Ns)) + ", "
-		s += "ADDITIONAL: " + strconv.Itoa(len(dns.Extra)) + "\n"
+	s := m.MsgHeader.String() + " "
+	if m.MsgHeader.Opcode == OpcodeUpdate {
+		s += "ZONE: " + strconv.Itoa(len(m.Question)) + ", "
+		s += "PREREQ: " + strconv.Itoa(len(m.Answer)) + ", "
+		s += "UPDATE: " + strconv.Itoa(len(m.Ns)) + ", "
+		s += "ADDITIONAL: " + strconv.Itoa(len(m.Extra)) + "\n"
 	} else {
-		s += "QUERY: " + strconv.Itoa(len(dns.Question)) + ", "
-		s += "ANSWER: " + strconv.Itoa(len(dns.Answer)) + ", "
-		s += "AUTHORITY: " + strconv.Itoa(len(dns.Ns)) + ", "
-		s += "ADDITIONAL: " + strconv.Itoa(len(dns.Extra)) + "\n"
+		s += "QUERY: " + strconv.Itoa(len(m.Question)) + ", "
+		s += "ANSWER: " + strconv.Itoa(len(m.Answer)) + ", "
+		s += "AUTHORITY: " + strconv.Itoa(len(m.Ns)) + ", "
+		s += "ADDITIONAL: " + strconv.Itoa(len(m.Extra)) + "\n"
 	}
-	opt := dns.IsEdns0()
+	opt := m.IsEdns0()
 	if opt != nil {
 		// OPT PSEUDOSECTION
 		s += opt.String() + "\n"
 	}
-	if len(dns.Question) > 0 {
-		if dns.MsgHdr.Opcode == OpcodeUpdate {
+	if len(m.Question) > 0 {
+		if m.MsgHdr.Opcode == OpcodeUpdate {
 			s += "\n;; ZONE SECTION:\n"
 		} else {
 			s += "\n;; QUESTION SECTION:\n"
 		}
-		for _, r := range dns.Question {
+		for _, r := range m.Question {
 			s += r.String() + "\n"
 		}
 	}
-	if len(dns.Answer) > 0 {
-		if dns.MsgHdr.Opcode == OpcodeUpdate {
+	if len(m.Answer) > 0 {
+		if m.MsgHdr.Opcode == OpcodeUpdate {
 			s += "\n;; PREREQUISITE SECTION:\n"
 		} else {
 			s += "\n;; ANSWER SECTION:\n"
 		}
-		for _, r := range dns.Answer {
+		for _, r := range m.Answer {
 			if r != nil {
 				s += r.String() + "\n"
 			}
 		}
 	}
-	if len(dns.Ns) > 0 {
-		if dns.MsgHdr.Opcode == OpcodeUpdate {
+	if len(m.Ns) > 0 {
+		if m.MsgHdr.Opcode == OpcodeUpdate {
 			s += "\n;; UPDATE SECTION:\n"
 		} else {
 			s += "\n;; AUTHORITY SECTION:\n"
 		}
-		for _, r := range dns.Ns {
+		for _, r := range m.Ns {
 			if r != nil {
 				s += r.String() + "\n"
 			}
 		}
 	}
-	if len(dns.Extra) > 0 && (opt == nil || len(dns.Extra) > 1) {
+	if len(m.Extra) > 0 && (opt == nil || len(m.Extra) > 1) {
 		s += "\n;; ADDITIONAL SECTION:\n"
-		for _, r := range dns.Extra {
+		for _, r := range m.Extra {
 			if r != nil && r.Header().Rrtype != TypeOPT {
 				s += r.String() + "\n"
 			}
@@ -915,46 +891,32 @@ func (dns *Msg) String() string {
 }
 
 // isCompressible returns whether the msg may be compressible.
-func (dns *Msg) isCompressible() bool {
+func (m *Msg) isCompressible() bool {
 	// If we only have one question, there is nothing we can ever compress.
-	return len(dns.Question) > 1 || len(dns.Answer) > 0 ||
-		len(dns.Ns) > 0 || len(dns.Extra) > 0
+	return len(m.Question) > 1 || len(m.Answer) > 0 ||
+		len(m.Ns) > 0 || len(m.Extra) > 0
 }
 
-// Len returns the message length when in (un)compressed wire format.
-// If dns.Compress is true compression it is taken into account. Len()
-// is provided to be a faster way to get the size of the resulting packet,
-// than packing it, measuring the size and discarding the buffer.
-func (dns *Msg) Len() int {
-	// If this message can't be compressed, avoid filling the
-	// compression map and creating garbage.
-	if dns.Compress && dns.isCompressible() {
-		compression := make(map[string]struct{})
-		return msgLenWithCompressionMap(dns, compression)
+// Len returns the message length when in uncompressed wire format.
+func (m *Msg) Len() int {
+	l := MsgHeaderSize
+
+	for _, r := range m.Question {
+		l += r.Len()
 	}
-
-	return msgLenWithCompressionMap(dns, nil)
-}
-
-func msgLenWithCompressionMap(dns *Msg, compression map[string]struct{}) int {
-	l := headerSize
-
-	for _, r := range dns.Question {
-		l += r.len(l, compression)
-	}
-	for _, r := range dns.Answer {
+	for _, r := range m.Answer {
 		if r != nil {
-			l += r.len(l, compression)
+			l += r.Len()
 		}
 	}
-	for _, r := range dns.Ns {
+	for _, r := range m.Ns {
 		if r != nil {
-			l += r.len(l, compression)
+			l += r.Len()
 		}
 	}
-	for _, r := range dns.Extra {
+	for _, r := range m.Extra {
 		if r != nil {
-			l += r.len(l, compression)
+			l += r.Len()
 		}
 	}
 
@@ -1007,7 +969,7 @@ func escapedNameLen(s string) int {
 }
 
 func compressionLenSearch(c map[string]struct{}, s string, msgOff int) (int, bool) {
-	for off, end := 0, false; !end; off, end = NextLabel(s, off) {
+	for off, end := 0, false; !end; off, end = dnsutil.Next(s, off) {
 		if _, ok := c[s[off:]]; ok {
 			return off, true
 		}
@@ -1020,6 +982,34 @@ func compressionLenSearch(c map[string]struct{}, s string, msgOff int) (int, boo
 	return 0, false
 }
 
+func (dh *header) pack(msg []byte, off int) (int, error) {
+	off, err := packUint16(dh.ID, msg, off)
+	if err != nil {
+		return off, err
+	}
+	off, err = packUint16(dh.Bits, msg, off)
+	if err != nil {
+		return off, err
+	}
+	off, err = packUint16(dh.Qdcount, msg, off)
+	if err != nil {
+		return off, err
+	}
+	off, err = packUint16(dh.Ancount, msg, off)
+	if err != nil {
+		return off, err
+	}
+	off, err = packUint16(dh.Nscount, msg, off)
+	if err != nil {
+		return off, err
+	}
+	off, err = packUint16(dh.Arcount, msg, off)
+	if err != nil {
+		return off, err
+	}
+	return off, nil
+}
+
 func (dh *header) unpack(msg *cryptobyte.String) bool {
 	return msg.ReadUint16(&dh.ID) &&
 		msg.ReadUint16(&dh.Bits) &&
@@ -1030,7 +1020,7 @@ func (dh *header) unpack(msg *cryptobyte.String) bool {
 }
 
 // setHdr set the header in the dns using the binary data in dh.
-func (m *Msg) setHdr(dh header) {
+func (m *Msg) setMsgHeader(dh header) {
 	m.ID = dh.ID
 	m.Response = dh.Bits&_QR != 0
 	m.Opcode = uint8(dh.Bits>>11) & 0xF

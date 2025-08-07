@@ -745,3 +745,15 @@ func packKeyWire(dw *dnskeyWireFmt, msg []byte) (int, error) {
 	}
 	return off, nil
 }
+
+// Helper function for packing and unpacking
+func intToBytes(i *big.Int, length int) []byte {
+	// TODO(tmthrgd): Move this to dnssec.go.
+	buf := i.Bytes()
+	if len(buf) < length {
+		b := make([]byte, length)
+		copy(b[length-len(buf):], buf)
+		return b
+	}
+	return buf
+}

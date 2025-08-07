@@ -37,7 +37,7 @@ func (rr *NULL) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *CNAME) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Target, msg, off, compression, compress)
+	off, err = packDomainName(rr.Target, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -85,7 +85,7 @@ func (rr *HINFO) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *MB) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Mb, msg, off, compression, compress)
+	off, err = packDomainName(rr.Mb, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -105,7 +105,7 @@ func (rr *MB) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *MG) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Mg, msg, off, compression, compress)
+	off, err = packDomainName(rr.Mg, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -125,11 +125,11 @@ func (rr *MG) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *MINFO) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Rmail, msg, off, compression, compress)
+	off, err = packDomainName(rr.Rmail, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
-	off, err = packDomainName(rr.Email, msg, off, compression, compress)
+	off, err = packDomainName(rr.Email, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -153,7 +153,7 @@ func (rr *MINFO) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *MR) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Mr, msg, off, compression, compress)
+	off, err = packDomainName(rr.Mr, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -173,7 +173,7 @@ func (rr *MR) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *MF) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Mf, msg, off, compression, compress)
+	off, err = packDomainName(rr.Mf, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -193,7 +193,7 @@ func (rr *MF) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *MD) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Md, msg, off, compression, compress)
+	off, err = packDomainName(rr.Md, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -217,7 +217,7 @@ func (rr *MX) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 	if err != nil {
 		return off, err
 	}
-	off, err = packDomainName(rr.Mx, msg, off, compression, compress)
+	off, err = packDomainName(rr.Mx, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -314,7 +314,7 @@ func (rr *RT) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *NS) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Ns, msg, off, compression, compress)
+	off, err = packDomainName(rr.Ns, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -334,7 +334,7 @@ func (rr *NS) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *PTR) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Ptr, msg, off, compression, compress)
+	off, err = packDomainName(rr.Ptr, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
@@ -382,11 +382,11 @@ func (rr *RP) unpack(data, msgBuf []byte) (err error) {
 }
 
 func (rr *SOA) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
-	off, err = packDomainName(rr.Ns, msg, off, compression, compress)
+	off, err = packDomainName(rr.Ns, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}
-	off, err = packDomainName(rr.Mbox, msg, off, compression, compress)
+	off, err = packDomainName(rr.Mbox, msg, off, compression, true)
 	if err != nil {
 		return off, err
 	}

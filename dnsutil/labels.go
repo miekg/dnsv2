@@ -2,7 +2,7 @@ package dnsutil
 
 // Holds a bunch of helper functions for dealing with labels.
 
-// LabelCount return the number of labels in the name s.
+// Count return the number of labels in the name s.
 func LabelCount(s string) (labels int) {
 	if s == "." {
 		return
@@ -10,7 +10,7 @@ func LabelCount(s string) (labels int) {
 	off := 0
 	end := false
 	for {
-		off, end = NextLabel(s, off)
+		off, end = Next(s, off)
 		labels++
 		if end {
 			return
@@ -31,7 +31,7 @@ func Split(s string) []int {
 	end := false
 
 	for {
-		off, end = NextLabel(s, off)
+		off, end = Next(s, off)
 		if end {
 			return idx
 		}
@@ -39,11 +39,11 @@ func Split(s string) []int {
 	}
 }
 
-// NextLabel returns the index of the start of the next label in the
+// Next returns the index of the start of the next label in the
 // string s starting at offset. A negative offset will cause a panic.
 // The bool end is true when the end of the string has been reached.
-// Also see PrevLabel.
-func NextLabel(s string, offset int) (i int, end bool) {
+// Also see [Prev].
+func Next(s string, offset int) (i int, end bool) {
 	if s == "" {
 		return 0, true
 	}
@@ -65,11 +65,11 @@ func NextLabel(s string, offset int) (i int, end bool) {
 	return i + 1, true
 }
 
-// PrevLabel returns the index of the label when starting from the right and
+// Prev returns the index of the label when starting from the right and
 // jumping n labels to the left.
 // The bool start is true when the start of the string has been overshot.
 // Also see NextLabel.
-func PrevLabel(s string, n int) (i int, start bool) {
+func Prev(s string, n int) (i int, start bool) {
 	if s == "" {
 		return 0, true
 	}
