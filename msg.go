@@ -648,25 +648,25 @@ func (m *Msg) pack(compression map[string]uint16) (err error) {
 	off := 0
 	off, err = dh.pack(m.Data, off)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, r := range m.Question {
 		off, err = packQuestion(r, m.Data, off)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		break
 	}
 	for _, r := range m.Answer {
 		_, off, err = packRR(r, m.Data, off, compression)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	for _, r := range m.Ns {
 		_, off, err = packRR(r, m.Data, off, compression)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	for _, r := range m.Extra {
