@@ -46,9 +46,7 @@ type Typer interface {
 
 // Field is a rdata element in a resource record. The string representation can be configured in various ways:
 //   - If a Field implements the Stringer interface it will be used to return the string presentation
-//   - If a Field has a struct tag that this library knows about, ie `domain-name`, or `cdomain-name`, etc. the
-//     string function for that tag will be used.
-//   - If none of the above is true and the fields is basic Go type, [fmt.Sprintf] will be used.
+//   - Otherwise if the field is a basic Go type, it will be converted to a string will be used.
 type Field any
 
 // The Packer interface defines the Pack and Unpack methods that are used to convert RRs to and from wire format.

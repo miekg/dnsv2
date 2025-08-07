@@ -52,7 +52,6 @@ func (rr *NSAPPTR) Header() *Header    { return &rr.Hdr }
 func (rr *NSEC3) Header() *Header      { return &rr.Hdr }
 func (rr *NSEC3PARAM) Header() *Header { return &rr.Hdr }
 func (rr *TKEY) Header() *Header       { return &rr.Hdr }
-func (rr *RFC3597) Header() *Header    { return &rr.Hdr }
 func (rr *URI) Header() *Header        { return &rr.Hdr }
 func (rr *DHCID) Header() *Header      { return &rr.Hdr }
 func (rr *TLSA) Header() *Header       { return &rr.Hdr }
@@ -358,7 +357,6 @@ var TypeToString = map[uint16]string{
 	TypeNSEC3:      "NSEC3",
 	TypeNSEC3PARAM: "NSEC3PARAM",
 	TypeTKEY:       "TKEY",
-	TypeRFC3597:    "RFC3597",
 	TypeURI:        "URI",
 	TypeDHCID:      "DHCID",
 	TypeTLSA:       "TLSA",
@@ -384,102 +382,101 @@ var TypeToString = map[uint16]string{
 	TypeNSAPPTR:    "NSAP-PTR",
 }
 
-func (rr *A) Data() *Fields     { return Fields{rr.A} }
-func (rr *AAAA) Data() *Fields  { return Fields{rr.AAAA} }
-func (rr *AFSDB) Data() *Fields { return Fields{rr.Subtype, rr.Hostname} }
-func (rr *AMTRELAY) Data() *Fields {
-	return Fields{rr.Precedence, rr.GatewayType, rr.GatewayAddr, rr.GatewayHost}
+func (rr *A) Data() []Field     { return []Field{rr.A} }
+func (rr *AAAA) Data() []Field  { return []Field{rr.AAAA} }
+func (rr *AFSDB) Data() []Field { return []Field{rr.Subtype, rr.Hostname} }
+func (rr *AMTRELAY) Data() []Field {
+	return []Field{rr.Precedence, rr.GatewayType, rr.GatewayAddr, rr.GatewayHost}
 }
-func (rr *ANY) Data() *Fields       { return Fields{} }
-func (rr *APL) Data() *Fields       { return Fields{rr.Prefixes} }
-func (rr *APLPrefix) Data() *Fields { return Fields{rr.Negation, rr.Network} }
-func (rr *AVC) Data() *Fields       { return Fields{rr.Txt} }
-func (rr *CAA) Data() *Fields       { return Fields{rr.Flag, rr.Tag, rr.Value} }
-func (rr *CDNSKEY) Data() *Fields   { return Fields{} }
-func (rr *CDS) Data() *Fields       { return Fields{} }
-func (rr *CERT) Data() *Fields      { return Fields{rr.Type, rr.KeyTag, rr.Algorithm, rr.Certificate} }
-func (rr *CNAME) Data() *Fields     { return Fields{rr.Target} }
-func (rr *CSYNC) Data() *Fields     { return Fields{rr.Serial, rr.Flags, rr.TypeBitMap} }
-func (rr *DHCID) Data() *Fields     { return Fields{rr.Digest} }
-func (rr *DLV) Data() *Fields       { return Fields{} }
-func (rr *DNAME) Data() *Fields     { return Fields{rr.Target} }
-func (rr *DNSKEY) Data() *Fields    { return Fields{rr.Flags, rr.Protocol, rr.Algorithm, rr.PublicKey} }
-func (rr *DS) Data() *Fields        { return Fields{rr.KeyTag, rr.Algorithm, rr.DigestType, rr.Digest} }
-func (rr *EID) Data() *Fields       { return Fields{rr.Endpoint} }
-func (rr *EUI48) Data() *Fields     { return Fields{rr.Address} }
-func (rr *EUI64) Data() *Fields     { return Fields{rr.Address} }
-func (rr *GID) Data() *Fields       { return Fields{rr.Gid} }
-func (rr *GPOS) Data() *Fields      { return Fields{rr.Longitude, rr.Latitude, rr.Altitude} }
-func (rr *HINFO) Data() *Fields     { return Fields{rr.Cpu, rr.Os} }
-func (rr *HIP) Data() *Fields {
-	return Fields{rr.HitLength, rr.PublicKeyAlgorithm, rr.PublicKeyLength, rr.Hit, rr.PublicKey, rr.RendezvousServers}
+func (rr *ANY) Data() []Field       { return []Field{} }
+func (rr *APL) Data() []Field       { return []Field{rr.Prefixes} }
+func (rr *APLPrefix) Data() []Field { return []Field{rr.Negation, rr.Network} }
+func (rr *AVC) Data() []Field       { return []Field{rr.Txt} }
+func (rr *CAA) Data() []Field       { return []Field{rr.Flag, rr.Tag, rr.Value} }
+func (rr *CDNSKEY) Data() []Field   { return []Field{} }
+func (rr *CDS) Data() []Field       { return []Field{} }
+func (rr *CERT) Data() []Field      { return []Field{rr.Type, rr.KeyTag, rr.Algorithm, rr.Certificate} }
+func (rr *CNAME) Data() []Field     { return []Field{rr.Target} }
+func (rr *CSYNC) Data() []Field     { return []Field{rr.Serial, rr.Flags, rr.TypeBitMap} }
+func (rr *DHCID) Data() []Field     { return []Field{rr.Digest} }
+func (rr *DLV) Data() []Field       { return []Field{} }
+func (rr *DNAME) Data() []Field     { return []Field{rr.Target} }
+func (rr *DNSKEY) Data() []Field    { return []Field{rr.Flags, rr.Protocol, rr.Algorithm, rr.PublicKey} }
+func (rr *DS) Data() []Field        { return []Field{rr.KeyTag, rr.Algorithm, rr.DigestType, rr.Digest} }
+func (rr *EID) Data() []Field       { return []Field{rr.Endpoint} }
+func (rr *EUI48) Data() []Field     { return []Field{rr.Address} }
+func (rr *EUI64) Data() []Field     { return []Field{rr.Address} }
+func (rr *GID) Data() []Field       { return []Field{rr.Gid} }
+func (rr *GPOS) Data() []Field      { return []Field{rr.Longitude, rr.Latitude, rr.Altitude} }
+func (rr *HINFO) Data() []Field     { return []Field{rr.Cpu, rr.Os} }
+func (rr *HIP) Data() []Field {
+	return []Field{rr.HitLength, rr.PublicKeyAlgorithm, rr.PublicKeyLength, rr.Hit, rr.PublicKey, rr.RendezvousServers}
 }
-
-func (rr *IPSECKEY) Data() *Fields {
-	return Fields{rr.Precedence, rr.GatewayType, rr.Algorithm, rr.GatewayAddr, rr.GatewayHost, rr.PublicKey}
+func (rr *IPSECKEY) Data() []Field {
+	return []Field{rr.Precedence, rr.GatewayType, rr.Algorithm, rr.GatewayAddr, rr.GatewayHost, rr.PublicKey}
 }
-func (rr *KEY) Data() *Fields { return Fields{} }
-func (rr *KX) Data() *Fields  { return Fields{rr.Preference, rr.Exchanger} }
-func (rr *L32) Data() *Fields { return Fields{rr.Preference, rr.Locator32} }
-func (rr *L64) Data() *Fields { return Fields{rr.Preference, rr.Locator64} }
-func (rr *LOC) Data() *Fields {
-	return Fields{rr.Version, rr.Size, rr.HorizPre, rr.VertPre, rr.Latitude, rr.Longitude, rr.Altitude}
+func (rr *KEY) Data() []Field { return []Field{} }
+func (rr *KX) Data() []Field  { return []Field{rr.Preference, rr.Exchanger} }
+func (rr *L32) Data() []Field { return []Field{rr.Preference, rr.Locator32} }
+func (rr *L64) Data() []Field { return []Field{rr.Preference, rr.Locator64} }
+func (rr *LOC) Data() []Field {
+	return []Field{rr.Version, rr.Size, rr.HorizPre, rr.VertPre, rr.Latitude, rr.Longitude, rr.Altitude}
 }
-func (rr *LP) Data() *Fields    { return Fields{rr.Preference, rr.Fqdn} }
-func (rr *MB) Data() *Fields    { return Fields{rr.Mb} }
-func (rr *MD) Data() *Fields    { return Fields{rr.Md} }
-func (rr *MF) Data() *Fields    { return Fields{rr.Mf} }
-func (rr *MG) Data() *Fields    { return Fields{rr.Mg} }
-func (rr *MINFO) Data() *Fields { return Fields{rr.Rmail, rr.Email} }
-func (rr *MR) Data() *Fields    { return Fields{rr.Mr} }
-func (rr *MX) Data() *Fields    { return Fields{rr.Preference, rr.Mx} }
-func (rr *NAPTR) Data() *Fields {
-	return Fields{rr.Order, rr.Preference, rr.Flags, rr.Service, rr.Regexp, rr.Replacement}
+func (rr *LP) Data() []Field    { return []Field{rr.Preference, rr.Fqdn} }
+func (rr *MB) Data() []Field    { return []Field{rr.Mb} }
+func (rr *MD) Data() []Field    { return []Field{rr.Md} }
+func (rr *MF) Data() []Field    { return []Field{rr.Mf} }
+func (rr *MG) Data() []Field    { return []Field{rr.Mg} }
+func (rr *MINFO) Data() []Field { return []Field{rr.Rmail, rr.Email} }
+func (rr *MR) Data() []Field    { return []Field{rr.Mr} }
+func (rr *MX) Data() []Field    { return []Field{rr.Preference, rr.Mx} }
+func (rr *NAPTR) Data() []Field {
+	return []Field{rr.Order, rr.Preference, rr.Flags, rr.Service, rr.Regexp, rr.Replacement}
 }
-func (rr *NID) Data() *Fields     { return Fields{rr.Preference, rr.NodeID} }
-func (rr *NIMLOC) Data() *Fields  { return Fields{rr.Locator} }
-func (rr *NINFO) Data() *Fields   { return Fields{rr.ZSData} }
-func (rr *NS) Data() *Fields      { return Fields{rr.Ns} }
-func (rr *NSAPPTR) Data() *Fields { return Fields{rr.Ptr} }
-func (rr *NSEC) Data() *Fields    { return Fields{rr.NextDomain, rr.TypeBitMap} }
-func (rr *NSEC3) Data() *Fields {
-	return Fields{rr.Hash, rr.Flags, rr.Iterations, rr.SaltLength, rr.Salt, rr.HashLength, rr.NextDomain, rr.TypeBitMap}
+func (rr *NID) Data() []Field     { return []Field{rr.Preference, rr.NodeID} }
+func (rr *NIMLOC) Data() []Field  { return []Field{rr.Locator} }
+func (rr *NINFO) Data() []Field   { return []Field{rr.ZSData} }
+func (rr *NS) Data() []Field      { return []Field{rr.Ns} }
+func (rr *NSAPPTR) Data() []Field { return []Field{rr.Ptr} }
+func (rr *NSEC) Data() []Field    { return []Field{rr.NextDomain, rr.TypeBitMap} }
+func (rr *NSEC3) Data() []Field {
+	return []Field{rr.Hash, rr.Flags, rr.Iterations, rr.SaltLength, rr.Salt, rr.HashLength, rr.NextDomain, rr.TypeBitMap}
 }
-
-func (rr *NSEC3PARAM) Data() *Fields {
-	return Fields{rr.Hash, rr.Flags, rr.Iterations, rr.SaltLength, rr.Salt}
+func (rr *NSEC3PARAM) Data() []Field {
+	return []Field{rr.Hash, rr.Flags, rr.Iterations, rr.SaltLength, rr.Salt}
 }
-func (rr *NULL) Data() *Fields       { return Fields{rr.Data} }
-func (rr *OPENPGPKEY) Data() *Fields { return Fields{rr.PublicKey} }
-func (rr *PTR) Data() *Fields        { return Fields{rr.Ptr} }
-func (rr *PX) Data() *Fields         { return Fields{rr.Preference, rr.Map822, rr.Mapx400} }
-func (rr *RFC3597) Data() *Fields    { return Fields{rr.Rdata} }
-func (rr *RKEY) Data() *Fields       { return Fields{rr.Flags, rr.Protocol, rr.Algorithm, rr.PublicKey} }
-func (rr *RP) Data() *Fields         { return Fields{rr.Mbox, rr.Txt} }
-func (rr *RRSIG) Data() *Fields {
-	return Fields{rr.TypeCovered, rr.Algorithm, rr.Labels, rr.OrigTtl, rr.Expiration, rr.Inception, rr.KeyTag, rr.SignerName, rr.Signature}
+func (rr *NULL) Data() []Field       { return []Field{rr.Data} }
+func (rr *OPENPGPKEY) Data() []Field { return []Field{rr.PublicKey} }
+func (rr *PTR) Data() []Field        { return []Field{rr.Ptr} }
+func (rr *PX) Data() []Field         { return []Field{rr.Preference, rr.Map822, rr.Mapx400} }
+func (rr *RFC3597) Data() []Field    { return []Field{rr.Rdata} }
+func (rr *RKEY) Data() []Field       { return []Field{rr.Flags, rr.Protocol, rr.Algorithm, rr.PublicKey} }
+func (rr *RP) Data() []Field         { return []Field{rr.Mbox, rr.Txt} }
+func (rr *RRSIG) Data() []Field {
+	return []Field{rr.TypeCovered, rr.Algorithm, rr.Labels, rr.OrigTtl, rr.Expiration, rr.Inception, rr.KeyTag, rr.SignerName, rr.Signature}
 }
-func (rr *RT) Data() *Fields  { return Fields{rr.Preference, rr.Host} }
-func (rr *SIG) Data() *Fields { return Fields{} }
-func (rr *SMIMEA) Data() *Fields {
-	return Fields{rr.Usage, rr.Selector, rr.MatchingType, rr.Certificate}
+func (rr *RT) Data() []Field  { return []Field{rr.Preference, rr.Host} }
+func (rr *SIG) Data() []Field { return []Field{} }
+func (rr *SMIMEA) Data() []Field {
+	return []Field{rr.Usage, rr.Selector, rr.MatchingType, rr.Certificate}
 }
-
-func (rr *SOA) Data() *Fields {
-	return Fields{rr.Ns, rr.Mbox, rr.Serial, rr.Refresh, rr.Retry, rr.Expire, rr.Minttl}
+func (rr *SOA) Data() []Field {
+	return []Field{rr.Ns, rr.Mbox, rr.Serial, rr.Refresh, rr.Retry, rr.Expire, rr.Minttl}
 }
-func (rr *SPF) Data() *Fields    { return Fields{rr.Txt} }
-func (rr *SRV) Data() *Fields    { return Fields{rr.Priority, rr.Weight, rr.Port, rr.Target} }
-func (rr *SSHFP) Data() *Fields  { return Fields{rr.Algorithm, rr.Type, rr.FingerPrint} }
-func (rr *TA) Data() *Fields     { return Fields{rr.KeyTag, rr.Algorithm, rr.DigestType, rr.Digest} }
-func (rr *TALINK) Data() *Fields { return Fields{rr.PreviousName, rr.NextName} }
-func (rr *TKEY) Data() *Fields {
-	return Fields{rr.Algorithm, rr.Inception, rr.Expiration, rr.Mode, rr.Error, rr.KeySize, rr.Key, rr.OtherLen, rr.OtherData}
+func (rr *SPF) Data() []Field    { return []Field{rr.Txt} }
+func (rr *SRV) Data() []Field    { return []Field{rr.Priority, rr.Weight, rr.Port, rr.Target} }
+func (rr *SSHFP) Data() []Field  { return []Field{rr.Algorithm, rr.Type, rr.FingerPrint} }
+func (rr *TA) Data() []Field     { return []Field{rr.KeyTag, rr.Algorithm, rr.DigestType, rr.Digest} }
+func (rr *TALINK) Data() []Field { return []Field{rr.PreviousName, rr.NextName} }
+func (rr *TKEY) Data() []Field {
+	return []Field{rr.Algorithm, rr.Inception, rr.Expiration, rr.Mode, rr.Error, rr.KeySize, rr.Key, rr.OtherLen, rr.OtherData}
 }
-func (rr *TLSA) Data() *Fields   { return Fields{rr.Usage, rr.Selector, rr.MatchingType, rr.Certificate} }
-func (rr *TXT) Data() *Fields    { return Fields{rr.Txt} }
-func (rr *UID) Data() *Fields    { return Fields{rr.Uid} }
-func (rr *UINFO) Data() *Fields  { return Fields{rr.Uinfo} }
-func (rr *URI) Data() *Fields    { return Fields{rr.Priority, rr.Weight, rr.Target} }
-func (rr *X25) Data() *Fields    { return Fields{rr.PSDNAddress} }
-func (rr *ZONEMD) Data() *Fields { return Fields{rr.Serial, rr.Scheme, rr.Hash, rr.Digest} }
+func (rr *TLSA) Data() []Field {
+	return []Field{rr.Usage, rr.Selector, rr.MatchingType, rr.Certificate}
+}
+func (rr *TXT) Data() []Field    { return []Field{rr.Txt} }
+func (rr *UID) Data() []Field    { return []Field{rr.Uid} }
+func (rr *UINFO) Data() []Field  { return []Field{rr.Uinfo} }
+func (rr *URI) Data() []Field    { return []Field{rr.Priority, rr.Weight, rr.Target} }
+func (rr *X25) Data() []Field    { return []Field{rr.PSDNAddress} }
+func (rr *ZONEMD) Data() []Field { return []Field{rr.Serial, rr.Scheme, rr.Hash, rr.Digest} }

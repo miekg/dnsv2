@@ -10,7 +10,7 @@ import (
 	"slices"
 )
 
-var exclude = []string{"APLPrefix"}
+var exclude = []string{"APLPrefix", "RFC3597"}
 
 // Types returns all types names from the file that are exported.
 func Types(file string) ([]string, error) {

@@ -819,6 +819,7 @@ func (dns *Msg) Unpack(msg []byte) error {
 
 // Convert a complete message to a string with dig-like output.
 func (dns *Msg) String() string {
+	// builder
 	if dns == nil {
 		return "<nil> MsgHdr"
 	}

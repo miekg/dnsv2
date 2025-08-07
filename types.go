@@ -235,7 +235,7 @@ type ANY struct {
 	// Does not have any rdata
 }
 
-func (rr *ANY) String() string { return rr.Hdr.String() }
+func (rr *ANY) String() string { return rr.Hdr.String(rr) }
 
 func (*ANY) parse(c *zlexer, origin string) *ParseError {
 	return &ParseError{err: "ANY records do not have a presentation format"}
@@ -244,12 +244,12 @@ func (*ANY) parse(c *zlexer, origin string) *ParseError {
 // NULL RR. See RFC 1035.
 type NULL struct {
 	Hdr  Header
-	Data string `dns:"any"`
+	Null string `dns:"any"`
 }
 
 func (rr *NULL) String() string {
 	// There is no presentation format; prefix string with a comment.
-	return ";" + rr.Hdr.String() + rr.Data
+	return ";" + rr.Hdr.String(rr) + rr.Null
 }
 
 func (*NULL) parse(c *zlexer, origin string) *ParseError {
@@ -266,13 +266,7 @@ func (rr *CNAME) String() string {
 	sb := strings.Builder{}
 	sb.WriteString(rr.Hdr.String(rr))
 	sb.WriteByte('\t')
-	fields := rr.Data()
-	for i, f := range fields {
-		sb.WriteString(f.String())
-		if i < len(fields)-1 {
-			sb.WriteByte(' ')
-		}
-	}
+	sb.WriteString(rr.Target)
 	return sb.String()
 }
 
@@ -281,10 +275,6 @@ type HINFO struct {
 	Hdr Header
 	Cpu string
 	Os  string
-}
-
-func (rr *HINFO) Fields() []Field {
-	return []Field{rr.Cpu, rr.Os}
 }
 
 func (rr *HINFO) String() string {
