@@ -199,16 +199,16 @@ func (h *MsgHeader) String() string {
 // ToRFC3597 converts a known RR to the unknown RR representation from RFC 3597.
 func (rr *RFC3597) ToRFC3597(r RR) error {
 	buf := make([]byte, r.Len())
-	headerEnd, off, err := packRR(r, buf, 0, compressionMap{}, false)
+	headerEnd, off, err := packRR(r, buf, 0, map[string]uint16{}, false)
 	if err != nil {
 		return err
 	}
 	buf = buf[:off]
 
 	*rr = RFC3597{Hdr: *r.Header()}
-	rr.Hdr.Rdlength = uint16(off - headerEnd)
+	rr.Hdr.t = uint16(off - headerEnd)
 
-	if rr.Hdr.Rdlength == 0 {
+	if rr.Hdr.t == 0 {
 		return nil
 	}
 
@@ -222,15 +222,13 @@ func (rr *RFC3597) fromRFC3597(r RR) error {
 
 	// Can't overflow uint16 as the length of Rdata is validated in (*RFC3597).parse.
 	// We can only get here when rr was constructed with that method.
-	hdr.Rdlength = uint16(hex.DecodedLen(len(rr.Rdata)))
+	hdr.t = uint16(hex.DecodedLen(len(rr.Rdata)))
 
-	if hdr.Rdlength == 0 {
-		// Dynamic update.
+	if hdr.t == 0 {
 		return nil
 	}
 
-	// rr.pack requires an extra allocation and a copy so we just decode Rdata
-	// manually, it's simpler anyway.
+	// rr.pack requires an extra allocation and a copy so we just decode Rdata manually, it's simpler anyway.
 	msg, err := hex.DecodeString(rr.Rdata)
 	if err != nil {
 		return err
