@@ -241,3 +241,42 @@ func euiToString(eui uint64, bits int) (hex string) {
 	}
 	return
 }
+
+// sprintHeader creates a strings.Builder, write the header to it, plus an extra tab and returns the
+// builder.
+func sprintHeader(rr RR) strings.Builder {
+	sb := strings.Builder{}
+	sb.WriteString(rr.Header().String(rr))
+	sb.WriteByte('\t')
+	return sb
+}
+
+// sprintData write the rdata to sb with spaces between the elements
+func sprintData(sb strings.Builder, sx ...string) {
+	for i, s := range sx {
+		sb.WriteString(s)
+		if i < len(sx)-1 {
+			sb.WriteByte(' ')
+		}
+	}
+}
+
+func splitN(s string, n int) []string {
+	if len(s) < n {
+		return []string{s}
+	}
+	sx := []string{}
+	p, i := 0, n
+	for {
+		if i <= len(s) {
+			sx = append(sx, s[p:i])
+		} else {
+			sx = append(sx, s[p:])
+			break
+
+		}
+		p, i = p+n, i+n
+	}
+
+	return sx
+}
