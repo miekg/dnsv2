@@ -313,7 +313,6 @@ if rr.%s != "-" {
 		fmt.Fprint(b, "return nil }\n\n")
 	}
 
-	println(b.String())
 	formatted, err := format.Source(b.Bytes())
 	if err != nil {
 		b.WriteTo(os.Stderr)
