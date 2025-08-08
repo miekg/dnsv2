@@ -22,8 +22,9 @@ func TestReadMsgBinary(t *testing.T) {
 	msg := new(Msg)
 	msg.Data = buf
 	fmt.Printf("%v\n", buf)
-	fmt.Printf("%s\n", msg)
 	if err := msg.Unpack(); err != nil {
+		fmt.Printf("%s\n", msg)
 		t.Fatal(err)
 	}
+	fmt.Printf("%s\n", msg)
 }

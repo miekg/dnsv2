@@ -524,7 +524,7 @@ func unpackRR(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("h %s", h.String())
+	fmt.Printf("%d h %s", rdlength, h.String())
 	println(rdlength, h.Name)
 
 	return unpackRRWithHeader(h, rdlength, msg, msgBuf)
@@ -680,22 +680,6 @@ func unpackQuestion(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 		return nil, ErrTruncatedMessage
 	}
 
-	// There was a bug in the previous unpacking code that meant the effective
-	// behaviour when exactly one byte remained here instead of two or more
-	// required for the class was to skip over it rather than return an error as
-	// expected. While that may seem unremarkable on its own, there is a bug, or
-	// perhaps an interesting design choice, in packDomainName means that we can
-	// accidentally generate corrupt messages that would trip this very check.
-	// This can happen when packing a message that contains exactly one question
-	// with an empty domain name. For messages that contain either multiple
-	// questions or also contain records, this is likely to lead to corrupt
-	// messages that wouldn't trip this check.
-	//
-	// if len(*msg) == 1 {
-	//      msg.Skip(1)
-	//      return q, nil
-	// }
-
 	var qclass uint16
 	if !msg.Empty() && !msg.ReadUint16(&qclass) {
 		return nil, ErrTruncatedMessage
@@ -708,7 +692,6 @@ func unpackQuestion(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	} else {
 		rr = &RFC3597{Hdr: Header{Name: name, t: qtype, Class: qclass}}
 	}
-
 	return rr, nil
 }
 
@@ -720,19 +703,13 @@ func unpackQuestions(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, e
 	// mere 12-byte packet.
 	var dst []RR
 	for i := 0; i < int(cnt); i++ {
-		// msg is already empty, cnt is a lie.
-		//
-		// TODO(tmthrgd): Remove this to fix #1492.
-		if msg.Empty() {
-			return dst, nil
-		}
-
 		r, err := unpackQuestion(msg, msgBuf)
 		if err != nil {
 			return dst, err
 		}
 		dst = append(dst, r)
 	}
+	fmt.Printf("%v\n", dst)
 	return dst, nil
 }
 
@@ -740,13 +717,6 @@ func unpackRRs(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, error) 
 	// See unpackQuestions for why we don't pre-allocate here.
 	var dst []RR
 	for i := 0; i < int(cnt); i++ {
-		// msg is already empty, cnt is a lie.
-		//
-		// TODO(tmthrgd): Remove this to fix #1492.
-		if msg.Empty() {
-			return dst, nil
-		}
-
 		r, err := unpackRR(msg, msgBuf)
 		if err != nil {
 			return dst, err
@@ -758,26 +728,14 @@ func unpackRRs(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, error) 
 
 func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 	s := cryptobyte.String(msg)
-	// If we are at the end of the message we should return *just* the
-	// header. This can still be useful to the caller. 9.9.9.9 sends these
-	// when responding with REFUSED for instance.
-	//
-	// TODO(tmthrgd): Remove this. If it's only sending the header, the header
-	// should be specifying that it contains no records.
-	if s.Empty() {
-		// reset sections before returning
-		m.Question, m.Answer, m.Ns, m.Extra, m.Pseudo = nil, nil, nil, nil, nil
-		return nil
-	}
-
 	var err error
-	println("question")
 	m.Question, err = unpackQuestions(dh.Qdcount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
-	println("answer")
+	println("answer", s.Empty())
+	fmt.Printf("%v\n", s)
 	m.Answer, err = unpackRRs(dh.Ancount, &s, msgBuf)
 	if err != nil {
 		return err
@@ -851,7 +809,18 @@ func (m *Msg) String() string {
 		sb.WriteString(sections[0])
 		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Question {
-			sb.WriteString(r.String())
+			// as we fake RRs to be present in the question section, just manual unpack print the header
+			// without the TTL here.
+			sb.WriteString(r.Header().Name)
+			sb.WriteByte('\t')
+			sb.WriteByte('\t')
+			sb.WriteString(sprintClass(r.Header().Class))
+			sb.WriteByte('\t')
+			rrtype := r.Header().t
+			if rrtype == 0 {
+				rrtype = RRToType(r)
+			}
+			sb.WriteString(sprintType(rrtype))
 			sb.WriteByte('\n')
 		}
 	}
