@@ -72,6 +72,8 @@ type Token {
 	// TokenType
 	// Value
 }
+
+type: TokenBlank, TokenString, TokenQuote, not TokenEOF or TokenNewline
 */
 
 // The Copier interface defines a copy function that returns a deep copy of the RR.
@@ -178,7 +180,7 @@ func (h *MsgHeader) Rcode() uint16        { return h.rcode }
 // ;; flags: qr aa rd ra;
 func (h *MsgHeader) String() string {
 	sb := strings.Builder{}
-	sb.WriteString(";; opcode: ")
+	sb.WriteString(";; ")
 	sb.WriteString(OpcodeToString[h.Opcode])
 	sb.WriteString(", status: ")
 	sb.WriteString(RcodeToString[h.Rcode()])

@@ -83,7 +83,7 @@ func (e *ParseError) Error() (s string) {
 type lex struct {
 	token  string // text of the token
 	err    bool   // when true, token text has lexer error
-	value  uint8  // value: zString, _BLANK, etc.
+	value  uint8  // value: zString, zBlank, etc.
 	torc   uint16 // type or class as parsed in the lexer, we only need to look this up in the grammar
 	line   int    // line in the file
 	column int    // column in the file
@@ -105,7 +105,7 @@ type ttlState struct {
 //
 //	mx := &MX{Hdr: Header{Name: "miek.nl.", Class: ClassINET}, Preference: 10, Mx: "mx.miek.nl."}
 //
-// instead of,
+// instead of:
 //
 // mx := New("miek.nl. 0 IN MX 10 mx.miek.nl.")
 func New(s string) (RR, error) {
@@ -115,7 +115,7 @@ func New(s string) (RR, error) {
 	return readRR(strings.NewReader(s), "")
 }
 
-// REadRR reads the RR contained in r.
+// readRR reads the RR contained in r.
 //
 // The string file is used in error reporting and to resolve relative
 // $INCLUDE directives.

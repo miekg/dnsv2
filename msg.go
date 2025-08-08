@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/miekg/dnsv2/dnsutil"
 	"github.com/miekg/dnsv2/internal/ddd"
@@ -815,65 +816,74 @@ func (m *Msg) Unpack(msg []byte) error {
 
 // Convert a complete message to a string with dig-like output.
 func (m *Msg) String() string {
-	// builder!!!
 	if m == nil {
 		return "<nil> MsgHdr"
 	}
-	s := m.MsgHeader.String() + " "
+	sb := strings.Builder{}
+
+	sb.WriteString(m.MsgHeader.String())
+	sb.WriteByte(' ')
+	sections := [4]string{"QUERY", "ANSWER", "AUTHORITY", "ADDITIONAL"}
 	if m.MsgHeader.Opcode == OpcodeUpdate {
-		s += "ZONE: " + strconv.Itoa(len(m.Question)) + ", "
-		s += "PREREQ: " + strconv.Itoa(len(m.Answer)) + ", "
-		s += "UPDATE: " + strconv.Itoa(len(m.Ns)) + ", "
-		s += "ADDITIONAL: " + strconv.Itoa(len(m.Extra)) + "\n"
-	} else {
-		s += "QUERY: " + strconv.Itoa(len(m.Question)) + ", "
-		s += "ANSWER: " + strconv.Itoa(len(m.Answer)) + ", "
-		s += "AUTHORITY: " + strconv.Itoa(len(m.Ns)) + ", "
-		s += "ADDITIONAL: " + strconv.Itoa(len(m.Extra)) + "\n"
+		sections = [4]string{"ZONE", "PREREQ", "UPDATE", "ADDITIONAL"}
 	}
+	sb.WriteString(sections[0])
+	sb.WriteString(": ")
+	sb.WriteString(strconv.Itoa(len(m.Question)))
+	sb.WriteString(", ")
+
+	sb.WriteString(sections[1])
+	sb.WriteString(": ")
+	sb.WriteString(strconv.Itoa(len(m.Answer)))
+	sb.WriteString(", ")
+
+	sb.WriteString(sections[2])
+	sb.WriteString(": ")
+	sb.WriteString(strconv.Itoa(len(m.Ns)))
+	sb.WriteString(", ")
+
+	sb.WriteString(sections[3])
+	sb.WriteString(": ")
+	sb.WriteString(strconv.Itoa(len(m.Extra)))
+	sb.WriteByte('\n')
+
 	if len(m.Question) > 0 {
-		if m.MsgHeader.Opcode == OpcodeUpdate {
-			s += "\n;; ZONE SECTION:\n"
-		} else {
-			s += "\n;; QUESTION SECTION:\n"
-		}
+		sb.WriteString(";; ")
+		sb.WriteString(sections[0])
+		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Question {
-			s += r.String() + "\n"
+			sb.WriteString(r.String())
+			sb.WriteByte('\n')
 		}
 	}
 	if len(m.Answer) > 0 {
-		if m.MsgHeader.Opcode == OpcodeUpdate {
-			s += "\n;; PREREQUISITE SECTION:\n"
-		} else {
-			s += "\n;; ANSWER SECTION:\n"
-		}
+		sb.WriteString(";; ")
+		sb.WriteString(sections[1])
+		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Answer {
-			if r != nil {
-				s += r.String() + "\n"
-			}
+			sb.WriteString(r.String())
+			sb.WriteByte('\n')
 		}
 	}
 	if len(m.Ns) > 0 {
-		if m.MsgHeader.Opcode == OpcodeUpdate {
-			s += "\n;; UPDATE SECTION:\n"
-		} else {
-			s += "\n;; AUTHORITY SECTION:\n"
-		}
+		sb.WriteString(";; ")
+		sb.WriteString(sections[2])
+		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Ns {
-			if r != nil {
-				s += r.String() + "\n"
-			}
+			sb.WriteString(r.String())
+			sb.WriteByte('\n')
 		}
 	}
 	if len(m.Extra) > 0 {
-		s += "\n;; ADDITIONAL SECTION:\n"
+		sb.WriteString(";; ")
+		sb.WriteString(sections[3])
+		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Extra {
-			if r != nil {
-				s += r.String() + "\n"
-			}
+			sb.WriteString(r.String())
+			sb.WriteByte('\n')
 		}
 	}
-	return s
+	return sb.String()
 }
 
 // isCompressible returns whether the msg may be compressible.
