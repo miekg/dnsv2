@@ -2,6 +2,7 @@ package dns
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -14,4 +15,15 @@ func TestMakeMsgQuestionMX(t *testing.T) {
 	msg.Pack()
 	fmt.Printf("%v\n", msg.Data)
 	fmt.Printf("%s\n", msg)
+}
+
+func TestReadMsgBinary(t *testing.T) {
+	buf, _ := os.ReadFile("testdata/dig-mx-miek.nl")
+	msg := new(Msg)
+	msg.Data = buf
+	fmt.Printf("%v\n", buf)
+	fmt.Printf("%s\n", msg)
+	if err := msg.Unpack(); err != nil {
+		t.Fatal(err)
+	}
 }

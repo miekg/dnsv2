@@ -16,144 +16,30 @@ import (
 	"golang.org/x/crypto/cryptobyte"
 )
 
-const (
-	dnsTimeout     time.Duration = 2 * time.Second
-	tcpIdleTimeout time.Duration = 8 * time.Second
+var (
+	Timeout        time.Duration = 2 * time.Second
+	TcpIdleTimeout time.Duration = 8 * time.Second
 )
 
-func isPacketConn(c net.Conn) bool {
-	if _, ok := c.(net.PacketConn); !ok {
-		return false
-	}
-
-	if ua, ok := c.LocalAddr().(*net.UnixAddr); ok {
-		return ua.Net == "unixgram" || ua.Net == "unixpacket"
-	}
-
-	return true
-}
-
-// A Conn represents a connection to a DNS server.
-type Conn struct {
-	net.Conn                         // a net.Conn holding the connection
-	UDPSize        uint16            // minimum receive buffer for UDP messages
-	TsigSecret     map[string]string // secret(s) for Tsig map[<zonename>]<base64 secret>, zonename must be in canonical form (lowercase, fqdn, see RFC 4034 Section 6.2)
-	TsigProvider   TsigProvider      // An implementation of the TsigProvider interface. If defined it replaces TsigSecret and is used for all TSIG operations.
-	tsigRequestMAC string
-}
-
-func (co *Conn) tsigProvider() TsigProvider {
-	if co.TsigProvider != nil {
-		return co.TsigProvider
-	}
-	// tsigSecretProvider will return ErrSecret if co.TsigSecret is nil.
-	return tsigSecretProvider(co.TsigSecret)
-}
-
-// A Client defines parameters for a DNS client.
-type Client struct {
-	Net       string      // if "tcp" or "tcp-tls" (DNS over TLS) a TCP query will be initiated, otherwise an UDP one (default is "" for UDP)
-	UDPSize   uint16      // minimum receive buffer for UDP messages
-	TLSConfig *tls.Config // TLS connection configuration
-	Dialer    *net.Dialer // a net.Dialer used to set local address, timeouts and more
-	// Timeout is a cumulative timeout for dial, write and read, defaults to 0 (disabled) - overrides DialTimeout, ReadTimeout,
-	// WriteTimeout when non-zero. Can be overridden with net.Dialer.Timeout (see Client.ExchangeWithDialer and
-	// Client.Dialer) or context.Context.Deadline (see ExchangeContext)
-	Timeout      time.Duration
-	DialTimeout  time.Duration     // net.DialTimeout, defaults to 2 seconds, or net.Dialer.Timeout if expiring earlier - overridden by Timeout when that value is non-zero
-	ReadTimeout  time.Duration     // net.Conn.SetReadTimeout value for connections, defaults to 2 seconds - overridden by Timeout when that value is non-zero
-	WriteTimeout time.Duration     // net.Conn.SetWriteTimeout value for connections, defaults to 2 seconds - overridden by Timeout when that value is non-zero
-	TsigSecret   map[string]string // secret(s) for Tsig map[<zonename>]<base64 secret>, zonename must be in canonical form (lowercase, fqdn, see RFC 4034 Section 6.2)
-	TsigProvider TsigProvider      // An implementation of the TsigProvider interface. If defined it replaces TsigSecret and is used for all TSIG operations.
-
-	// SingleInflight previously serialised multiple concurrent queries for the
-	// same Qname, Qtype and Qclass to ensure only one would be in flight at a
-	// time.
-	//
-	// Deprecated: This is a no-op. Callers should implement their own in flight
-	// query caching if needed. See github.com/miekg/dns/issues/1449.
-	SingleInflight bool
-}
+// A Client is a DNS client. If it currently empty.
+type Client struct{}
+// Dial or TransPort ala http?
 
 // Exchange performs a synchronous UDP query. It sends the message m to the address
 // contained in a and waits for a reply. Exchange does not retry a failed query, nor
 // will it fall back to TCP in case of truncation.
 // See client.Exchange for more information on setting larger buffer sizes.
-func Exchange(m *Msg, a string) (r *Msg, err error) {
-	client := Client{Net: "udp"}
-	r, _, err = client.Exchange(m, a)
+func Exchange(ctx context.Context, m *Msg, conn net.Conn) (r *Msg, err error) {
+	client := Client{}
+	r, _, err = client.Exchange(ctx, m, conn)
 	return r, err
-}
-
-func (c *Client) dialTimeout() time.Duration {
-	if c.Timeout != 0 {
-		return c.Timeout
-	}
-	if c.DialTimeout != 0 {
-		return c.DialTimeout
-	}
-	return dnsTimeout
-}
-
-func (c *Client) readTimeout() time.Duration {
-	if c.ReadTimeout != 0 {
-		return c.ReadTimeout
-	}
-	return dnsTimeout
-}
-
-func (c *Client) writeTimeout() time.Duration {
-	if c.WriteTimeout != 0 {
-		return c.WriteTimeout
-	}
-	return dnsTimeout
-}
-
-// Dial connects to the address on the named network.
-func (c *Client) Dial(address string) (conn *Conn, err error) {
-	return c.DialContext(context.Background(), address)
-}
-
-// DialContext connects to the address on the named network, with a context.Context.
-func (c *Client) DialContext(ctx context.Context, address string) (conn *Conn, err error) {
-	// create a new dialer with the appropriate timeout
-	var d net.Dialer
-	if c.Dialer == nil {
-		d = net.Dialer{Timeout: c.getTimeoutForRequest(c.dialTimeout())}
-	} else {
-		d = *c.Dialer
-	}
-
-	network := c.Net
-	if network == "" {
-		network = "udp"
-	}
-
-	useTLS := strings.HasPrefix(network, "tcp") && strings.HasSuffix(network, "-tls")
-
-	conn = new(Conn)
-	if useTLS {
-		network = strings.TrimSuffix(network, "-tls")
-
-		tlsDialer := tls.Dialer{
-			NetDialer: &d,
-			Config:    c.TLSConfig,
-		}
-		conn.Conn, err = tlsDialer.DialContext(ctx, network, address)
-	} else {
-		conn.Conn, err = d.DialContext(ctx, network, address)
-	}
-	if err != nil {
-		return nil, err
-	}
-	conn.UDPSize = c.UDPSize
-	return conn, nil
 }
 
 // Exchange performs a synchronous query. It sends the message m to the address
 // contained in a and waits for a reply. Basic use pattern with a *dns.Client:
 //
 //	c := new(dns.Client)
+/
 //	in, rtt, err := c.Exchange(message, "127.0.0.1:53")
 //
 // Exchange does not retry a failed query, nor will it fall back to TCP in
@@ -164,9 +50,8 @@ func (c *Client) DialContext(ctx context.Context, address string) (conn *Conn, e
 // of 512 bytes
 // To specify a local address or a timeout, the caller has to set the `Client.Dialer`
 // attribute appropriately
-func (c *Client) Exchange(m *Msg, address string) (r *Msg, rtt time.Duration, err error) {
+func (c *Client) Exchange(ctx context.Context, m *Msg, conn net.Conn) (r *Msg, rtt time.Duration, err error) {
 	co, err := c.Dial(address)
-
 	if err != nil {
 		return nil, 0, err
 	}

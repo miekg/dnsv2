@@ -7,6 +7,7 @@ import (
 )
 
 //go:generate go run rr_generate.go
+//go:generate go run ednsrr_generate.go
 //go:generate go run msg_generate.go
 //go:generate go run pack_generate.go
 //go:generate go run parse_generate.go

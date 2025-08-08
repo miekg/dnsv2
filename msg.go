@@ -3,7 +3,7 @@ package dns
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -275,17 +275,13 @@ func UnpackDomainName(msg []byte, off int) (string, int, error) {
 	s := cryptobyte.String(msg[off:])
 	name, err := unpackDomainName(&s, msg)
 	if err != nil {
-		if errors.Is(err, ErrUnpackOverflow) {
-			// Keep existing behaviour of returning ErrBuf here.
-			return "", len(msg), ErrBuf
-		}
-		// Keep documented behaviour of returning len(msg) here.
 		return "", len(msg), err
 	}
 	return name, offset(s, msg), nil
 }
 
 func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
+	println("unpackDomainName")
 	name := make([]byte, 0, maxDomainNamePresentationLength)
 	budget := maxDomainNameWireOctets
 	var ptrs int // number of pointers followed
@@ -528,6 +524,8 @@ func unpackRR(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("h %s", h.String())
+	println(rdlength, h.Name)
 
 	return unpackRRWithHeader(h, rdlength, msg, msgBuf)
 }
@@ -675,9 +673,6 @@ func unpackQuestion(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 
 	name, err := unpackDomainName(msg, msgBuf)
 	if err != nil {
-		if errors.Is(err, ErrUnpackOverflow) {
-			return nil, ErrTruncatedMessage
-		}
 		return nil, err
 	}
 	var qtype uint16
@@ -776,21 +771,25 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 	}
 
 	var err error
+	println("question")
 	m.Question, err = unpackQuestions(dh.Qdcount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
+	println("answer")
 	m.Answer, err = unpackRRs(dh.Ancount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
+	println("ns")
 	m.Ns, err = unpackRRs(dh.Nscount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
+	println("extra")
 	m.Extra, err = unpackRRs(dh.Arcount, &s, msgBuf)
 	if err != nil {
 		return err
@@ -803,15 +802,15 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 	return nil
 }
 
-// Unpack unpacks a binary message to a Msg structure.
-func (m *Msg) Unpack(msg []byte) error {
-	s := cryptobyte.String(msg)
+// Unpack unpacks a binary message that ists in m.Data to a Msg structure.
+func (m *Msg) Unpack() error {
+	s := cryptobyte.String(m.Data)
 	var dh header
 	if !dh.unpack(&s) {
 		return ErrTruncatedMessage
 	}
 	m.setMsgHeader(dh)
-	return m.unpack(dh, s, msg)
+	return m.unpack(dh, s, m.Data)
 }
 
 // Convert a complete message to a string with dig-like output.

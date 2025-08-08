@@ -2,6 +2,7 @@ package dns
 
 // Code option codes.
 const (
+	CodeNone         uint16 = 0x0
 	CodeLLQ          uint16 = 0x1    // Long lived queries: http://tools.ietf.org/html/draft-sekar-dns-llq-01
 	CodeUL           uint16 = 0x2    // Update lease draft: http://files.dns-sd.org/draft-sekar-dns-ul.txt
 	CodeNSID         uint16 = 0x3    // Nsid (See RFC 5001)
@@ -83,9 +84,30 @@ var StringToExtendedRcode = reverseInt16(ExtendedRcodeToString)
 // OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. In messages this
 // is found in the pseudo section.
 type OPT struct {
-	Header
+	Hdr     Header
 	Options []EDNS0 `dns:"opt"`
 }
+
+func (rr *OPT) Header() *Header { return &rr.Hdr }
+func (rr *OPT) String() string  { return rr.Hdr.String() }
+
+func (rr *OPT) Data() []Field {
+	fields := make([]Field, len(rr.Options))
+	for i := range rr.Options {
+		fields[i] = rr.Options[i]
+	}
+	return fields
+}
+
+func (rr *OPT) Len() int {
+	l := rr.Hdr.Len()
+	for i := range rr.Options {
+		l += rr.Options[i].Len()
+	}
+	return l
+}
+
+var _ RR = &OPT{}
 
 // NSID EDNS0 option is used to retrieve a nameserver identifier. When sending a request Nsid must be empty.
 // The identifier is an opaque string encoded as hex.
