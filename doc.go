@@ -7,18 +7,12 @@ less-is-more principle, by presenting a small, clean interface.
 It supports (asynchronous) querying/replying, incoming/outgoing zone transfers,
 TSIG, EDNS0, dynamic updates, notifies and DNSSEC validation/signing.
 
-Note that domain names MUST be fully qualified before sending them, unqualified
-names in a message will result in a packing failure.
-
 Resource records are native types. They are not stored in wire format. Basic
 usage pattern for creating a new resource record:
 
-	r := new(dns.MX)
-	r.Hdr = dns.RR_Header{Name: "miek.nl.", Rrtype: dns.TypeMX, Class: dns.ClassINET, Ttl: 3600}
-	r.Preference = 10
-	r.Mx = "mx.miek.nl."
+	r ;= &MX{Header{Name:"miek.nl.", Class: dns.ClassINET, TTL: 3600}, Preference: 10, Mx: "mx.miek.nl."}
 
-Or directly from a string:
+Or directly from a string (which is slower):
 
 	mx, err := dns.NewRR("miek.nl. 3600 IN MX 10 mx.miek.nl.")
 

@@ -95,26 +95,33 @@ type ttlState struct {
 	isByDirective bool   // isByDirective indicates whether ttl was set by a $TTL directive
 }
 
-// NewRR reads the RR contained in the string s. Only the first RR is returned.
+// New reads the RR contained in the string s. Only the first RR is returned.
 // If s contains no records, NewRR will return nil with no error.
 //
 // The class defaults to IN and TTL defaults to 3600. The full zone file syntax
-// like $TTL, $ORIGIN, etc. is supported. All fields of the returned RR are
-// set, except RR.Header().Rdlength which is set to 0.
-func NewRR(s string) (RR, error) {
+// like $TTL, $ORIGIN, etc. is supported.
+//
+// Note that building an RR directly from it Go structure is far more efficient, i.e.
+//
+//	mx := &MX{Hdr: Header{Name: "miek.nl.", Class: ClassINET}, Preference: 10, Mx: "mx.miek.nl."}
+//
+// instead of,
+//
+// mx := New("miek.nl. 0 IN MX 10 mx.miek.nl.")
+func New(s string) (RR, error) {
 	if len(s) > 0 && s[len(s)-1] != '\n' { // We need a closing newline
-		return ReadRR(strings.NewReader(s+"\n"), "")
+		return readRR(strings.NewReader(s+"\n"), "")
 	}
-	return ReadRR(strings.NewReader(s), "")
+	return readRR(strings.NewReader(s), "")
 }
 
-// ReadRR reads the RR contained in r.
+// REadRR reads the RR contained in r.
 //
 // The string file is used in error reporting and to resolve relative
 // $INCLUDE directives.
 //
 // See NewRR for more documentation.
-func ReadRR(r io.Reader, file string) (RR, error) {
+func readRR(r io.Reader, file string) (RR, error) {
 	zp := NewZoneParser(r, ".", file)
 	zp.SetDefaultTTL(defaultTTL)
 	zp.SetIncludeAllowed(true)
@@ -153,7 +160,7 @@ func ReadRR(r io.Reader, file string) (RR, error) {
 // the RR are returned concatenated along with the RR. Comments on a line
 // by themselves are discarded.
 //
-// Callers should not assume all returned data in an Resource Record is
+// Callers should not assume all returned data in a RR is
 // syntactically correct, e.g. illegal base64 in RRSIGs will be returned as-is.
 type ZoneParser struct {
 	c *zlexer

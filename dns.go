@@ -95,6 +95,8 @@ func (h *Header) Data() []Field   { return nil }
 func (h *Header) Header() *Header { return h }
 
 // String returns the string representation of h.
+// Note that as the RR type is derived from the RR containing this header, getting the text
+// representation of just the header will show TYPE0 instead of the actual type.
 func (h *Header) String() string {
 	sb := strings.Builder{}
 	sb.WriteString(sprintName(h.Name))

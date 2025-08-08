@@ -1114,7 +1114,7 @@ func (rr *RFC3597) String() string {
 	return sb.String()
 }
 
-func rfc3597Header(rr *RFC3597) strings.Builder {
+func rfc3597Header(rr *RFC3597) *strings.Builder {
 	sb := strings.Builder{}
 
 	sb.WriteString(rr.Hdr.Name)
@@ -1124,7 +1124,7 @@ func rfc3597Header(rr *RFC3597) strings.Builder {
 	sb.WriteString("CLASS" + strconv.Itoa(int(rr.Hdr.Class)))
 	sb.WriteByte('\t')
 	sb.WriteString("TYPE" + strconv.Itoa(int(rr.Hdr.t)))
-	return sb
+	return &sb
 }
 
 // URI RR. See RFC 7553.

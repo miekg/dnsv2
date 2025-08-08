@@ -10,7 +10,9 @@ func TestMakeMsgQuestionMX(t *testing.T) {
 	msg := new(Msg)
 	msg.ID = ID()
 	msg.RecursionDesired = true
-	msg.Question = []RR{&MX{Hdr: Header{Name: "miek.nl."}}}
+	mx := &MX{Hdr: Header{Name: "miek.nl.", Class: ClassINET}}
+	msg.Question = []RR{mx}
 	msg.Pack()
 	fmt.Printf("%v\n", msg.Data)
+	fmt.Printf("%s\n", mx)
 }

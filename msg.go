@@ -466,11 +466,7 @@ func packQuestion(rr RR, msg []byte, off int) (off1 int, err error) {
 		return len(msg), err
 	}
 
-	class := uint16(0)
-	if rr.Header().Class == 0 {
-		class = ClassINET
-	}
-	off, err = packUint16(class, msg, off)
+	off, err = packUint16(rr.Header().Class, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
