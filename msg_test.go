@@ -7,9 +7,7 @@ import (
 
 // TestMakeMsgQuestionMX tests the creation of a small Msg with a question section only.
 func TestMakeMsgQuestionMX(t *testing.T) {
-	msg := new(Msg)
-	msg.ID = ID()
-	msg.RecursionDesired = true
+	msg := &Msg{MsgHeader: MsgHeader{ID: ID(), RecursionDesired: true}}
 	mx := &MX{Hdr: Header{Name: "miek.nl.", Class: ClassINET}}
 	msg.Question = []RR{mx}
 	msg.Pack()
