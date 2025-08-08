@@ -19,6 +19,74 @@ const (
 	CodeLOCALEND     uint16 = 0xFFFE // End of range reserved for local/experimental use (See RFC 6891)
 )
 
+// Extended DNS Error Codes (RFC 8914).
+const (
+	ExtendedRcodeOther uint16 = iota
+	ExtendedRcodeUnsupportedDNSKEYAlgorithm
+	ExtendedRcodeUnsupportedDSDigestType
+	ExtendedRcodeStaleAnswer
+	ExtendedRcodeForgedAnswer
+	ExtendedRcodeDNSSECIndeterminate
+	ExtendedRcodeDNSBogus
+	ExtendedRcodeSignatureExpired
+	ExtendedRcodeSignatureNotYetValid
+	ExtendedRcodeDNSKEYMissing
+	ExtendedRcodeRRSIGsMissing
+	ExtendedRcodeNoZoneKeyBitSet
+	ExtendedRcodeNSECMissing
+	ExtendedRcodeCachedError
+	ExtendedRcodeNotReady
+	ExtendedRcodeBlocked
+	ExtendedRcodeCensored
+	ExtendedRcodeFiltered
+	ExtendedRcodeProhibited
+	ExtendedRcodeStaleNXDOMAINAnswer
+	ExtendedRcodeNotAuthoritative
+	ExtendedRcodeNotSupported
+	ExtendedRcodeNoReachableAuthority
+	ExtendedRcodeNetworkError
+	ExtendedRcodeInvalidData
+)
+
+// ExtendedRcodeToString maps extended error info codes to a human readable description.
+var ExtendedRcodeToString = map[uint16]string{
+	ExtendedRcodeOther:                      "Other",
+	ExtendedRcodeUnsupportedDNSKEYAlgorithm: "Unsupported DNSKEY Algorithm",
+	ExtendedRcodeUnsupportedDSDigestType:    "Unsupported DS Digest Type",
+	ExtendedRcodeStaleAnswer:                "Stale Answer",
+	ExtendedRcodeForgedAnswer:               "Forged Answer",
+	ExtendedRcodeDNSSECIndeterminate:        "DNSSEC Indeterminate",
+	ExtendedRcodeDNSBogus:                   "DNSSEC Bogus",
+	ExtendedRcodeSignatureExpired:           "Signature Expired",
+	ExtendedRcodeSignatureNotYetValid:       "Signature Not Yet Valid",
+	ExtendedRcodeDNSKEYMissing:              "DNSKEY Missing",
+	ExtendedRcodeRRSIGsMissing:              "RRSIGs Missing",
+	ExtendedRcodeNoZoneKeyBitSet:            "No Zone Key Bit Set",
+	ExtendedRcodeNSECMissing:                "NSEC Missing",
+	ExtendedRcodeCachedError:                "Cached Error",
+	ExtendedRcodeNotReady:                   "Not Ready",
+	ExtendedRcodeBlocked:                    "Blocked",
+	ExtendedRcodeCensored:                   "Censored",
+	ExtendedRcodeFiltered:                   "Filtered",
+	ExtendedRcodeProhibited:                 "Prohibited",
+	ExtendedRcodeStaleNXDOMAINAnswer:        "Stale NXDOMAIN Answer",
+	ExtendedRcodeNotAuthoritative:           "Not Authoritative",
+	ExtendedRcodeNotSupported:               "Not Supported",
+	ExtendedRcodeNoReachableAuthority:       "No Reachable Authority",
+	ExtendedRcodeNetworkError:               "Network Error",
+	ExtendedRcodeInvalidData:                "Invalid Data",
+}
+
+// StringToExtendedRcode is a map from human readable descriptions to extended error info codes.
+var StringToExtendedRcode = reverseInt16(ExtendedRcodeToString)
+
+// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. In messages this
+// is found in the pseudo section.
+type OPT struct {
+	Header
+	Options []EDNS0 `dns:"opt"`
+}
+
 // NSID EDNS0 option is used to retrieve a nameserver identifier. When sending a request Nsid must be empty.
 // The identifier is an opaque string encoded as hex.
 type NSID struct {

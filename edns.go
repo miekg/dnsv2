@@ -70,12 +70,6 @@ func makeDataOpt(code uint16) EDNS0 {
 	}
 }
 
-// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891.
-type OPT struct {
-	Hdr    RR_Header
-	Option []EDNS0 `dns:"opt"`
-}
-
 func (rr *OPT) String() string {
 	s := "\n;; OPT PSEUDOSECTION:\n; EDNS: version " + strconv.Itoa(int(rr.Version())) + "; "
 	if rr.Do() {
@@ -144,10 +138,6 @@ func (rr *OPT) len(off int, compression map[string]struct{}) int {
 func (*OPT) parse(c *zlexer, origin string) *ParseError {
 	return &ParseError{err: "OPT records do not have a presentation format"}
 }
-
-func (rr *OPT) isDuplicate(r2 RR) bool { return false }
-
-// return the old value -> delete SetVersion?
 
 // Version returns the EDNS version used. Only zero is defined.
 func (rr *OPT) Version() uint8 {
