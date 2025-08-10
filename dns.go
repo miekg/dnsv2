@@ -219,8 +219,7 @@ func (h *MsgHeader) String() string {
 	if h.CheckingDisabled {
 		sb.WriteString(" cd")
 	}
-
-	sb.WriteString(";")
+	sb.WriteByte('\n')
 	return sb.String()
 }
 

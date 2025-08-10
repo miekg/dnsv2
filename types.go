@@ -1451,9 +1451,13 @@ type OPT struct {
 	Options []EDNS0 `dns:"opt"`
 }
 
-func (rr *OPT) Header() *Header { return &rr.Hdr }
-func (rr *OPT) String() string  { return rr.Hdr.String() }
+func (rr *OPT) String() string { return rr.Hdr.String() }
 
+func (*OPT) parse(c *zlexer, origin string) *ParseError {
+	return &ParseError{err: "OPT records do not have a presentation format"}
+}
+
+/*
 func (rr *OPT) Data() []Field {
 	fields := make([]Field, len(rr.Options))
 	for i := range rr.Options {
@@ -1461,6 +1465,7 @@ func (rr *OPT) Data() []Field {
 	}
 	return fields
 }
+*/
 
 func (rr *OPT) Len() int {
 	l := rr.Hdr.Len()

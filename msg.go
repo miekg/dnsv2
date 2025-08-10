@@ -642,7 +642,7 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 		rr := m.Extra[i]
 		if _, ok := rr.(*OPT); ok {
 			m.Pseudo = append(m.Pseudo, rr)
-			m.Extra[len(m.Extra)-j] = rr
+			m.Extra[len(m.Extra)-j-1] = rr
 
 			j++
 		}
@@ -676,11 +676,11 @@ func (m *Msg) String() string {
 	sb := strings.Builder{}
 
 	sb.WriteString(m.MsgHeader.String())
-	sb.WriteByte(' ')
-	sections := [4]string{"QUERY", "ANSWER", "AUTHORITY", "ADDITIONAL"}
+	sections := [5]string{"QUESTION", "PSEUDO", "ANSWER", "AUTHORITY", "ADDITIONAL"}
 	if m.MsgHeader.Opcode == OpcodeUpdate {
-		sections = [4]string{"ZONE", "PREREQ", "UPDATE", "ADDITIONAL"}
+		sections = [5]string{"ZONE", "PSEUDO", "PREREQ", "UPDATE", "ADDITIONAL"}
 	}
+	sb.WriteString(";; ")
 	sb.WriteString(sections[0])
 	sb.WriteString(": ")
 	sb.WriteString(strconv.Itoa(len(m.Question)))
@@ -688,21 +688,26 @@ func (m *Msg) String() string {
 
 	sb.WriteString(sections[1])
 	sb.WriteString(": ")
-	sb.WriteString(strconv.Itoa(len(m.Answer)))
+	sb.WriteString(strconv.Itoa(len(m.Pseudo)))
 	sb.WriteString(", ")
 
 	sb.WriteString(sections[2])
 	sb.WriteString(": ")
-	sb.WriteString(strconv.Itoa(len(m.Ns)))
+	sb.WriteString(strconv.Itoa(len(m.Answer)))
 	sb.WriteString(", ")
 
 	sb.WriteString(sections[3])
+	sb.WriteString(": ")
+	sb.WriteString(strconv.Itoa(len(m.Ns)))
+	sb.WriteString(", ")
+
+	sb.WriteString(sections[4])
 	sb.WriteString(": ")
 	sb.WriteString(strconv.Itoa(len(m.Extra)))
 	sb.WriteByte('\n')
 
 	if len(m.Question) > 0 {
-		sb.WriteString(";; ")
+		sb.WriteString("\n;; ")
 		sb.WriteString(sections[0])
 		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Question {
@@ -720,9 +725,18 @@ func (m *Msg) String() string {
 			sb.WriteByte('\n')
 		}
 	}
-	if len(m.Answer) > 0 {
-		sb.WriteString(";; ")
+	if len(m.Pseudo) > 0 {
+		sb.WriteString("\n;; ")
 		sb.WriteString(sections[1])
+		sb.WriteString(" SECTION:\n")
+		for _, r := range m.Pseudo {
+			sb.WriteString(r.String())
+			sb.WriteByte('\n')
+		}
+	}
+	if len(m.Answer) > 0 {
+		sb.WriteString("\n;; ")
+		sb.WriteString(sections[2])
 		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Answer {
 			sb.WriteString(r.String())
@@ -730,7 +744,7 @@ func (m *Msg) String() string {
 		}
 	}
 	if len(m.Ns) > 0 {
-		sb.WriteString(";; ")
+		sb.WriteString("\n;; ")
 		sb.WriteString(sections[2])
 		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Ns {
@@ -739,7 +753,7 @@ func (m *Msg) String() string {
 		}
 	}
 	if len(m.Extra) > 0 {
-		sb.WriteString(";; ")
+		sb.WriteString("\n;; ")
 		sb.WriteString(sections[3])
 		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Extra {

@@ -150,6 +150,8 @@ func pack(rr RR, msg []byte, off int, compression map[string]uint16) (int, error
 		return x.pack(msg, off, compression)
 	case *ZONEMD:
 		return x.pack(msg, off, compression)
+	case *OPT:
+		return x.pack(msg, off, compression)
 	case *APL:
 		return x.pack(msg, off, compression)
 	}
@@ -303,6 +305,8 @@ func unpack(rr RR, data, msgBuf []byte) error {
 	case *CSYNC:
 		return x.unpack(data, msgBuf)
 	case *ZONEMD:
+		return x.unpack(data, msgBuf)
+	case *OPT:
 		return x.unpack(data, msgBuf)
 	case *APL:
 		return x.unpack(data, msgBuf)

@@ -2165,6 +2165,26 @@ func (rr *ZONEMD) unpack(data, msgBuf []byte) (err error) {
 	return nil
 }
 
+func (rr *OPT) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
+	off, err = packOpt(rr.Options, msg, off)
+	if err != nil {
+		return off, err
+	}
+	return off, nil
+}
+
+func (rr *OPT) unpack(data, msgBuf []byte) (err error) {
+	s := cryptobyte.String(data)
+	rr.Options, err = unpackOpt(&s)
+	if err != nil {
+		return err
+	}
+	if !s.Empty() {
+		return ErrTrailingRData
+	}
+	return nil
+}
+
 func (rr *APL) pack(msg []byte, off int, compression map[string]uint16) (off1 int, err error) {
 	off, err = packApl(rr.Prefixes, msg, off)
 	if err != nil {

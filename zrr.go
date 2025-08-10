@@ -73,6 +73,7 @@ func (rr *NIMLOC) Header() *Header     { return &rr.Hdr }
 func (rr *OPENPGPKEY) Header() *Header { return &rr.Hdr }
 func (rr *CSYNC) Header() *Header      { return &rr.Hdr }
 func (rr *ZONEMD) Header() *Header     { return &rr.Hdr }
+func (rr *OPT) Header() *Header        { return &rr.Hdr }
 func (rr *APL) Header() *Header        { return &rr.Hdr }
 
 // TypeToRR is a map of constructors for each RR type.
@@ -148,6 +149,7 @@ var TypeToRR = map[uint16]func() RR{
 	TypeOPENPGPKEY: func() RR { return new(OPENPGPKEY) },
 	TypeCSYNC:      func() RR { return new(CSYNC) },
 	TypeZONEMD:     func() RR { return new(ZONEMD) },
+	TypeOPT:        func() RR { return new(OPT) },
 	TypeAPL:        func() RR { return new(APL) },
 }
 
@@ -296,6 +298,8 @@ func RRToType(rr RR) uint16 {
 		return TypeCSYNC
 	case *ZONEMD:
 		return TypeZONEMD
+	case *OPT:
+		return TypeOPT
 	case *APL:
 		return TypeAPL
 	}
@@ -378,6 +382,7 @@ var TypeToString = map[uint16]string{
 	TypeOPENPGPKEY: "OPENPGPKEY",
 	TypeCSYNC:      "CSYNC",
 	TypeZONEMD:     "ZONEMD",
+	TypeOPT:        "OPT",
 	TypeAPL:        "APL",
 	TypeNSAPPTR:    "NSAP-PTR",
 }
@@ -447,6 +452,7 @@ func (rr *NSEC3PARAM) Data() []Field {
 }
 func (rr *NULL) Data() []Field       { return []Field{rr.Null} }
 func (rr *OPENPGPKEY) Data() []Field { return []Field{rr.PublicKey} }
+func (rr *OPT) Data() []Field        { return []Field{rr.Options} }
 func (rr *PTR) Data() []Field        { return []Field{rr.Ptr} }
 func (rr *PX) Data() []Field         { return []Field{rr.Preference, rr.Map822, rr.Mapx400} }
 func (rr *RFC3597) Data() []Field    { return []Field{rr.Rdata} }
