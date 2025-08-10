@@ -15,22 +15,21 @@ import (
 
 // EDNS0 Option codes.
 const (
-	EDNS0LLQ          = 0x1     // long lived queries: http://tools.ietf.org/html/draft-sekar-dns-llq-01
-	EDNS0UL           = 0x2     // update lease draft: http://files.dns-sd.org/draft-sekar-dns-ul.txt
-	EDNS0NSID         = 0x3     // nsid (See RFC 5001)
-	EDNS0ESU          = 0x4     // ENUM Source-URI draft: https://datatracker.ietf.org/doc/html/draft-kaplan-enum-source-uri-00
-	EDNS0DAU          = 0x5     // DNSSEC Algorithm Understood
-	EDNS0DHU          = 0x6     // DS Hash Understood
-	EDNS0N3U          = 0x7     // NSEC3 Hash Understood
-	EDNS0SUBNET       = 0x8     // client-subnet (See RFC 7871)
-	EDNS0EXPIRE       = 0x9     // EDNS0 expire
-	EDNS0COOKIE       = 0xa     // EDNS0 Cookie
-	EDNS0TCPKEEPALIVE = 0xb     // EDNS0 tcp keep alive (See RFC 7828)
-	EDNS0PADDING      = 0xc     // EDNS0 padding (See RFC 7830)
-	EDNS0EDE          = 0xf     // EDNS0 extended DNS errors (See RFC 8914)
-	EDNS0LOCALSTART   = 0xFDE9  // Beginning of range reserved for local/experimental use (See RFC 6891)
-	EDNS0LOCALEND     = 0xFFFE  // End of range reserved for local/experimental use (See RFC 6891)
-	_DO               = 1 << 15 // DNSSEC OK
+	EDNS0LLQ          = 0x1    // long lived queries: http://tools.ietf.org/html/draft-sekar-dns-llq-01
+	EDNS0UL           = 0x2    // update lease draft: http://files.dns-sd.org/draft-sekar-dns-ul.txt
+	EDNS0NSID         = 0x3    // nsid (See RFC 5001)
+	EDNS0ESU          = 0x4    // ENUM Source-URI draft: https://datatracker.ietf.org/doc/html/draft-kaplan-enum-source-uri-00
+	EDNS0DAU          = 0x5    // DNSSEC Algorithm Understood
+	EDNS0DHU          = 0x6    // DS Hash Understood
+	EDNS0N3U          = 0x7    // NSEC3 Hash Understood
+	EDNS0SUBNET       = 0x8    // client-subnet (See RFC 7871)
+	EDNS0EXPIRE       = 0x9    // EDNS0 expire
+	EDNS0COOKIE       = 0xa    // EDNS0 Cookie
+	EDNS0TCPKEEPALIVE = 0xb    // EDNS0 tcp keep alive (See RFC 7828)
+	EDNS0PADDING      = 0xc    // EDNS0 padding (See RFC 7830)
+	EDNS0EDE          = 0xf    // EDNS0 extended DNS errors (See RFC 8914)
+	EDNS0LOCALSTART   = 0xFDE9 // Beginning of range reserved for local/experimental use (See RFC 6891)
+	EDNS0LOCALEND     = 0xFFFE // End of range reserved for local/experimental use (See RFC 6891)
 )
 
 // makeDataOpt is used to unpack the EDNS0 option(s) from a message.

@@ -187,7 +187,7 @@ const (
 
 	// EDNS0 OPT "Header.Bits"
 	_DO = 1 << 15 // DNSSEC OK
-	// _CO
+	_CO = 1 << 14 // Compact Answers OK
 )
 
 // Various constants used in the LOC RR. See RFC 1876.
@@ -1451,11 +1451,9 @@ type OPT struct {
 	Options []EDNS0 `dns:"opt"`
 }
 
-func (rr *OPT) String() string { return rr.Hdr.String() }
+// See opt.go for other methods.
 
-func (*OPT) parse(c *zlexer, origin string) *ParseError {
-	return &ParseError{err: "OPT records do not have a presentation format"}
-}
+func (rr *OPT) String() string { return rr.Hdr.String() }
 
 /*
 func (rr *OPT) Data() []Field {

@@ -854,3 +854,28 @@ func (m *Msg) setMsgHeader(dh header) {
 	m.CheckingDisabled = dh.Bits&_CD != 0
 	m.SetRcode(dh.Bits & 0xF)
 }
+
+// Do returns the value of the DO (DNSSEC OK) bit from the message. If the message does not have an OPT RR
+// false is returned.
+func (m *Msg) Do() bool {
+	if len(m.Pseudo) == 0 {
+		return false
+	}
+	opt, ok := m.Pseudo[0].(*OPT)
+	if !ok {
+		return false
+	}
+	return opt.Do()
+}
+
+// SetDo sets the DO (DNSSEC OK) bit in the message. If the message does not have an OPT RR, it will be added
+// in the pseudo section.
+func (m *Msg) SetDo(do bool) {
+	if len(m.Pseudo) == 0 {
+		m.Pseudo[0] = new(OPT)
+	}
+
+	if opt, ok := m.Pseudo[0].(*OPT); ok {
+		opt.SetDo(do)
+	}
+}
