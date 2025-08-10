@@ -20,7 +20,6 @@ func offset(data, buf []byte) int {
 	if len(data) > 0 && len(buf) > 0 && &data[len(data)-1] != &buf[len(buf)-1] {
 		panic("dns: internal error: cannot compute offset")
 	}
-	println("LEN BUF", len(buf), "LEN DATA", len(data))
 	return len(buf) - len(data)
 }
 
