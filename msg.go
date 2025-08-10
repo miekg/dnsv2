@@ -411,8 +411,6 @@ func unpackRR(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	if err != nil {
 		return nil, err
 	}
-	println(rdlength, h.Name)
-
 	return unpackRRWithHeader(h, rdlength, msg, msgBuf)
 }
 
