@@ -156,6 +156,9 @@ type Msg struct {
 	// EDNS0 option codes, that are interpreted (and shown) as RRs. If a TSIG or SIG(0) record is present it also sits in this
 	// section.
 	Pseudo []RR // Holds the RR(s) of the (virtual) peusdo section.
+	// ps holds the number of real RRs in the pseudo section, this is 3 max (OPT, TSIG and SIG(0)). The number of
+	// virtual RR in pseudo is len(Pseudo).
+	ps uint8
 
 	// Data is the data of the message that was either received from the wire or is about to be send
 	// over the wire. Note that this data is a snapshot of the Msg as it was packed or unpacked.

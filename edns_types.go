@@ -81,36 +81,6 @@ var ExtendedRcodeToString = map[uint16]string{
 // StringToExtendedRcode is a map from human readable descriptions to extended error info codes.
 var StringToExtendedRcode = reverseInt16(ExtendedRcodeToString)
 
-// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. In messages this
-// is found in the pseudo section.
-type OPT struct {
-	Hdr     Header
-	Options []EDNS0 `dns:"opt"`
-}
-
-func (rr *OPT) Header() *Header { return &rr.Hdr }
-func (rr *OPT) String() string  { return rr.Hdr.String() }
-
-/*
-func (rr *OPT) Data() []Field {
-	fields := make([]Field, len(rr.Options))
-	for i := range rr.Options {
-		fields[i] = rr.Options[i]
-	}
-	return fields
-}
-*/
-
-func (rr *OPT) Len() int {
-	l := rr.Hdr.Len()
-	for i := range rr.Options {
-		l += rr.Options[i].Len()
-	}
-	return l
-}
-
-var _ RR = &OPT{}
-
 // NSID EDNS0 option is used to retrieve a nameserver identifier. When sending a request Nsid must be empty.
 // The identifier is an opaque string encoded as hex.
 type NSID struct {

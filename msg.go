@@ -503,7 +503,7 @@ func (m *Msg) pack(compression map[string]uint16) (err error) {
 	dh.Qdcount = uint16(len(m.Question))
 	dh.Ancount = uint16(len(m.Answer))
 	dh.Nscount = uint16(len(m.Ns))
-	dh.Arcount = uint16(len(m.Extra)) // pseudo !!
+	dh.Arcount = uint16(len(m.Extra))
 
 	// We need the uncompressed length here, because we first pack it and then compress it.
 	uncompressedLen := m.Len()
@@ -599,6 +599,8 @@ func unpackQuestions(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, e
 
 func unpackRRs(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, error) {
 	// See unpackQuestions for why we don't pre-allocate here.
+	//
+	// In the additional section we stop unpacking when we see
 	var dst []RR
 	for i := 0; i < int(cnt); i++ {
 		r, err := unpackRR(msg, msgBuf)
@@ -618,24 +620,35 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 		return err
 	}
 
-	println("answer", s.Empty())
-	fmt.Printf("%v\n", s)
 	m.Answer, err = unpackRRs(dh.Ancount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
-	println("ns")
 	m.Ns, err = unpackRRs(dh.Nscount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
 
-	println("extra")
 	m.Extra, err = unpackRRs(dh.Arcount, &s, msgBuf)
 	if err != nil {
 		return err
 	}
+
+	// Extra OPT RR and/or TSIG/SIG(0) from the section and place them in the pseudo section. Swap them to the
+	// end, copy them to pseudo and shorten extra.
+	j := 0
+	for i := 0; i < len(m.Extra)-j; i++ {
+		rr := m.Extra[i]
+		if _, ok := rr.(*OPT); ok {
+			m.Pseudo = append(m.Pseudo, rr)
+			m.Extra[len(m.Extra)-j] = rr
+
+			j++
+		}
+	}
+	m.Extra = m.Extra[:len(m.Extra)-j]
+	m.ps = 1
 
 	if !s.Empty() {
 		return &Error{err: "trailing message data"}
@@ -658,7 +671,7 @@ func (m *Msg) Unpack() error {
 // Convert a complete message to a string with dig-like output.
 func (m *Msg) String() string {
 	if m == nil {
-		return "<nil> MsgHdr"
+		return "<nil> Msg"
 	}
 	sb := strings.Builder{}
 
@@ -693,8 +706,7 @@ func (m *Msg) String() string {
 		sb.WriteString(sections[0])
 		sb.WriteString(" SECTION:\n")
 		for _, r := range m.Question {
-			// as we fake RRs to be present in the question section, just manual unpack print the header
-			// without the TTL here.
+			// as we fake RRs to be present in the question section, just manual unpack print the header without the TTL here.
 			sb.WriteString(r.Header().Name)
 			sb.WriteByte('\t')
 			sb.WriteByte('\t')

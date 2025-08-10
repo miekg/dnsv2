@@ -75,8 +75,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
-	// opt is the first (should be the first)
-	types = types[1:]
 
 	source := &bytes.Buffer{}
 	source.WriteString(hdr)

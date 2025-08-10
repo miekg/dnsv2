@@ -1124,6 +1124,7 @@ func rfc3597Header(rr *RFC3597) *strings.Builder {
 	sb.WriteString("CLASS" + strconv.Itoa(int(rr.Hdr.Class)))
 	sb.WriteByte('\t')
 	sb.WriteString("TYPE" + strconv.Itoa(int(rr.Hdr.t)))
+	sb.WriteByte('\t')
 	return &sb
 }
 
@@ -1442,6 +1443,34 @@ func (rr *ZONEMD) String() string {
 	sprintData(sb, strconv.Itoa(int(rr.Serial)), strconv.Itoa(int(rr.Scheme)), strconv.Itoa(int(rr.Hash)), rr.Digest)
 	return sb.String()
 }
+
+// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. In messages this
+// is found in the pseudo section.
+type OPT struct {
+	Hdr     Header
+	Options []EDNS0 `dns:"opt"`
+}
+
+func (rr *OPT) Header() *Header { return &rr.Hdr }
+func (rr *OPT) String() string  { return rr.Hdr.String() }
+
+func (rr *OPT) Data() []Field {
+	fields := make([]Field, len(rr.Options))
+	for i := range rr.Options {
+		fields[i] = rr.Options[i]
+	}
+	return fields
+}
+
+func (rr *OPT) Len() int {
+	l := rr.Hdr.Len()
+	for i := range rr.Options {
+		l += rr.Options[i].Len()
+	}
+	return l
+}
+
+var _ RR = &OPT{}
 
 // APL RR. See RFC 3123.
 type APL struct {
