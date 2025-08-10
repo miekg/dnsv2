@@ -16,12 +16,6 @@ const (
 	maxCompressionOffset    = 2 << 13 // We have 14 bits for the compression pointer
 	maxDomainNameWireOctets = 255     // See RFC 1035 section 2.3.4
 
-	// This is the maximum number of compression pointers that should occur in a
-	// semantically valid message. Each label in a domain name must be at least one
-	// octet and is separated by a period. The root label won't be represented by a
-	// compression pointer to a compression pointer, hence the -2 to exclude the
-	// smallest valid root label.
-
 	// This is the maximum length of a domain name in presentation format. The
 	// maximum wire length of a domain name is 255 octets (see above), with the
 	// maximum label length being 63. The wire format requires one extra byte over
@@ -254,34 +248,27 @@ func isRootLabel(s string, bs []byte, off, end int) bool {
 }
 
 // Unpack a domain name.
-// In addition to the simple sequences of counted strings above,
-// domain names are allowed to refer to strings elsewhere in the
-// packet, to avoid repeating common suffixes when returning
-// many entries in a single domain. The pointers are marked
-// by a length byte with the top two bits set. Ignoring those
-// two bits, that byte and the next give a 14 bit offset from into msg
+// In addition to the simple sequences of counted strings above, domain names are allowed to refer to strings elsewhere in the
+// packet, to avoid repeating common suffixes when returning many entries in a single domain. The pointers are marked
+// by a length byte with the top two bits set. Ignoring those two bits, that byte and the next give a 14 bit offset from into msg
 // where we should pick up the trail.
-// Note that if we jump elsewhere in the packet,
-// we record the last offset we read from when we found the first pointer,
-// which is where the next record or record field will start.
-// We enforce that pointers always point backwards into the message.
+// Note that if we jump elsewhere in the packet, we record the last offset we read from when we found the first pointer,
+// which is where the next record or record field will start. We enforce that pointers always point backwards into the message.
 
-// UnpackDomainName unpacks a domain name into a string. It returns
-// the name, the new offset into msg and any error that occurred.
-//
-// When an error is encountered, the unpacked name will be discarded
-// and len(msg) will be returned as the offset.
-func UnpackDomainName(msg []byte, off int) (string, int, error) {
+// UnpackName unpacks a domain name into a string. It returns the name, the new offset into msg and any error that occurred.
+// When an error is encountered, the unpacked name will be discarded and len(msg) will be returned as the offset.
+func UnpackName(msg []byte, off int) (string, int, error) {
 	s := cryptobyte.String(msg[off:])
-	name, err := unpackDomainName(&s, msg)
+	name, err := unpackName(&s, msg)
 	if err != nil {
 		return "", len(msg), err
 	}
+	println("offset")
 	return name, offset(s, msg), nil
 }
 
-func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
-	println("unpackDomainName")
+func unpackName(s *cryptobyte.String, msgBuf []byte) (string, error) {
+	println("unpackName")
 	name := make([]byte, 0, maxDomainNamePresentationLength)
 	budget := maxDomainNameWireOctets
 	var ptrs int // number of pointers followed
@@ -330,121 +317,22 @@ func unpackDomainName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 			if !cs.ReadUint8(&c1) {
 				return "", ErrUnpackOverflow
 			}
-			// If this is the first pointer we've seen, we need to
-			// advance s to our current position.
+			// If this is the first pointer we've seen, we need to advance s to our current position.
 			if ptrs == 0 {
 				*s = cs
 			}
-			// The pointer should always point backwards to an earlier
-			// part of the message. Technically it could work pointing
-			// forwards, but we choose not to support that as RFC1035
-			// specifically refers to a "prior occurance".
+			// The pointer should always point backwards to an earlier part of the message. Technically it could work pointing
+			// forwards, but we choose not to support that as RFC 1035 specifically refers to a "prior occurance".
 			off := uint16(c&^0xC0)<<8 | uint16(c1)
 			if int(off) >= offset(cs, msgBuf)-2 {
 				return "", &Error{err: "pointer not to prior occurrence of name"}
 			}
-			// Jump to the offset in msgBuf. We carry msgBuf around with
-			// us solely for this line.
+			// Jump to the offset in msgBuf. We carry msgBuf around with us solely for this line.
 			cs = msgBuf[off:]
 		default: // 0x80 and 0x40 are reserved
 			return "", &Error{err: "reserved domain name label type"}
 		}
 	}
-}
-
-// TODO(tmthrgd): Move these helper functions to msg_helpers.go.
-
-func packTxt(txt []string, msg []byte, offset int) (int, error) {
-	if len(txt) == 0 {
-		if offset >= len(msg) {
-			return offset, ErrBuf
-		}
-		msg[offset] = 0
-		return offset, nil
-	}
-	var err error
-	for _, s := range txt {
-		offset, err = packTxtString(s, msg, offset)
-		if err != nil {
-			return offset, err
-		}
-	}
-	return offset, nil
-}
-
-func packTxtString(s string, msg []byte, offset int) (int, error) {
-	lenByteOffset := offset
-	if offset >= len(msg) || len(s) > 256*4+1 /* If all \DDD */ {
-		return offset, ErrBuf
-	}
-	offset++
-	for i := 0; i < len(s); i++ {
-		if len(msg) <= offset {
-			return offset, ErrBuf
-		}
-		if s[i] == '\\' {
-			i++
-			if i == len(s) {
-				break
-			}
-			// check for \DDD
-			if ddd.Is(s[i:]) {
-				msg[offset] = ddd.ToByte(s[i:])
-				i += 2
-			} else {
-				msg[offset] = s[i]
-			}
-		} else {
-			msg[offset] = s[i]
-		}
-		offset++
-	}
-	l := offset - lenByteOffset - 1
-	if l > 255 {
-		return offset, &Error{err: "string exceeded 255 bytes in txt"}
-	}
-	msg[lenByteOffset] = byte(l)
-	return offset, nil
-}
-
-func packOctetString(s string, msg []byte, offset int) (int, error) {
-	if offset >= len(msg) || len(s) > 256*4+1 {
-		return offset, ErrBuf
-	}
-	for i := 0; i < len(s); i++ {
-		if len(msg) <= offset {
-			return offset, ErrBuf
-		}
-		if s[i] == '\\' {
-			i++
-			if i == len(s) {
-				break
-			}
-			// check for \DDD
-			if ddd.Is(s[i:]) {
-				msg[offset] = ddd.ToByte(s[i:])
-				i += 2
-			} else {
-				msg[offset] = s[i]
-			}
-		} else {
-			msg[offset] = s[i]
-		}
-		offset++
-	}
-	return offset, nil
-}
-
-func unpackTxt(s *cryptobyte.String) ([]string, error) {
-	var strs []string
-	for !s.Empty() {
-		str, err := unpackString(s)
-		if err != nil {
-			return strs, err
-		}
-		strs = append(strs, str)
-	}
-	return strs, nil
 }
 
 // packQuestion packs an RR into a question section.
@@ -671,7 +559,7 @@ func unpackQuestion(msg *cryptobyte.String, msgBuf []byte) (RR, error) {
 	// enforce that we've properly received an entire question by removing the
 	// msg.Empty() checks.
 
-	name, err := unpackDomainName(msg, msgBuf)
+	name, err := unpackName(msg, msgBuf)
 	if err != nil {
 		return nil, err
 	}

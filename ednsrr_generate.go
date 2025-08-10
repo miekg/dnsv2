@@ -50,8 +50,9 @@ var CodeToString = map[uint16]string{
 
 `))
 
-var headerFunc = template.Must(template.New("headerFunc").Parse(`
+var interfaceFunc = template.Must(template.New("interfaceFunc").Parse(`
 {{range .}}  func (rr *{{.}}) Header() *Header { return &rr.Hdr }
+func (rr *{{.}}) Pseudo() bool { return true }
 {{end}}
 
 `))
@@ -79,7 +80,7 @@ func main() {
 
 	source := &bytes.Buffer{}
 	source.WriteString(hdr)
-	if err := headerFunc.Execute(source, types); err != nil {
+	if err := interfaceFunc.Execute(source, types); err != nil {
 		log.Fatalf("Failed to generate %s: %v", out, err)
 	}
 	if err := CodeToRR.Execute(source, types); err != nil {

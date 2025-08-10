@@ -46,7 +46,7 @@ func (rr *CNAME) pack(msg []byte, off int, compression map[string]uint16) (off1 
 
 func (rr *CNAME) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Target, err = unpackDomainName(&s, msgBuf)
+	rr.Target, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (rr *MB) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 
 func (rr *MB) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Mb, err = unpackDomainName(&s, msgBuf)
+	rr.Mb, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (rr *MG) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 
 func (rr *MG) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Mg, err = unpackDomainName(&s, msgBuf)
+	rr.Mg, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -138,11 +138,11 @@ func (rr *MINFO) pack(msg []byte, off int, compression map[string]uint16) (off1 
 
 func (rr *MINFO) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Rmail, err = unpackDomainName(&s, msgBuf)
+	rr.Rmail, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
-	rr.Email, err = unpackDomainName(&s, msgBuf)
+	rr.Email, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (rr *MR) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 
 func (rr *MR) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Mr, err = unpackDomainName(&s, msgBuf)
+	rr.Mr, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (rr *MF) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 
 func (rr *MF) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Mf, err = unpackDomainName(&s, msgBuf)
+	rr.Mf, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (rr *MD) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 
 func (rr *MD) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Md, err = unpackDomainName(&s, msgBuf)
+	rr.Md, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func (rr *MX) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.Preference) {
 		return ErrUnpackOverflow
 	}
-	rr.Mx, err = unpackDomainName(&s, msgBuf)
+	rr.Mx, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (rr *AFSDB) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.Subtype) {
 		return ErrUnpackOverflow
 	}
-	rr.Hostname, err = unpackDomainName(&s, msgBuf)
+	rr.Hostname, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func (rr *RT) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.Preference) {
 		return ErrUnpackOverflow
 	}
-	rr.Host, err = unpackDomainName(&s, msgBuf)
+	rr.Host, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -323,7 +323,7 @@ func (rr *NS) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 
 func (rr *NS) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Ns, err = unpackDomainName(&s, msgBuf)
+	rr.Ns, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -343,7 +343,7 @@ func (rr *PTR) pack(msg []byte, off int, compression map[string]uint16) (off1 in
 
 func (rr *PTR) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Ptr, err = unpackDomainName(&s, msgBuf)
+	rr.Ptr, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -367,11 +367,11 @@ func (rr *RP) pack(msg []byte, off int, compression map[string]uint16) (off1 int
 
 func (rr *RP) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Mbox, err = unpackDomainName(&s, msgBuf)
+	rr.Mbox, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
-	rr.Txt, err = unpackDomainName(&s, msgBuf)
+	rr.Txt, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -415,11 +415,11 @@ func (rr *SOA) pack(msg []byte, off int, compression map[string]uint16) (off1 in
 
 func (rr *SOA) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Ns, err = unpackDomainName(&s, msgBuf)
+	rr.Ns, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
-	rr.Mbox, err = unpackDomainName(&s, msgBuf)
+	rr.Mbox, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -535,7 +535,7 @@ func (rr *SRV) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.Port) {
 		return ErrUnpackOverflow
 	}
-	rr.Target, err = unpackDomainName(&s, msgBuf)
+	rr.Target, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -593,7 +593,7 @@ func (rr *NAPTR) unpack(data, msgBuf []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	rr.Replacement, err = unpackDomainName(&s, msgBuf)
+	rr.Replacement, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -654,7 +654,7 @@ func (rr *DNAME) pack(msg []byte, off int, compression map[string]uint16) (off1 
 
 func (rr *DNAME) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Target, err = unpackDomainName(&s, msgBuf)
+	rr.Target, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -725,11 +725,11 @@ func (rr *PX) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.Preference) {
 		return ErrUnpackOverflow
 	}
-	rr.Map822, err = unpackDomainName(&s, msgBuf)
+	rr.Map822, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
-	rr.Mapx400, err = unpackDomainName(&s, msgBuf)
+	rr.Mapx400, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -911,7 +911,7 @@ func (rr *RRSIG) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.KeyTag) {
 		return ErrUnpackOverflow
 	}
-	rr.SignerName, err = unpackDomainName(&s, msgBuf)
+	rr.SignerName, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -939,7 +939,7 @@ func (rr *NSEC) pack(msg []byte, off int, compression map[string]uint16) (off1 i
 
 func (rr *NSEC) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.NextDomain, err = unpackDomainName(&s, msgBuf)
+	rr.NextDomain, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -1035,7 +1035,7 @@ func (rr *KX) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.Preference) {
 		return ErrUnpackOverflow
 	}
-	rr.Exchanger, err = unpackDomainName(&s, msgBuf)
+	rr.Exchanger, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -1100,11 +1100,11 @@ func (rr *TALINK) pack(msg []byte, off int, compression map[string]uint16) (off1
 
 func (rr *TALINK) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.PreviousName, err = unpackDomainName(&s, msgBuf)
+	rr.PreviousName, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
-	rr.NextName, err = unpackDomainName(&s, msgBuf)
+	rr.NextName, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -1347,7 +1347,7 @@ func (rr *NSAPPTR) pack(msg []byte, off int, compression map[string]uint16) (off
 
 func (rr *NSAPPTR) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Ptr, err = unpackDomainName(&s, msgBuf)
+	rr.Ptr, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -1524,7 +1524,7 @@ func (rr *TKEY) pack(msg []byte, off int, compression map[string]uint16) (off1 i
 
 func (rr *TKEY) unpack(data, msgBuf []byte) (err error) {
 	s := cryptobyte.String(data)
-	rr.Algorithm, err = unpackDomainName(&s, msgBuf)
+	rr.Algorithm, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -1763,7 +1763,7 @@ func (rr *HIP) unpack(data, msgBuf []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	rr.RendezvousServers, err = unpackDomainNames(&s, msgBuf)
+	rr.RendezvousServers, err = unpackNames(&s, msgBuf)
 	if err != nil {
 		return err
 	}
@@ -1889,7 +1889,7 @@ func (rr *LP) unpack(data, msgBuf []byte) (err error) {
 	if !s.ReadUint16(&rr.Preference) {
 		return ErrUnpackOverflow
 	}
-	rr.Fqdn, err = unpackDomainName(&s, msgBuf)
+	rr.Fqdn, err = unpackName(&s, msgBuf)
 	if err != nil {
 		return err
 	}

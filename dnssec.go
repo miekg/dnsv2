@@ -593,8 +593,8 @@ type wireSlice [][]byte
 func (p wireSlice) Len() int      { return len(p) }
 func (p wireSlice) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p wireSlice) Less(i, j int) bool {
-	_, ioff, _ := UnpackDomainName(p[i], 0)
-	_, joff, _ := UnpackDomainName(p[j], 0)
+	_, ioff, _ := UnpackName(p[i], 0)
+	_, joff, _ := UnpackName(p[j], 0)
 	return bytes.Compare(p[i][ioff+10:], p[j][joff+10:]) < 0
 }
 

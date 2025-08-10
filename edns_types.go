@@ -91,6 +91,7 @@ type OPT struct {
 func (rr *OPT) Header() *Header { return &rr.Hdr }
 func (rr *OPT) String() string  { return rr.Hdr.String() }
 
+/*
 func (rr *OPT) Data() []Field {
 	fields := make([]Field, len(rr.Options))
 	for i := range rr.Options {
@@ -98,6 +99,7 @@ func (rr *OPT) Data() []Field {
 	}
 	return fields
 }
+*/
 
 func (rr *OPT) Len() int {
 	l := rr.Hdr.Len()
@@ -112,13 +114,19 @@ var _ RR = &OPT{}
 // NSID EDNS0 option is used to retrieve a nameserver identifier. When sending a request Nsid must be empty.
 // The identifier is an opaque string encoded as hex.
 type NSID struct {
-	Header
+	Hdr  Header
 	Nsid string `dns:"hex"`
 }
+
+func (rr *NSID) Len() int       { return 0 }
+func (rr *NSID) String() string { return "" }
 
 // PADDING option is used to add padding to a request/response. The default value of padding SHOULD be 0x0 but other values MAY be us>
 // compression is applied before encryption which may break signatures.
 type PADDING struct {
-	Header
+	Hdr     Header
 	Padding string `dns:"octet"`
 }
+
+func (rr *PADDING) Len() int       { return 0 }
+func (rr *PADDING) String() string { return "" }

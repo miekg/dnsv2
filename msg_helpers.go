@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/miekg/dnsv2/internal/ddd"
 	"golang.org/x/crypto/cryptobyte"
 )
 
@@ -19,10 +20,11 @@ func offset(data, buf []byte) int {
 	if len(data) > 0 && len(buf) > 0 && &data[len(data)-1] != &buf[len(buf)-1] {
 		panic("dns: internal error: cannot compute offset")
 	}
+	println("LEN BUF", len(buf), "LEN DATA", len(data))
 	return len(buf) - len(data)
 }
 
-// helper functions called from the generated zmsg.go
+// helper functions called from the generated zmsg.go - among others
 
 func unpackA(s *cryptobyte.String) (net.IP, error) {
 	ip := make(net.IP, net.IPv4len)
@@ -73,7 +75,7 @@ func packAAAA(aaaa net.IP, msg []byte, off int) (int, error) {
 
 // unpackRRHeader unpacks an RR header advancing msg.
 func unpackRRHeader(msg *cryptobyte.String, msgBuf []byte) (h Header, rdlength uint16, err error) {
-	h.Name, err = unpackDomainName(msg, msgBuf)
+	h.Name, err = unpackName(msg, msgBuf)
 	if err != nil {
 		if errors.Is(err, ErrUnpackOverflow) {
 			return h, 0, ErrTruncatedMessage
@@ -514,10 +516,10 @@ func packSVCB(pairs []SVCBKeyValue, msg []byte, off int) (int, error) {
 	return off, nil
 }
 
-func unpackDomainNames(s *cryptobyte.String, msgBuf []byte) ([]string, error) {
+func unpackNames(s *cryptobyte.String, msgBuf []byte) ([]string, error) {
 	var names []string
 	for !s.Empty() {
-		name, err := unpackDomainName(s, msgBuf)
+		name, err := unpackName(s, msgBuf)
 		if err != nil {
 			return names, err
 		}
@@ -669,7 +671,7 @@ func unpackIPSECGateway(s *cryptobyte.String, msgBuf []byte, gatewayType uint8) 
 	case IPSECGatewayIPv6:
 		addr, err = unpackAAAA(s)
 	case IPSECGatewayHost:
-		name, err = unpackDomainName(s, msgBuf)
+		name, err = unpackName(s, msgBuf)
 	}
 	return addr, name, err
 }
@@ -688,4 +690,97 @@ func packIPSECGateway(gatewayAddr net.IP, gatewayString string, msg []byte, off 
 	}
 
 	return off, err
+}
+
+func packTxt(txt []string, msg []byte, offset int) (int, error) {
+	if len(txt) == 0 {
+		if offset >= len(msg) {
+			return offset, ErrBuf
+		}
+		msg[offset] = 0
+		return offset, nil
+	}
+	var err error
+	for _, s := range txt {
+		offset, err = packTxtString(s, msg, offset)
+		if err != nil {
+			return offset, err
+		}
+	}
+	return offset, nil
+}
+
+func packTxtString(s string, msg []byte, offset int) (int, error) {
+	lenByteOffset := offset
+	if offset >= len(msg) || len(s) > 256*4+1 /* If all \DDD */ {
+		return offset, ErrBuf
+	}
+	offset++
+	for i := 0; i < len(s); i++ {
+		if len(msg) <= offset {
+			return offset, ErrBuf
+		}
+		if s[i] == '\\' {
+			i++
+			if i == len(s) {
+				break
+			}
+			// check for \DDD
+			if ddd.Is(s[i:]) {
+				msg[offset] = ddd.ToByte(s[i:])
+				i += 2
+			} else {
+				msg[offset] = s[i]
+			}
+		} else {
+			msg[offset] = s[i]
+		}
+		offset++
+	}
+	l := offset - lenByteOffset - 1
+	if l > 255 {
+		return offset, &Error{err: "string exceeded 255 bytes in txt"}
+	}
+	msg[lenByteOffset] = byte(l)
+	return offset, nil
+}
+
+func packOctetString(s string, msg []byte, offset int) (int, error) {
+	if offset >= len(msg) || len(s) > 256*4+1 {
+		return offset, ErrBuf
+	}
+	for i := 0; i < len(s); i++ {
+		if len(msg) <= offset {
+			return offset, ErrBuf
+		}
+		if s[i] == '\\' {
+			i++
+			if i == len(s) {
+				break
+			}
+			// check for \DDD
+			if ddd.Is(s[i:]) {
+				msg[offset] = ddd.ToByte(s[i:])
+				i += 2
+			} else {
+				msg[offset] = s[i]
+			}
+		} else {
+			msg[offset] = s[i]
+		}
+		offset++
+	}
+	return offset, nil
+}
+
+func unpackTxt(s *cryptobyte.String) ([]string, error) {
+	var strs []string
+	for !s.Empty() {
+		str, err := unpackString(s)
+		if err != nil {
+			return strs, err
+		}
+		strs = append(strs, str)
+	}
+	return strs, nil
 }

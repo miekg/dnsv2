@@ -251,7 +251,7 @@ if rr.%s != "-" {
 				case `dns:"pairs"`:
 					unpackField("unpackSVCB")
 				case `dns:"domain-name"`:
-					unpackFieldBuf("unpackDomainNames")
+					unpackFieldBuf("unpackNames")
 				case `dns:"apl"`:
 					unpackField("unpackApl")
 				default:
@@ -263,7 +263,7 @@ if rr.%s != "-" {
 			switch tag {
 			case `dns:"-"`: // ignored
 			case `dns:"cdomain-name"`, `dns:"domain-name"`:
-				unpackFieldBuf("unpackDomainName")
+				unpackFieldBuf("unpackName")
 			case `dns:"a"`:
 				unpackField("unpackA")
 			case `dns:"aaaa"`:

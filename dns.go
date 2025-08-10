@@ -35,6 +35,8 @@ type RR interface {
 	String() string
 	// Data returns all the rdata fields of the resource record.
 	Data() []Field
+	// SetData sets the rdata fields of the resource record.
+	//	SetData([]Field) error
 	// Len is the length if the RR when encoded in wire format, this is not a perfect metric and returning
 	// a slightly too large value is OK.
 	Len() int
