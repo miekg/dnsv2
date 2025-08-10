@@ -318,9 +318,9 @@ func unpackName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 				return "", ErrUnpackOverflow
 			}
 			// If this is the first pointer we've seen, we need to advance s to our current position.
-			if ptrs == 0 {
-				*s = cs
-			}
+			//			if ptrs == 0 {
+			//				*s = cs
+			//			}
 			// The pointer should always point backwards to an earlier part of the message. Technically it could work pointing
 			// forwards, but we choose not to support that as RFC 1035 specifically refers to a "prior occurance".
 			off := uint16(c&^0xC0)<<8 | uint16(c1)
