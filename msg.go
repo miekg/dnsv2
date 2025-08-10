@@ -542,6 +542,12 @@ func (m *Msg) pack(compression map[string]uint16) (err error) {
 			return err
 		}
 	}
+	for _, r := range m.Pseudo {
+		_, off, err = packRR(r, m.Data, off, compression)
+		if err != nil {
+			return err
+		}
+	}
 	m.Data = m.Data[:off]
 	return nil
 }

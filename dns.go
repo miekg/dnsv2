@@ -154,7 +154,7 @@ type Msg struct {
 	Extra    []RR // Holds the RR(s) of the additional section, execpt records that go into the pseudo section.
 	// The Pseudo section is a virtual (doesn't exist on the wire) section in this package. It holds the OPT
 	// EDNS0 option codes, that are interpreted (and shown) as RRs. If a TSIG or SIG(0) record is present it also sits in this
-	// section.
+	// section. If an OPT RR is present it will always be the first RR in this section.
 	Pseudo []RR // Holds the RR(s) of the (virtual) peusdo section.
 	// ps holds the number of real RRs in the pseudo section, this is 3 max (OPT, TSIG and SIG(0)). The number of
 	// virtual RR in pseudo is len(Pseudo).
