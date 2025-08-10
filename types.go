@@ -1453,7 +1453,21 @@ type OPT struct {
 
 // See opt.go for other methods.
 
-func (rr *OPT) String() string { return rr.Hdr.String() }
+func (rr *OPT) String() string {
+	sb := strings.Builder{}
+	sb.WriteString(";; version: ")
+	sb.WriteString(strconv.Itoa(int(rr.Version())))
+	sb.WriteString(", udp: ")
+	sb.WriteString(strconv.Itoa(int(rr.UDPSize())))
+	sb.WriteString(", flags:")
+	if rr.Do() {
+		sb.WriteString(" do")
+	}
+	if rr.Co() {
+		sb.WriteString(" co")
+	}
+	return sb.String()
+}
 
 /*
 func (rr *OPT) Data() []Field {

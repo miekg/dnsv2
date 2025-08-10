@@ -192,9 +192,9 @@ func (h *MsgHeader) String() string {
 	sb.WriteString(RcodeToString[h.Rcode()])
 	sb.WriteString(", id: ")
 	sb.WriteString(strconv.Itoa(int(h.ID)))
-	sb.WriteByte('\n')
+	sb.WriteByte(',')
 
-	sb.WriteString(";; flags:")
+	sb.WriteString(" flags:")
 	if h.Response {
 		sb.WriteString(" qr")
 	}
