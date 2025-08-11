@@ -18,15 +18,18 @@ func TestMakeMsgQuestionMX(t *testing.T) {
 }
 
 func TestReadMsgBinary(t *testing.T) {
-	buf, _ := os.ReadFile("testdata/dig-mx-miek.nl")
-	msg := new(Msg)
-	msg.Data = buf
-	fmt.Printf("%v\n", buf)
-	if err := msg.Unpack(); err != nil {
-		fmt.Printf("%s\n", msg)
-		t.Fatal(err)
+	binary := []string{"dig-mx-miek.nl", "dig+do+nsid-a-miek.nl"}
+	for i, bin := range binary {
+		t.Run(fmt.Sprintf("test %d: %s", i, bin), func(t *testing.T) {
+			buf, _ := os.ReadFile("testdata/" + bin)
+			msg := &Msg{Data: buf}
+			if err := msg.Unpack(); err != nil {
+				t.Logf("%v\n", msg.Data)
+				t.Errorf("%s", err)
+			}
+			t.Logf("%s\n", msg)
+		})
 	}
-	fmt.Printf("%s\n", msg)
 }
 
 func TestUnpackName(t *testing.T) {

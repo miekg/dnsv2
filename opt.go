@@ -4,6 +4,8 @@ func (*OPT) parse(c *zlexer, origin string) *ParseError {
 	return &ParseError{err: "OPT records do not have a presentation format"}
 }
 
+// hoeft allemaal niet ge-exporteerd te worden.
+
 // Version returns the EDNS version used. Only version zero is currently defined.
 func (rr *OPT) Version() uint8 { return uint8(rr.Hdr.TTL & 0x00FF0000 >> 16) }
 

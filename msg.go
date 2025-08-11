@@ -3,7 +3,6 @@ package dns
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -269,7 +268,7 @@ func UnpackName(msg []byte, off int) (string, int, error) {
 func unpackName(s *cryptobyte.String, msgBuf []byte) (string, error) {
 	name := make([]byte, 0, maxDomainNamePresentationLength)
 	budget := maxDomainNameWireOctets
-	var ptrs int // number of pointers followed
+	var ptrs int // number of pointers followed, can be just bool
 
 	// If we never see a pointer, we need to ensure that we advance s to our final position.
 	cs := *s
@@ -543,6 +542,7 @@ func (m *Msg) pack(compression map[string]uint16) (err error) {
 		}
 	}
 	for _, r := range m.Pseudo {
+		// not tsig and sig0 - added OPT RR and unpack things in there.
 		_, off, err = packRR(r, m.Data, off, compression)
 		if err != nil {
 			return err
@@ -599,7 +599,6 @@ func unpackQuestions(cnt uint16, msg *cryptobyte.String, msgBuf []byte) ([]RR, e
 		}
 		dst = append(dst, r)
 	}
-	fmt.Printf("%v\n", dst)
 	return dst, nil
 }
 

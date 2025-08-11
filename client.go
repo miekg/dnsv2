@@ -23,7 +23,7 @@ var (
 
 // A Client is a DNS client. If it currently empty.
 type Client struct{}
-// Dial or TransPort ala http?
+// Dial or TransP:ort ala http?
 
 // Exchange performs a synchronous UDP query. It sends the message m to the address
 // contained in a and waits for a reply. Exchange does not retry a failed query, nor
