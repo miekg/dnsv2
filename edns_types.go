@@ -1,5 +1,12 @@
 package dns
 
+import (
+	"encoding/hex"
+	"fmt"
+
+	"golang.org/x/crypto/cryptobyte"
+)
+
 // Code option codes.
 const (
 	CodeNone         uint16 = 0x0
@@ -81,6 +88,17 @@ var ExtendedErrorToString = map[uint16]string{
 // StringToExtendedError is a map from human readable descriptions to extended error info codes.
 var StringToExtendedError = reverseInt16(ExtendedErrorToString)
 
+func unpackOptionCode(option EDNS0, s *cryptobyte.String) error {
+	switch x := option.(type) {
+	case *NSID:
+		return x.unpack(s)
+	case *PADDING:
+		return x.unpack(s)
+	}
+	// Coder() check, abuse Type()?
+	return fmt.Errorf("no option unpack defined")
+}
+
 // NSID EDNS0 option is used to retrieve a nameserver identifier. When sending a request Nsid must be empty.
 // The identifier is an opaque string encoded as hex.
 type NSID struct {
@@ -88,15 +106,30 @@ type NSID struct {
 	Nsid string `dns:"hex"`
 }
 
-func (rr *NSID) Len() int       { return 0 }
-func (rr *NSID) String() string { return "" }
+func (o *NSID) Len() int { return 4 + len(o.Nsid)/2 }
+func (o *NSID) String() string {
+	sb := sprintOptionHeader(o)
+	sb.WriteString(o.Nsid)
+	if x, err := hex.DecodeString(o.Nsid); err == nil { // == nil
+		sb.WriteString(" ; (\"")
+		sb.Write(x)
+		sb.WriteByte(')')
+	}
+	return sb.String()
+}
 
-// PADDING option is used to add padding to a request/response. The default value of padding SHOULD be 0x0 but other values MAY be us>
-// compression is applied before encryption which may break signatures.
+func (o *NSID) unpack(s *cryptobyte.String) error {
+	o.Nsid = hex.EncodeToString(*s)
+	return nil
+}
+
+// PADDING option is used to add padding to a request/response. The default value of padding SHOULD be 0x0 but
+// other values MAY be used.
 type PADDING struct {
 	Hdr     Header
 	Padding string `dns:"octet"`
 }
 
-func (rr *PADDING) Len() int       { return 0 }
-func (rr *PADDING) String() string { return "" }
+func (o *PADDING) Len() int                          { return 0 }
+func (o *PADDING) String() string                    { return "" }
+func (o *PADDING) unpack(s *cryptobyte.String) error { return nil }

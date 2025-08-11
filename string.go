@@ -185,6 +185,13 @@ func sprintType(t uint16) string {
 	return "TYPE" + strconv.Itoa(int(t))
 }
 
+func sprintCode(t uint16) string {
+	if t1, ok := CodeToString[uint16(t)]; ok {
+		return t1
+	}
+	return "CODE" + strconv.Itoa(int(t))
+}
+
 func sprintClass(c uint16) string {
 	if s, ok := ClassToString[uint16(c)]; ok {
 		// Only emit mnemonics when they are unambiguous, specially ANY is in both.
@@ -261,6 +268,22 @@ func sprintHeader(rr RR) *strings.Builder {
 		rrtype = RRToType(rr)
 	}
 	sb.WriteString(sprintType(rrtype))
+	sb.WriteByte('\t')
+	return &sb
+}
+
+func sprintOptionHeader(rr EDNS0) *strings.Builder {
+	sb := strings.Builder{}
+	sb.WriteByte('.')
+	sb.WriteByte('\t')
+
+	sb.WriteByte('\t') // skip TTL
+
+	sb.WriteString(sprintClass(rr.Header().Class))
+	sb.WriteByte('\t')
+
+	rrcode := RRToCode(rr)
+	sb.WriteString(sprintCode(rrcode))
 	sb.WriteByte('\t')
 	return &sb
 }

@@ -29,7 +29,8 @@ var (
 	ErrShortRead        = &Error{err: "short read"}
 	ErrSig              = &Error{err: "bad signature"} // ErrSig indicates that a signature can not be cryptographically validated.
 	ErrSoa              = &Error{err: "no SOA"}        // ErrSOA indicates that no SOA RR was seen when doing zone transfers.
-	ErrTime             = &Error{err: "bad time"}      // ErrTime indicates a timing error in TSIG authentication.
+	ErrOpt              = &Error{err: "unknown OPT code"}
+	ErrTime             = &Error{err: "bad time"} // ErrTime indicates a timing error in TSIG authentication.
 	ErrTruncatedMessage = &Error{err: "overflow unpacking truncated message"}
 	ErrUnpackOverflow   = &Error{err: "overflow unpacking data"}
 	ErrTrailingRData    = &Error{err: "trailing record rdata"}

@@ -650,16 +650,23 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 			// move to end, so it can be removed latter and unpack the opt for the settings.
 			m.Security = opt.Security()
 			m.CompatAnswers = opt.CompactAnswers()
-			// m.Rcode == something someting
+			// m.Rcode == something someting, TODO
 			m.Version = opt.Version()
 			m.UDPSize = opt.UDPSize()
+
+			m.Pseudo = make([]RR, len(opt.Options))
+			for i, o := range opt.Options {
+				m.Pseudo[i] = RR(o)
+			}
 
 			m.Extra[len(m.Extra)-j-1] = rr
 			j++
 		}
 	}
+	// remove the option
 	m.Extra = m.Extra[:len(m.Extra)-j]
-	m.ps = 0
+
+	m.ps = 0 // unless TSIG, SIG(0)
 
 	if !s.Empty() {
 		return &Error{err: "trailing message data"}

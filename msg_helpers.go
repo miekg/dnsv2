@@ -339,7 +339,27 @@ func packStringTxt(s []string, msg []byte, off int) (int, error) {
 }
 
 func unpackOpt(s *cryptobyte.String) ([]EDNS0, error) {
-	return nil, nil
+	edns0 := []EDNS0{}
+	for !s.Empty() {
+		var (
+			code uint16
+			data cryptobyte.String
+		)
+		if !s.ReadUint16(&code) || !s.ReadUint16LengthPrefixed(&data) {
+			return nil, ErrUnpackOverflow
+		}
+		var option EDNS0
+		if newFn, ok := CodeToRR[code]; ok {
+			option = newFn()
+		} else {
+			return nil, ErrOpt
+		}
+		if err := unpackOptionCode(option, &data); err != nil {
+			return nil, err
+		}
+		edns0 = append(edns0, option)
+	}
+	return edns0, nil
 }
 
 func packOpt(options []EDNS0, msg []byte, off int) (int, error) {

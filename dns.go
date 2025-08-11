@@ -48,6 +48,8 @@ type Typer interface {
 	Type() uint16
 }
 
+// Type Coder Code() for option RR???
+
 // Field is a rdata element in a resource record. The string representation can be configured in various ways:
 //   - If a Field implements the Stringer interface it will be used to return the string presentation
 //   - Otherwise if the field is a basic Go type, it will be converted to a string will be used.
