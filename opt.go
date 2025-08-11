@@ -16,11 +16,11 @@ func (rr *OPT) UDPSize() uint16 { return rr.Hdr.Class }
 // SetUDPSize sets the UDP buffer size.
 func (rr *OPT) SetUDPSize(size uint16) { rr.Hdr.Class = size }
 
-// Do returns the value of the DO (DNSSEC OK) bit.
-func (rr *OPT) Do() bool { return rr.Hdr.TTL&_DO == _DO }
+// Security returns the value of the DO (DNSSEC OK) bit.
+func (rr *OPT) Security() bool { return rr.Hdr.TTL&_DO == _DO }
 
-// SetDo sets the DO (DNSSEC OK) bit.
-func (rr *OPT) SetDo(do bool) {
+// SetSecurity sets the security (DNSSEC OK) bit.
+func (rr *OPT) SetSecurity(do bool) {
 	if do {
 		rr.Hdr.TTL |= _DO
 	} else {
@@ -28,11 +28,11 @@ func (rr *OPT) SetDo(do bool) {
 	}
 }
 
-// Co returns the value of the CO (Compact Answers OK) bit.
-func (rr *OPT) Co() bool { return rr.Hdr.TTL&_CO == _CO }
+// CompactAnswers returns the value of the CO (Compact Answers OK) bit.
+func (rr *OPT) CompactAnswers() bool { return rr.Hdr.TTL&_CO == _CO }
 
-// SetCo sets the CO (Compact Answers OK) bit.
-func (rr *OPT) SetCo(co bool) {
+// SetCompactAnswers sets the CO (Compact Answers OK) bit.
+func (rr *OPT) SetCompactAnswers(co bool) {
 	if co {
 		rr.Hdr.TTL |= _CO
 	} else {

@@ -138,7 +138,14 @@ type MsgHeader struct {
 	AuthenticatedData  bool
 	CheckingDisabled   bool
 
-	rcode uint16 // 12 bits are defined, some live in the OPT RR.
+	Rcode uint16 // Rcode is the message response code, see the RcodeXXX constants.
+
+	// Extended DNS (version 0) option that can be set directly on the message. The package takes care of
+	// putting the bits in the right places.
+	UDPSize       uint16 // UDPSize is the OPT's RR advertised UDP size.
+	Version       uint8  // Version is the EDNS version, always zero.
+	Security      bool   // Security is the DNSSEC OK bit, see RFC 403{3,4,5}.
+	CompatAnswers bool   // Compact Answers OK
 }
 
 // Msg is a DNS message.
@@ -176,9 +183,6 @@ const (
 	OptionUnpackQuestion                    // Unpack only the question section of the message
 )
 
-func (h *MsgHeader) SetRcode(code uint16) {}
-func (h *MsgHeader) Rcode() uint16        { return h.rcode }
-
 // Convert a MsgHeader to a string, with dig-like headers:
 //
 // ;; opcode: QUERY, status: NOERROR, id: 48404
@@ -189,7 +193,7 @@ func (h *MsgHeader) String() string {
 	sb.WriteString(";; ")
 	sb.WriteString(OpcodeToString[h.Opcode])
 	sb.WriteString(", status: ")
-	sb.WriteString(RcodeToString[h.Rcode()])
+	sb.WriteString(RcodeToString[h.Rcode])
 	sb.WriteString(", id: ")
 	sb.WriteString(strconv.Itoa(int(h.ID)))
 	sb.WriteByte(',')
@@ -218,6 +222,12 @@ func (h *MsgHeader) String() string {
 	}
 	if h.CheckingDisabled {
 		sb.WriteString(" cd")
+	}
+	if h.Security {
+		sb.WriteString(" do")
+	}
+	if h.CompatAnswers {
+		sb.WriteString(" co")
 	}
 	sb.WriteByte('\n')
 	return sb.String()

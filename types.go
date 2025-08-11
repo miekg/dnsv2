@@ -1444,8 +1444,9 @@ func (rr *ZONEMD) String() string {
 	return sb.String()
 }
 
-// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. In messages this
-// is found in the pseudo section.
+// OPT is the EDNS0 RR appended to messages to convey extra (meta) information. See RFC 6891. This record is
+// not (directly) found in messages as the pack and unpack function take care of this. Any EDNS0 options are
+// found in the [Pseudo] section of the message.
 type OPT struct {
 	Hdr     Header
 	Options []EDNS0 `dns:"opt"`
@@ -1453,21 +1454,7 @@ type OPT struct {
 
 // See opt.go for other methods.
 
-func (rr *OPT) String() string {
-	sb := strings.Builder{}
-	sb.WriteString(";; version: ")
-	sb.WriteString(strconv.Itoa(int(rr.Version())))
-	sb.WriteString(", udp: ")
-	sb.WriteString(strconv.Itoa(int(rr.UDPSize())))
-	sb.WriteString(", flags:")
-	if rr.Do() {
-		sb.WriteString(" do")
-	}
-	if rr.Co() {
-		sb.WriteString(" co")
-	}
-	return sb.String()
-}
+func (rr *OPT) String() string { return "" }
 
 /*
 func (rr *OPT) Data() []Field {

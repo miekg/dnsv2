@@ -456,7 +456,7 @@ func (m *Msg) Pack() error {
 }
 
 func (m *Msg) pack(compression map[string]uint16) (err error) {
-	if m.Rcode() < 0 || m.Rcode() > 0xFFF {
+	if m.Rcode < 0 || m.Rcode > 0xFFF {
 		return ErrRcode
 	}
 
@@ -474,7 +474,7 @@ func (m *Msg) pack(compression map[string]uint16) (err error) {
 	// Convert convenient Msg into wire-like Header.
 	var dh header
 	dh.ID = m.ID
-	dh.Bits = uint16(m.Opcode)<<11 | uint16(m.Rcode()&0xF)
+	dh.Bits = uint16(m.Opcode)<<11 | uint16(m.Rcode&0xF)
 	if m.Response {
 		dh.Bits |= _QR
 	}
@@ -641,20 +641,26 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 		return err
 	}
 
-	// Extra OPT RR and/or TSIG/SIG(0) from the section and place them in the pseudo section. Swap them to the
-	// end, copy them to pseudo and shorten extra.
+	// Check for the OPT RR and remove it entirely, unpack the OPT for option code and put those in the Pseudo
+	// section. Any TSIG and SIG0 records will also be put in the pseudo section, but after the options.
+
 	j := 0
 	for i := 0; i < len(m.Extra)-j; i++ {
 		rr := m.Extra[i]
-		if _, ok := rr.(*OPT); ok {
-			m.Pseudo = append(m.Pseudo, rr)
-			m.Extra[len(m.Extra)-j-1] = rr
+		if opt, ok := rr.(*OPT); ok {
+			// move to end, so it can be removed latter and unpack the opt for the settings.
+			m.Security = opt.Security()
+			m.CompatAnswers = opt.CompactAnswers()
+			// m.Rcode == something someting
+			m.Version = opt.Version()
+			m.UDPSize = opt.UDPSize()
 
+			m.Extra[len(m.Extra)-j-1] = rr
 			j++
 		}
 	}
 	m.Extra = m.Extra[:len(m.Extra)-j]
-	m.ps = 1
+	m.ps = 0
 
 	if !s.Empty() {
 		return &Error{err: "trailing message data"}
@@ -682,6 +688,15 @@ func (m *Msg) String() string {
 	sb := strings.Builder{}
 
 	sb.WriteString(m.MsgHeader.String())
+	// if core EDNS flags are set, we print this (flags are already handles in MsgHeader
+	if m.UDPSize > 0 || m.Security || m.CompatAnswers {
+		sb.WriteString(";; EDNS, version: ")
+		sb.WriteString(strconv.Itoa(int(m.Version)))
+		sb.WriteString(", udp: ")
+		sb.WriteString(strconv.Itoa(int(m.UDPSize)))
+		sb.WriteByte('\n')
+	}
+
 	sections := [5]string{"QUESTION", "PSEUDO", "ANSWER", "AUTHORITY", "ADDITIONAL"}
 	if m.MsgHeader.Opcode == OpcodeUpdate {
 		sections = [5]string{"ZONE", "PSEUDO", "PREREQ", "UPDATE", "ADDITIONAL"}
@@ -852,30 +867,5 @@ func (m *Msg) setMsgHeader(dh header) {
 	m.Zero = dh.Bits&_Z != 0 // _Z covers the zero bit, which should be zero; not sure why we set it to the opposite.
 	m.AuthenticatedData = dh.Bits&_AD != 0
 	m.CheckingDisabled = dh.Bits&_CD != 0
-	m.SetRcode(dh.Bits & 0xF)
-}
-
-// Do returns the value of the DO (DNSSEC OK) bit from the message. If the message does not have an OPT RR
-// false is returned.
-func (m *Msg) Do() bool {
-	if len(m.Pseudo) == 0 {
-		return false
-	}
-	opt, ok := m.Pseudo[0].(*OPT)
-	if !ok {
-		return false
-	}
-	return opt.Do()
-}
-
-// SetDo sets the DO (DNSSEC OK) bit in the message. If the message does not have an OPT RR, it will be added
-// in the pseudo section.
-func (m *Msg) SetDo(do bool) {
-	if len(m.Pseudo) == 0 {
-		m.Pseudo[0] = new(OPT)
-	}
-
-	if opt, ok := m.Pseudo[0].(*OPT); ok {
-		opt.SetDo(do)
-	}
+	m.Rcode = dh.Bits & 0xF
 }

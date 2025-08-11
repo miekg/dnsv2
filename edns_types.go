@@ -22,64 +22,64 @@ const (
 
 // Extended DNS Error Codes (RFC 8914).
 const (
-	ExtendedRcodeOther uint16 = iota
-	ExtendedRcodeUnsupportedDNSKEYAlgorithm
-	ExtendedRcodeUnsupportedDSDigestType
-	ExtendedRcodeStaleAnswer
-	ExtendedRcodeForgedAnswer
-	ExtendedRcodeDNSSECIndeterminate
-	ExtendedRcodeDNSBogus
-	ExtendedRcodeSignatureExpired
-	ExtendedRcodeSignatureNotYetValid
-	ExtendedRcodeDNSKEYMissing
-	ExtendedRcodeRRSIGsMissing
-	ExtendedRcodeNoZoneKeyBitSet
-	ExtendedRcodeNSECMissing
-	ExtendedRcodeCachedError
-	ExtendedRcodeNotReady
-	ExtendedRcodeBlocked
-	ExtendedRcodeCensored
-	ExtendedRcodeFiltered
-	ExtendedRcodeProhibited
-	ExtendedRcodeStaleNXDOMAINAnswer
-	ExtendedRcodeNotAuthoritative
-	ExtendedRcodeNotSupported
-	ExtendedRcodeNoReachableAuthority
-	ExtendedRcodeNetworkError
-	ExtendedRcodeInvalidData
+	ExtendedErrorOther uint16 = iota
+	ExtendedErrorUnsupportedDNSKEYAlgorithm
+	ExtendedErrorUnsupportedDSDigestType
+	ExtendedErrorStaleAnswer
+	ExtendedErrorForgedAnswer
+	ExtendedErrorDNSSECIndeterminate
+	ExtendedErrorDNSBogus
+	ExtendedErrorSignatureExpired
+	ExtendedErrorSignatureNotYetValid
+	ExtendedErrorDNSKEYMissing
+	ExtendedErrorRRSIGsMissing
+	ExtendedErrorNoZoneKeyBitSet
+	ExtendedErrorNSECMissing
+	ExtendedErrorCachedError
+	ExtendedErrorNotReady
+	ExtendedErrorBlocked
+	ExtendedErrorCensored
+	ExtendedErrorFiltered
+	ExtendedErrorProhibited
+	ExtendedErrorStaleNXDOMAINAnswer
+	ExtendedErrorNotAuthoritative
+	ExtendedErrorNotSupported
+	ExtendedErrorNoReachableAuthority
+	ExtendedErrorNetworkError
+	ExtendedErrorInvalidData
 )
 
-// ExtendedRcodeToString maps extended error info codes to a human readable description.
-var ExtendedRcodeToString = map[uint16]string{
-	ExtendedRcodeOther:                      "Other",
-	ExtendedRcodeUnsupportedDNSKEYAlgorithm: "Unsupported DNSKEY Algorithm",
-	ExtendedRcodeUnsupportedDSDigestType:    "Unsupported DS Digest Type",
-	ExtendedRcodeStaleAnswer:                "Stale Answer",
-	ExtendedRcodeForgedAnswer:               "Forged Answer",
-	ExtendedRcodeDNSSECIndeterminate:        "DNSSEC Indeterminate",
-	ExtendedRcodeDNSBogus:                   "DNSSEC Bogus",
-	ExtendedRcodeSignatureExpired:           "Signature Expired",
-	ExtendedRcodeSignatureNotYetValid:       "Signature Not Yet Valid",
-	ExtendedRcodeDNSKEYMissing:              "DNSKEY Missing",
-	ExtendedRcodeRRSIGsMissing:              "RRSIGs Missing",
-	ExtendedRcodeNoZoneKeyBitSet:            "No Zone Key Bit Set",
-	ExtendedRcodeNSECMissing:                "NSEC Missing",
-	ExtendedRcodeCachedError:                "Cached Error",
-	ExtendedRcodeNotReady:                   "Not Ready",
-	ExtendedRcodeBlocked:                    "Blocked",
-	ExtendedRcodeCensored:                   "Censored",
-	ExtendedRcodeFiltered:                   "Filtered",
-	ExtendedRcodeProhibited:                 "Prohibited",
-	ExtendedRcodeStaleNXDOMAINAnswer:        "Stale NXDOMAIN Answer",
-	ExtendedRcodeNotAuthoritative:           "Not Authoritative",
-	ExtendedRcodeNotSupported:               "Not Supported",
-	ExtendedRcodeNoReachableAuthority:       "No Reachable Authority",
-	ExtendedRcodeNetworkError:               "Network Error",
-	ExtendedRcodeInvalidData:                "Invalid Data",
+// ExtendedErrorToString maps extended error info codes to a human readable description.
+var ExtendedErrorToString = map[uint16]string{
+	ExtendedErrorOther:                      "Other",
+	ExtendedErrorUnsupportedDNSKEYAlgorithm: "Unsupported DNSKEY Algorithm",
+	ExtendedErrorUnsupportedDSDigestType:    "Unsupported DS Digest Type",
+	ExtendedErrorStaleAnswer:                "Stale Answer",
+	ExtendedErrorForgedAnswer:               "Forged Answer",
+	ExtendedErrorDNSSECIndeterminate:        "DNSSEC Indeterminate",
+	ExtendedErrorDNSBogus:                   "DNSSEC Bogus",
+	ExtendedErrorSignatureExpired:           "Signature Expired",
+	ExtendedErrorSignatureNotYetValid:       "Signature Not Yet Valid",
+	ExtendedErrorDNSKEYMissing:              "DNSKEY Missing",
+	ExtendedErrorRRSIGsMissing:              "RRSIGs Missing",
+	ExtendedErrorNoZoneKeyBitSet:            "No Zone Key Bit Set",
+	ExtendedErrorNSECMissing:                "NSEC Missing",
+	ExtendedErrorCachedError:                "Cached Error",
+	ExtendedErrorNotReady:                   "Not Ready",
+	ExtendedErrorBlocked:                    "Blocked",
+	ExtendedErrorCensored:                   "Censored",
+	ExtendedErrorFiltered:                   "Filtered",
+	ExtendedErrorProhibited:                 "Prohibited",
+	ExtendedErrorStaleNXDOMAINAnswer:        "Stale NXDOMAIN Answer",
+	ExtendedErrorNotAuthoritative:           "Not Authoritative",
+	ExtendedErrorNotSupported:               "Not Supported",
+	ExtendedErrorNoReachableAuthority:       "No Reachable Authority",
+	ExtendedErrorNetworkError:               "Network Error",
+	ExtendedErrorInvalidData:                "Invalid Data",
 }
 
-// StringToExtendedRcode is a map from human readable descriptions to extended error info codes.
-var StringToExtendedRcode = reverseInt16(ExtendedRcodeToString)
+// StringToExtendedError is a map from human readable descriptions to extended error info codes.
+var StringToExtendedError = reverseInt16(ExtendedErrorToString)
 
 // NSID EDNS0 option is used to retrieve a nameserver identifier. When sending a request Nsid must be empty.
 // The identifier is an opaque string encoded as hex.
