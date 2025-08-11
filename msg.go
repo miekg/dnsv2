@@ -671,11 +671,10 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 	if !s.Empty() {
 		return &Error{err: "trailing message data"}
 	}
-
 	return nil
 }
 
-// Unpack unpacks a binary message that ists in m.Data to a Msg structure.
+// Unpack unpacks a binary message that sits in m.Data to a Msg structure.
 func (m *Msg) Unpack() error {
 	s := cryptobyte.String(m.Data)
 	var dh header
@@ -874,4 +873,24 @@ func (m *Msg) setMsgHeader(dh header) {
 	m.AuthenticatedData = dh.Bits&_AD != 0
 	m.CheckingDisabled = dh.Bits&_CD != 0
 	m.Rcode = dh.Bits & 0xF
+}
+
+// io.Reader and io.Writer interfaces implementation.
+
+// Write writes the buffer p to the m.Data. If m.Data is less then the size of p an error is returned.
+func (m *Msg) Write(p []byte) (n int, err error) {
+	if len(p) > len(m.Data) {
+		return 0, ErrBuf
+	}
+	copy(m.Data, p)
+	return len(p), nil
+}
+
+// Read read the data from m.Data into p.
+func (m *Msg) Read(p []byte) (n int, err error) {
+	if len(p) < len(m.Data) {
+		return 0, ErrBuf
+	}
+	copy(p, m.Data)
+	return len(p), nil
 }
