@@ -656,7 +656,6 @@ func (m *Msg) unpack(dh header, msg, msgBuf []byte) error {
 
 			m.Pseudo = make([]RR, len(opt.Options))
 			for i, o := range opt.Options {
-				println("PSUEDO", i)
 				m.Pseudo[i] = RR(o)
 			}
 
